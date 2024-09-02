@@ -101,7 +101,7 @@ class Simulation:
             We safeguard measurements with a try-except block to avoid loosing results after an expensive
             simulation. This is the maximum number of errors happening during measurements
             before we abort the whole simulation.
-            Setting this to None disables raising the error due to failed measurements 
+            Setting this to None disables raising the error due to failed measurements
             (also at the end of the simulation).
 
     Attributes
@@ -168,7 +168,7 @@ class Simulation:
         Only set if `grouped` > 1. In that case, :attr:`model` is the modified/grouped model,
         and `model_ungrouped` is the original ungrouped model.
     final_processing : bool
-        Flag that indicates that we're in the final processing and want to avoid raising errors 
+        Flag that indicates that we're in the final processing and want to avoid raising errors
         before saving results.
     """
     #: name of the default algorithm `engine` class
@@ -715,8 +715,8 @@ class Simulation:
                                                    psi=psi,
                                                    model=model,
                                                    simulation=self)
-            # we safe-guard the measurements with try-except 
-            # to avoid that mistakes in the measurement cause us to loose all our data, 
+            # we safe-guard the measurements with try-except
+            # to avoid that mistakes in the measurement cause us to loose all our data,
             # e.g. if we were running DMRG for days, and just have a stupid typo in a measurement function
         except Exception:
             err_traceback = traceback.format_exc()

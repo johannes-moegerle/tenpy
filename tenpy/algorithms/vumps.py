@@ -192,7 +192,7 @@ class VUMPSEngine(IterativeSweeps):
         Options
         -------
         .. cfg:configoptions :: VUMPSEngine
-        
+
             diagonal_gauge_frequency : int
                 Number of sweeps how often we restore the UniformMPS to the diagonal gauge
             cutoff : float
@@ -298,7 +298,7 @@ class VUMPSEngine(IterativeSweeps):
         Options
         -------
         .. cfg:configoptions :: VUMPSEngine
-        
+
             max_E_err : float
                 Convergence if the change of the energy in each step
                 satisfies ``|Delta E / max(E, 1)| < max_E_err``. Note that
@@ -330,13 +330,13 @@ class VUMPSEngine(IterativeSweeps):
         Options
         -------
         .. cfg:configoptions :: VUMPSEngine
-        
+
             check_overlap : bool
                 Since AL C = C AR is not identically true, the MPS defined by AL and AR are not exactly the same.
                 We can compute the overlap of the two to check.
             norm_tol : float
                 Check if final state is in canonical form.
-        
+
         """
         super().post_run_cleanup()
         check_overlap = self.options.get('check_overlap', True, bool)
@@ -675,7 +675,7 @@ class SingleSiteVUMPSEngine(VUMPSEngine):
             Center matrix left of site ``i0``
         C2: :class:`~tenpy.linalg.np_conserved.Array`
             Center matrix right of site ``i0``
-        
+
         Returns
         -------
         AL : :class:`~tenpy.linalg.np_conserved.Array`
@@ -823,7 +823,7 @@ class TwoSiteVUMPSEngine(VUMPSEngine):
             Center matrix left of site ``i0``
         C3: :class:`~tenpy.linalg.np_conserved.Array`
             Center matrix right of site ``i0+1``
-        
+
         Returns
         -------
         AL2 : :class:`~tenpy.linalg.np_conserved.Array`

@@ -41,7 +41,7 @@ def main():
     args = parser.parse_args()
     load_existing = args.load
     file = args.file
-    
+
     if load_existing:
         print('Loading existing file')
         with open(file, 'rb') as f:
@@ -68,23 +68,23 @@ def run():
 def run_at_fixed_chi(chi):
     psi = tenpy.MPS.from_lat_product_state(model.lat, [['up'], ['down']])
     # Selects Sz=0 sector
-    
+
     engine_params['trunc_params'].update(chi_max=chi)
     engine = tenpy.TEBDEngine(psi, model, engine_params)
     # engine = tenpy.TDVPEngine(psi, model, engine_params)
-    
+
     t = [0]
     S = [psi.entanglement_entropy()]
     mag_z = [psi.expectation_value('Sz')]
     err = [0]
-    
+
     for n in tqdm(range(200)):
         engine.run()
         t.append(engine.evolved_time)
         S.append(psi.entanglement_entropy())
         mag_z.append(psi.expectation_value('Sz'))
         err.append(engine.trunc_err.eps)
-    
+
     t = np.array(t)
     S = np.array(S)
     mag_z = np.array(mag_z)
@@ -131,7 +131,7 @@ def plot(results, outfile):
     ax_mag.set_yticks([0, 12, 24, 36, 49])
     ax_mag.xaxis.set_major_formatter(mpl.ticker.FuncFormatter(lambda x, pos: str(dt_measure * int(x))))
     im = ax_mag.pcolor(results[max_chi]['mag_z'].T, cmap='inferno', edgecolor='face')
-    # cmap candidates: viridis, inferno, coolwarm, bwr, RdBu, 
+    # cmap candidates: viridis, inferno, coolwarm, bwr, RdBu,
     divider = make_axes_locatable(ax_mag)
     cax = divider.append_axes('right', size='5%', pad=0.05)
     cbar = plt.colorbar(im, cax=cax)

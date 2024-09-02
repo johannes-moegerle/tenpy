@@ -335,7 +335,7 @@ class MPO:
             import numpy as np
 
         .. doctest :: from_wavepacket
-        
+
             >>> L, k0, x0, sigma, = 50, np.pi/8., 10., 5.
             >>> x = np.arange(L)
             >>> coeff = np.exp(-1.j * k0 * x) * np.exp(- 0.5 * (x - x0)**2 / sigma**2)
@@ -348,7 +348,7 @@ class MPO:
         Indeed, we can apply this to a (vacuum) MPS and get the correct state:
 
         .. doctest :: from_wavepacket
-        
+
             >>> psi = MPS.from_product_state([site] * L, ['empty'] * L)
             >>> wp.apply(psi, dict(compression_method='SVD'))
             TruncationError()
@@ -1408,7 +1408,7 @@ class MPO:
         """
         if self.explicit_plus_hc != other.explicit_plus_hc:
             raise ValueError('Can not add MPOs with different explicit_plus_hc flags')
-        
+
         L = self.L
         assert self.bc == other.bc
         assert other.L == L

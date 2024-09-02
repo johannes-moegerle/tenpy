@@ -12,7 +12,7 @@ Follow this checklist when creating a new release, i.e. updating the version num
    A convenient way to check this is to re-run the github.com actions on the latest commit.
 
 #. Update the changelog and release notes.
-   
+
    - The "latest" contributions should have added entries in ``doc/changelog/latest/``.
      Starting a docbuild (``make html``) pastes all of these entries into ``doc/changelog/_latest.rst``,
      even if aborted after a few seconds.
@@ -27,23 +27,23 @@ Follow this checklist when creating a new release, i.e. updating the version num
      It should be empty except for the header.
 
 #. Update ``tenpy/version.py``
-  
+
    - Update the release number.
    - set ``released=True``.
 
 #. Create the version commit and a tag::
-    
+
      git commit -m "VERSION 0.42.1"
      git tag -s "v0.42.1"
-   
-   
+
+
    Change the version number appropriately!
    We usually choose ``VERSION 0.42.1`` for the commit message of the tag as well.
    You should GPG sign the commit.
 
 #. Reset the ``released=False`` flag in ``tenpy/version.py``.
    Commit and push these changes::
-   
+
      git add tenpy/version.py
      git commit -m "reset released=False"
      git push
@@ -58,17 +58,17 @@ Follow this checklist when creating a new release, i.e. updating the version num
    This is best done in a dedicated fresh environment.
    Since the dependencies (numpy, scipy) are not available on TestPyPI, we need to pre-install them.
    On live PyPI we could omit them here and ``pip install physics-tenpy`` would install them for us::
-   
+
      conda create -n tenpytest python=3.12 pip numpy scipy h5py pyyaml pytest ipython
      conda activate tenpytest
      pip install -i https://test.pypi.org/simple/ physics-tenpy==0.42.1
-   
+
    Make sure your working directory is *not* the root folder of a tenpy repo.
    That would cause the tenpy version from the repo to be in the path and probably take
    precedence over the tenpy version that we just installed.
    In e.g. an ``ipython`` console, check that tenpy can be imported without errors and warnings and
    check that you are importing the correct version::
-   
+
      In [1] import tenpy as tp
      In [2]: print(tp.__file__)  # make sure the following path contains 'site-packages'.
      /Users/jakobunfried/anaconda3/envs/tenpytest/lib/python3.12/site-packages/tenpy/__init__.py
@@ -77,7 +77,7 @@ Follow this checklist when creating a new release, i.e. updating the version num
      git revision unknown using
      python 3.12.1 | packaged by Anaconda, Inc. | (main, Jan 19 2024, 09:45:58) [Clang 14.0.6 ]
      numpy 1.26.3, scipy 1.11.4
-   
+
    Run the test suite. Again, ensure that you are not in the root directory of the repo::
 
       pytest path/to/local/repo/tests
@@ -88,8 +88,8 @@ Follow this checklist when creating a new release, i.e. updating the version num
 
 #. Wait for conda-forge bot to create a pull request in the `feedstock repo <https://github.com/conda-forge/physics-tenpy-feedstock>`_
    and merge it.
-   
-   
+
+
 If something goes wrong
 ~~~~~~~~~~~~~~~~~~~~~~~
 The following is a loose collection of tips and pointers, in case something goes wrong during the
@@ -99,12 +99,12 @@ release steps outlined above.
   TestPyPI, like the live PyPI can not be modified once uploaded and accepts only one upload per
   unique version number. If you do not do this quick enough, subsequent uploads to TestPyPI
   (with the same version number) will fail.
-  
+
 - After fixing the problems, you can simply make a second ``"VERSION 0.42.1"`` commit.
   Consider putting an explanation into the commit message; what went wrong the first time?
- 
+
 - To "move" the tag to the new commit follow these steps::
-   
+
     git tag -d <tagname>                  # delete the old tag locally
     git push origin :refs/tags/<tagname>  # delete the old tag remotely
     git tag <tagname> <commitId>          # make a new tag locally

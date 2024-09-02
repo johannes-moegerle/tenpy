@@ -97,5 +97,5 @@ This work was funded by the U.S. Department of Energy, Office of Science, Office
 
 License
 -------
-The code is licensed under GPL-v3.0 given in the file ``LICENSE`` of the repository, 
+The code is licensed under GPL-v3.0 given in the file ``LICENSE`` of the repository,
 in the online documentation readable at https://tenpy.readthedocs.io/en/latest/install/license.html.

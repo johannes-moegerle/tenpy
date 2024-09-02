@@ -103,7 +103,7 @@ def test_fixes_339(L=8, chi=10, dt=0.5):
     err_max = np.max(tdvp2.trunc_err_list)
     wrong_err = expect_err + TruncationError(err_max, 1 - 2 * err_max)
 
-    
+
     if np.allclose(tdvp2.trunc_err.eps, wrong_err.eps):
         print('matches with wrong eps')
     if np.allclose(tdvp2.trunc_err.ov_err, wrong_err.ov_err):
@@ -113,4 +113,3 @@ def test_fixes_339(L=8, chi=10, dt=0.5):
     assert np.allclose(tdvp2.trunc_err.ov_err, expect_err.ov_err)
     assert not np.allclose(tdvp2.trunc_err.eps, wrong_err.eps)
     assert not np.allclose(tdvp2.trunc_err.ov_err, wrong_err.ov_err)
-    

@@ -129,7 +129,7 @@ class Sweep(Algorithm):
     """
     DefaultMixer = None
     use_mixer_by_default = False  # The default for the "mixer" config option
-    
+
     def __init__(self, psi, model, options, *, orthogonal_to=None, **kwargs):
         if not hasattr(self, "EffectiveH"):
             raise NotImplementedError("Subclass needs to set EffectiveH")
@@ -217,7 +217,7 @@ class Sweep(Algorithm):
         -------
 
         .. cfg:configoptions :: Sweep
-                
+
             start_env : int
                 Number of sweeps to be performed without optimization to update the environment.
 
@@ -391,7 +391,7 @@ class Sweep(Algorithm):
                     self.mixer_deactivate()
                 else:
                     self.mixer = mixer
-            
+
         return np.max(self.trunc_err_list)
 
     def get_sweep_schedule(self):
@@ -684,14 +684,14 @@ class Sweep(Algorithm):
         #   new_B[i] = V[i] * B[i] * hc(V[i + 1])
         # LP environments transform like A tensors on the vR(*) leg(s)
         # RP environments transform like B tensors on the vL(*) leg(s)
-        
+
         if self.psi.finite:
             assert self.psi.get_SL(0).ndim == 1
             assert self.psi.get_SR(self.psi.L - 1).ndim == 1
             first = 1
         else:
             first = 0
-        
+
         for i in range(first, self.psi.L):  # converting S to the left of site i
             S = self.psi.get_SL(i)
             if S.ndim == 1:
@@ -724,7 +724,7 @@ class Sweep(Algorithm):
             self.psi.set_B(i - 1, B_L, form=self.psi.form[i - 1])
             self.psi.set_SL(i, S)
             self.psi.set_B(i, B_R, form=self.psi.form[i])
-            
+
             # Update environment LP and RP
             assert self.env.bra is self.psi
             update_env_ket_leg = (self.env.ket is self.psi)
@@ -764,7 +764,7 @@ class IterativeSweeps(Sweep):
             If the any truncation error :attr:`~tenpy.algorithms.truncation.TruncationError.eps`
             on the final sweep exceeds this value, we raise.
             Can be downgraded to a warning by setting this option to ``None``.
-    
+
     """
 
     def run(self):
@@ -807,7 +807,7 @@ class IterativeSweeps(Sweep):
             iteration
         """
         raise NotImplementedError("Subclasses should implement this.")
-    
+
     def status_update(self, iteration_start_time: float):
         """Emits a status message to the logging system after an iteration.
 
@@ -830,7 +830,7 @@ class IterativeSweeps(Sweep):
                 'sep': "=" * 80,
             }
         )
-        
+
     def stopping_criterion(self, iteration_start_time: float) -> bool:
         """Determines if the main loop should be terminated.
 
@@ -842,7 +842,7 @@ class IterativeSweeps(Sweep):
         Options
         -------
         .. cfg:configoptions :: IterativeSweeps
-        
+
             min_sweeps : int
                 Minimum number of sweeps to perform.
             max_sweeps : int
@@ -860,7 +860,7 @@ class IterativeSweeps(Sweep):
         min_sweeps = self.options.get('min_sweeps', 1, int)
         max_sweeps = self.options.get('max_sweeps', 1000, int)
         max_seconds = 3600 * self.options.get('max_hours', 24 * 365, 'real')
-        
+
         if self.sweeps > max_sweeps:
             if self.is_converged():
                 logger.info(f'{self.__class__.__name__}: Converged.')
@@ -889,11 +889,11 @@ class IterativeSweeps(Sweep):
         Such checks are covered by :meth:`stopping_condition`.
         """
         raise NotImplementedError("Subclasses should implement this.")
-    
+
     def post_run_cleanup(self):
         """Perform any final steps or clean up after the main loop has terminated."""
         self.mixer_cleanup()
-        
+
 
 class EffectiveH(NpcLinearOperator):
     """Prototype class for local effective Hamiltonians used in sweep algorithms.
@@ -2463,13 +2463,13 @@ class QRBasedVariationalApplyMPO(VariationalApplyMPO):
             # for old_T_R `'A'` form fine as well, but i0+1 in `'Th'` form if ``use_eig_based_svd=True``
         expand = self._expansion_rate(i0)
         use_eig_based_svd = self.options.get('use_eig_based_svd', False, bool)
-        
+
         T_Lc, S, T_Rc, form, err, renormalize = decompose_theta_qr_based(
-            old_qtotal_L=old_T_L.qtotal, old_qtotal_R=old_T_R.qtotal, old_bond_leg=old_bond_leg, 
+            old_qtotal_L=old_T_L.qtotal, old_qtotal_R=old_T_R.qtotal, old_bond_leg=old_bond_leg,
             theta=theta, move_right=self.move_right,
             expand=expand, min_block_increase = self.options.get('cbe_min_block_increase', 1, int),
             use_eig_based_svd=use_eig_based_svd,
-            trunc_params=self.trunc_params, 
+            trunc_params=self.trunc_params,
             compute_err=self.options.get('compute_err', True, bool),
             return_both_T=True
         )
@@ -2480,11 +2480,11 @@ class QRBasedVariationalApplyMPO(VariationalApplyMPO):
         else:
             assert form[1] == 'B'
             VH = T_Rc
-        
+
         T_L = T_Lc.split_legs(['(vL.p)'])
         T_R = T_Rc.split_legs(['(p.vR)'])
         U, VH = None, None
-        
+
         self.renormalize.append(renormalize)
 
         # compare to old best guess to check convergence of the sweeps
@@ -2498,7 +2498,7 @@ class QRBasedVariationalApplyMPO(VariationalApplyMPO):
             ov = npc.inner(theta_new_trunc, theta_old, do_conj=True, axes='labels')
             theta_diff = 1. - abs(ov)
             self._theta_diff.append(theta_diff)
-        
+
         # set the new tensors to the MPS
         new_psi.set_B(i0, T_L, form=form[0])
         new_psi.set_B(i0+1, T_R, form=form[1])

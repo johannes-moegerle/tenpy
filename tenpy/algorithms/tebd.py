@@ -707,7 +707,7 @@ class QRBasedTEBDEngine(TEBDEngine):
             expand = expand, min_block_increase=self.options.get('cbe_min_block_increase', 1, int),
             use_eig_based_svd=self.options.get('use_eig_based_svd', False, bool),
             trunc_params=self.trunc_params,
-            compute_err=self.options.get('compute_err', True, bool), 
+            compute_err=self.options.get('compute_err', True, bool),
             return_both_T=True,
         )
         assert form == ['A','B']

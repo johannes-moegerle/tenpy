@@ -305,7 +305,7 @@ def test_convert_memory_units():
 
 def test_setup_logging():
     tenpy.tools.misc.setup_logging(to_stdout="INFO", skip_setup=False)
-    
+
 
 if __name__ == "__main__":
     import tempfile

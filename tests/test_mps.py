@@ -659,7 +659,7 @@ def test_correlation_length():
     with pytest.warns(UserWarning, match='trimming speigs k to smaller matrix dimension d'):
         xi_p2 = psi_AKLT.correlation_length(target=2, charge_sector=np.array([+2]), tol_ev0=None)
     assert abs(xi_p2[0] - xi_AKLT) < 1.e-13
-    
+
     assert abs(xi - xi_AKLT) < 1.e-13
 
 

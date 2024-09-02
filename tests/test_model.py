@@ -526,4 +526,3 @@ def test_disordered_lattice_model(bc, J=2.):
         except ValueError:
             idx = terms.terms.index([(op, mps_j), (op, mps_i)])
         assert abs(terms.strength[idx] - J/dist) < 1.e-14
-
