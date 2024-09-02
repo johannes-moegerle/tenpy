@@ -12,6 +12,7 @@ from collections.abc import MutableMapping
 import pprint
 import os
 import logging
+
 logger = logging.getLogger(__name__)
 
 from .hdf5_io import ATTR_FORMAT
@@ -51,6 +52,7 @@ class Config(MutableMapping):
     unused : set
         Keeps track of any :attr:`options` not yet used.
     """
+
     def __init__(self, config, name):
         self.options = config
         self.unused = set(config.keys())
@@ -89,7 +91,8 @@ class Config(MutableMapping):
             Name of the resulting YAML file.
         """
         import yaml
-        with open(filename, 'w') as stream:
+
+        with open(filename, "w") as stream:
             yaml.dump(self.as_dict(), stream)
 
     @classmethod
@@ -221,7 +224,7 @@ class Config(MutableMapping):
         recursive : bool
             If True, check the values of `self` for other :class:`Config` and warn in them as well.
         """
-        unused = getattr(self, 'unused', None)
+        unused = getattr(self, "unused", None)
         if unused is None:
             return
         if len(unused) > 0:
@@ -273,15 +276,15 @@ class Config(MutableMapping):
         self.unused.discard(key)  # (does nothing if key not in set)
         if (expect_type is not None) and (val is not None):  # (val is None) => nothing to check
             # convert to sequence
-            if expect_type == 'real':
+            if expect_type == "real":
                 expect_type = [numbers.Real]
-            if expect_type == 'complex':
+            if expect_type == "complex":
                 expect_type = [numbers.Complex]
-            if expect_type == 'array':
+            if expect_type == "array":
                 expect_type = [list, np.ndarray]
-            if expect_type == 'real_or_array':
+            if expect_type == "real_or_array":
                 expect_type = [numbers.Real, list, np.ndarray]
-            if expect_type == 'complex_or_array':
+            if expect_type == "complex_or_array":
                 expect_type = [numbers.Complex, list, np.ndarray]
             try:
                 iter(expect_type)
@@ -289,17 +292,17 @@ class Config(MutableMapping):
                 expect_type = [expect_type]
             else:
                 expect_type = list(expect_type)
-            assert len(expect_type) > 0, 'Expected at least one type'
+            assert len(expect_type) > 0, "Expected at least one type"
             type_ok = False
             for t in expect_type:
                 if not isinstance(t, type):
-                    raise ValueError(f'Not a type: {t}')
+                    raise ValueError(f"Not a type: {t}")
                 if isinstance(val, t):
                     type_ok = True
                     break
             if not type_ok:
                 if len(expect_type) == 1:
-                    expected = f'Expected {expect_type[0]}'
+                    expected = f"Expected {expect_type[0]}"
                 else:
                     expected = f'Expected one of {", ".join(t.__name__ for t in expect_type)}'
                 msg = f'Invalid type for key "{key}". {expected}. Got {type(val).__name__}.'
@@ -382,7 +385,7 @@ class Config(MutableMapping):
             msg = "Deprecated option in {name!r}: {old!r} renamed to {new!r}"
             msg = msg.format(name=self.name, old=old_key, new=new_key)
             if extra_msg:
-                msg = '\n'.join(msg, extra_msg)
+                msg = "\n".join(msg, extra_msg)
             warnings.warn(msg, FutureWarning, stacklevel=3)
             self.options[new_key] = self.options[old_key]
             self.unused.discard(old_key)
@@ -446,8 +449,7 @@ class Config(MutableMapping):
         bool
             True if `self` has key `key` with a nontrivial value. False otherwise.
         """
-        return (key in self.keys() and self.options[key] is not None
-                and np.any(np.array(self.options[key])) != 0)
+        return key in self.keys() and self.options[key] is not None and np.any(np.array(self.options[key])) != 0
 
 
 def asConfig(config, name):
@@ -471,7 +473,6 @@ def asConfig(config, name):
     return Config(config, name)
 
 
-
 def _yaml_eval_constructor(loader, node):
     """Yaml constructor to support `!py_eval` tag in yaml files."""
     cmd = loader.construct_scalar(node)
@@ -493,13 +494,14 @@ except ImportError:
 if yaml is None:
     _YamlLoaderWithPyEval = None
 else:
+
     class _YamlLoaderWithPyEval(yaml.FullLoader):
         eval_context = {}
 
     yaml.add_constructor("!py_eval", _yaml_eval_constructor, Loader=_YamlLoaderWithPyEval)
 
 
-def load_yaml_with_py_eval(filename=None, yaml_content=None, context={'np': numpy}):
+def load_yaml_with_py_eval(filename=None, yaml_content=None, context={"np": numpy}):
     """Load a yaml file with support for an additional `!py_eval` tag.
 
     When defining yaml parameter files, it's sometimes convenient to just have python snippets
@@ -547,12 +549,12 @@ def load_yaml_with_py_eval(filename=None, yaml_content=None, context={'np': nump
 
     """
     if _YamlLoaderWithPyEval is None:
-        raise RuntimeError('Could not import yaml. Consider installing the pyyaml package.')
+        raise RuntimeError("Could not import yaml. Consider installing the pyyaml package.")
 
     _YamlLoaderWithPyEval.eval_context = context
 
     if filename is not None:
-        with open(filename, 'r') as stream:
+        with open(filename, "r") as stream:
             config = yaml.load(stream, Loader=_YamlLoaderWithPyEval)
     elif yaml_content is not None:
         config = yaml.load(yaml_content, Loader=_YamlLoaderWithPyEval)

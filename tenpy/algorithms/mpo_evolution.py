@@ -10,7 +10,7 @@ from .algorithm import TimeEvolutionAlgorithm, TimeDependentHAlgorithm
 from .truncation import TruncationError
 from ..tools.misc import consistency_check
 
-__all__ = ['ExpMPOEvolution', 'TimeDependentExpMPOEvolution']
+__all__ = ["ExpMPOEvolution", "TimeDependentExpMPOEvolution"]
 
 
 class ExpMPOEvolution(TimeEvolutionAlgorithm):
@@ -63,22 +63,23 @@ class ExpMPOEvolution(TimeEvolutionAlgorithm):
         A dictionary containing the information of the latest created `_U`.
         We won't recalculate `_U` if those parameters didn't change.
     """
+
     def __init__(self, psi, model, options, **kwargs):
         super().__init__(psi, model, options, **kwargs)
         options = self.options
-        self.trunc_err = options.get('start_trunc_err', TruncationError(), TruncationError)
+        self.trunc_err = options.get("start_trunc_err", TruncationError(), TruncationError)
         self._U_MPO = None
         self._U_param = {}
 
     # run from TimeEvolutionAlgorithm
 
     def prepare_evolve(self, dt):
-        order = self.options.get('order', 2, int)
-        approximation = self.options.get('approximation', 'II', str)
+        order = self.options.get("order", 2, int)
+        approximation = self.options.get("approximation", "II", str)
 
         self.calc_U(dt, order, approximation)
 
-    def calc_U(self, dt, order=2, approximation='II'):
+    def calc_U(self, dt, order=2, approximation="II"):
         """Calculate ``self._U_MPO``.
 
         This function calculates the approximation ``U ~= exp(-i dt_ H)`` with
@@ -99,15 +100,16 @@ class ExpMPOEvolution(TimeEvolutionAlgorithm):
             return  # nothing to do: _U is cached
         self._U_param = U_param
         logger.info("Calculate U for %s", U_param)
-        consistency_check(dt, self.options, 'max_dt', 1.,
-                          'delta_t > ``max_delta_t`` is unreasonably large for trotterization.')
+        consistency_check(
+            dt, self.options, "max_dt", 1.0, "delta_t > ``max_delta_t`` is unreasonably large for trotterization."
+        )
         H_MPO = self.model.H_MPO
         if order == 1:
             U_MPO = H_MPO.make_U(dt * -1j, approximation=approximation)
             self._U_MPO = [U_MPO]
         elif order == 2:
-            U1 = H_MPO.make_U(-(1. + 1j) / 2. * dt * 1j, approximation=approximation)
-            U2 = H_MPO.make_U(-(1. - 1j) / 2. * dt * 1j, approximation=approximation)
+            U1 = H_MPO.make_U(-(1.0 + 1j) / 2.0 * dt * 1j, approximation=approximation)
+            U2 = H_MPO.make_U(-(1.0 - 1j) / 2.0 * dt * 1j, approximation=approximation)
             self._U_MPO = [U1, U2]
         else:
             raise ValueError("order {0:d} not implemented".format(order=order))
@@ -120,10 +122,11 @@ class ExpMPOEvolution(TimeEvolutionAlgorithm):
         return trunc_err
 
 
-class TimeDependentExpMPOEvolution(TimeDependentHAlgorithm,ExpMPOEvolution):
+class TimeDependentExpMPOEvolution(TimeDependentHAlgorithm, ExpMPOEvolution):
     """Variant of :class:`ExpMPOEvolution` that can handle time-dependent hamiltonians.
 
     See details in :class:`~tenpy.algorithms.algorithm.TimeDependentHAlgorithm` as well.
     """
+
     # uses run from TimeDependentHAlgorithm
     # so nothing to redefine here

@@ -16,19 +16,17 @@ import sys
 import subprocess
 import os
 
-__all__ = [
-    "version", "released", "short_version", "git_revision", "full_version", "version_summary"
-]
+__all__ = ["version", "released", "short_version", "git_revision", "full_version", "version_summary"]
 
 # hard-coded version for people without git...
 #: current release version as a string
-version = '1.0.3'
+version = "1.0.3"
 
 #: whether this is a released version or modified
 released = False
 
 #: same as version, but with 'v' in front
-short_version = 'v' + version
+short_version = "v" + version
 
 
 def _get_git_revision(cwd=None):
@@ -48,9 +46,7 @@ def _get_git_revision(cwd=None):
     if cwd is None:
         cwd = os.path.dirname(os.path.abspath(__file__))
     try:
-        rev = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
-                                      cwd=cwd,
-                                      stderr=subprocess.STDOUT).decode().strip()
+        rev = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd, stderr=subprocess.STDOUT).decode().strip()
     except (subprocess.SubprocessError, FileNotFoundError):
         # FileNotFound e.g if git is not installed or cwd doesn't exist
         # SubprocessError: git command failed for whatever reason
@@ -64,10 +60,16 @@ def _get_git_description():
     If unknown, return 0
     """
     try:
-        descr = subprocess.check_output(['git', 'describe', '--tags', '--long'],
-                                        cwd=os.path.dirname(os.path.abspath(__file__)),
-                                        stderr=subprocess.STDOUT).decode().strip()
-        n_commits = int(descr.split('-')[1])
+        descr = (
+            subprocess.check_output(
+                ["git", "describe", "--tags", "--long"],
+                cwd=os.path.dirname(os.path.abspath(__file__)),
+                stderr=subprocess.STDOUT,
+            )
+            .decode()
+            .strip()
+        )
+        n_commits = int(descr.split("-")[1])
     except:
         n_commits = 0
     return n_commits
@@ -81,7 +83,7 @@ def _get_full_version():
     """obtain version from git."""
     full_version = version
     if not released:
-        full_version += '.dev{0:d}+{1!s}'.format(_get_git_description(), git_revision[:7])
+        full_version += ".dev{0:d}+{1!s}".format(_get_git_description(), git_revision[:7])
     return full_version
 
 
@@ -103,16 +105,20 @@ def _get_version_summary():
     else:
         cython_info = "not compiled"
 
-    summary = ("tenpy {tenpy_ver!s} ({cython_info!s}),\n"
-               "git revision {git_rev!s} using\n"
-               "python {python_ver!s}\n"
-               "numpy {numpy_ver!s}, scipy {scipy_ver!s}")
-    summary = summary.format(tenpy_ver=full_version,
-                             cython_info=cython_info,
-                             git_rev=git_revision,
-                             python_ver=sys.version,
-                             numpy_ver=numpy.version.full_version,
-                             scipy_ver=scipy.version.full_version)
+    summary = (
+        "tenpy {tenpy_ver!s} ({cython_info!s}),\n"
+        "git revision {git_rev!s} using\n"
+        "python {python_ver!s}\n"
+        "numpy {numpy_ver!s}, scipy {scipy_ver!s}"
+    )
+    summary = summary.format(
+        tenpy_ver=full_version,
+        cython_info=cython_info,
+        git_rev=git_revision,
+        python_ver=sys.version,
+        numpy_ver=numpy.version.full_version,
+        scipy_ver=scipy.version.full_version,
+    )
     return summary
 
 

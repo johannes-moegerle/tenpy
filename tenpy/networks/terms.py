@@ -16,8 +16,12 @@ from ..tools.misc import add_with_None_0
 from ..tools.hdf5_io import Hdf5Exportable
 
 __all__ = [
-    'TermList', 'OnsiteTerms', 'CouplingTerms', 'MultiCouplingTerms', 'ExponentiallyDecayingTerms',
-    'order_combine_term'
+    "TermList",
+    "OnsiteTerms",
+    "CouplingTerms",
+    "MultiCouplingTerms",
+    "ExponentiallyDecayingTerms",
+    "order_combine_term",
 ]
 
 
@@ -91,16 +95,17 @@ class TermList(Hdf5Exportable):
 
     The negative index -5 here indicates a tensor left of the current MPS unit cell.
     """
-    def __init__(self, terms, strength=1.):
+
+    def __init__(self, terms, strength=1.0):
         self.terms = list(terms)
         self.strength = np.array(strength)
         if self.strength.ndim == 0:
             self.strength = np.ones([len(self.terms)]) * self.strength
-        if (len(self.terms), ) != self.strength.shape:
+        if (len(self.terms),) != self.strength.shape:
             raise ValueError("different length of terms and strength")
 
     @classmethod
-    def from_lattice_locations(cls, lattice, terms, strength=1., shift=None):
+    def from_lattice_locations(cls, lattice, terms, strength=1.0, shift=None):
         """Initialize from a list of terms given in lattice indices instead of MPS indices.
 
         Parameters
@@ -183,8 +188,7 @@ class TermList(Hdf5Exportable):
 
     def __add__(self, other):
         if isinstance(other, TermList):
-            return TermList(self.terms + other.terms,
-                            np.concatenate((self.strength, other.strength)))
+            return TermList(self.terms + other.terms, np.concatenate((self.strength, other.strength)))
         return NotImplemented
 
     def __mul__(self, other):
@@ -195,12 +199,12 @@ class TermList(Hdf5Exportable):
         for term, strength in self:
             ops = []
             for op, i in term:
-                if ' ' in op:
-                    op = '[' + op + ']'
+                if " " in op:
+                    op = "[" + op + "]"
                 ops.append(f"{op!s}_{i:d}")
-            term_str = ' '.join(ops)
-            res.append('{s:.5f} * {t}'.format(s=strength, t=term_str))
-        return ' +\n'.join(res)
+            term_str = " ".join(ops)
+            res.append("{s:.5f} * {t}".format(s=strength, t=term_str))
+        return " +\n".join(res)
 
     def order_combine(self, sites):
         """Order and combine operators in each term.
@@ -279,7 +283,7 @@ def order_combine_term(term, sites):
         warnings.warn("not intended for large number of operators.")
     for s_max in range(N - 1, 0, -1):
         for s in range(s_max):
-            t1, t2 = terms_commute[s:s + 2]
+            t1, t2 = terms_commute[s : s + 2]
             if t1[1] > t2[1]:  # t1 right of t2 -> swap
                 terms_commute[s] = t2
                 terms_commute[s + 1] = t1
@@ -314,6 +318,7 @@ class OnsiteTerms(Hdf5Exportable):
         Filled by meth:`add_onsite_term`.
         For each index `i` a dictionary ``{'opname': strength}`` defining the onsite terms.
     """
+
     def __init__(self, L):
         assert L > 0
         self.L = L
@@ -353,7 +358,7 @@ class OnsiteTerms(Hdf5Exportable):
         assert self.L == graph.L
         for i, terms in enumerate(self.onsite_terms):
             for opname, strength in terms.items():
-                graph.add(i, 'IdL', 'IdR', opname, strength)
+                graph.add(i, "IdL", "IdR", opname, strength)
         if graph.max_range is not None:
             graph.max_range = max(graph.max_range, 1)
 
@@ -382,7 +387,7 @@ class OnsiteTerms(Hdf5Exportable):
             res.append(H)
         return res
 
-    def remove_zeros(self, tol_zero=1.e-15):
+    def remove_zeros(self, tol_zero=1.0e-15):
         """Remove entries close to 0 from :attr:`onsite_terms`.
 
         Parameters
@@ -418,7 +423,7 @@ class OnsiteTerms(Hdf5Exportable):
             If finite, we distribute the onsite term of the
         """
         dist_L, dist_R = distribute
-        if dist_L + dist_R != 1.:
+        if dist_L + dist_R != 1.0:
             raise ValueError("sum of `distribute` not 1!")
         N_sites = self.L
         H_onsite = self.to_Arrays(sites)
@@ -427,22 +432,22 @@ class OnsiteTerms(Hdf5Exportable):
             if H_j is None:
                 continue
             if finite and j == 0:
-                dist_L, dist_R = 0., 1.
+                dist_L, dist_R = 0.0, 1.0
             elif finite and j == N_sites - 1:
-                dist_L, dist_R = 1., 0.
+                dist_L, dist_R = 1.0, 0.0
             else:
                 dist_L, dist_R = distribute
-            if dist_L != 0.:
+            if dist_L != 0.0:
                 i = (j - 1) % N_sites
                 Id_i = sites[i].Id
                 H_bond[j] = add_with_None_0(H_bond[j], dist_L * npc.outer(Id_i, H_j))
-            if dist_R != 0.:
+            if dist_R != 0.0:
                 k = (j + 1) % N_sites
                 Id_k = sites[k].Id
                 H_bond[k] = add_with_None_0(H_bond[k], dist_R * npc.outer(H_j, Id_k))
         for H in H_bond:
             if H is not None:
-                H.iset_leg_labels(['p0', 'p0*', 'p1', 'p1*'])
+                H.iset_leg_labels(["p0", "p0*", "p1", "p1*"])
         # done
 
     def to_TermList(self):
@@ -468,7 +473,7 @@ class OnsiteTerms(Hdf5Exportable):
             raise ValueError("incompatible lengths")
         for self_t, other_t in zip(self.onsite_terms, other.onsite_terms):
             for key, value in other_t.items():
-                self_t[key] = self_t.get(key, 0.) + value
+                self_t[key] = self_t.get(key, 0.0) + value
         return self
 
     def _test_terms(self, sites):
@@ -499,6 +504,7 @@ class CouplingTerms(Hdf5Exportable):
         ``bc_MPS == 'infinite'``, in which case they indicate couplings between different
         iMPS unit cells.
     """
+
     def __init__(self, L):
         assert L > 0
         self.L = L
@@ -519,7 +525,7 @@ class CouplingTerms(Hdf5Exportable):
                 max_range = max(max_range, j_max - i)
         return max_range
 
-    def add_coupling_term(self, strength, i, j, op_i, op_j, op_string='Id'):
+    def add_coupling_term(self, strength, i, j, op_i, op_j, op_string="Id"):
         """Add a two-site coupling term on given MPS sites.
 
         Parameters
@@ -583,23 +589,19 @@ class CouplingTerms(Hdf5Exportable):
         need_JW_j = site_j.op_needs_JW(op_j)
         if op_string is None:
             if need_JW_i and need_JW_j:
-                op_string = 'JW'
+                op_string = "JW"
             elif need_JW_i or need_JW_j:
                 raise ValueError("Only one of the operators needs a Jordan-Wigner string?!")
             else:
-                op_string = 'Id'
-        if op_string == 'JW':
+                op_string = "Id"
+        if op_string == "JW":
             op_i = site_i.multiply_op_names([op_i, op_string])
         return strength, i, j, op_i, op_j, op_string
 
-    def plot_coupling_terms(self,
-                            ax,
-                            lat,
-                            style_map='default',
-                            common_style={'linestyle': '--'},
-                            text=None,
-                            text_pos=0.4):
-        """"Plot coupling terms into a given lattice.
+    def plot_coupling_terms(
+        self, ax, lat, style_map="default", common_style={"linestyle": "--"}, text=None, text_pos=0.4
+    ):
+        """ "Plot coupling terms into a given lattice.
 
         This function plots the :attr:`coupling_terms`
 
@@ -634,25 +636,26 @@ class CouplingTerms(Hdf5Exportable):
         pos = lat.position(lat.order)  # row `i` gives position where to plot site `i`
         N_sites = lat.N_sites
         x_y = np.zeros((2, 2))  # columns=x,y, rows=i,j
-        if style_map == 'default':
+        if style_map == "default":
             import matplotlib
             from matplotlib.cm import hsv
             from matplotlib.colors import Normalize
+
             norm_angle = Normalize(vmin=-np.pi, vmax=np.pi)
 
             def style_map(i, j, op_i, op_string, op_j, strength):
                 """define the plot style for a given coupling."""
                 key = (op_i, op_string, op_j)
                 style = {}
-                style['linewidth'] = np.abs(strength) * matplotlib.rcParams['lines.linewidth']
-                style['color'] = hsv(norm_angle(np.angle(strength)))
+                style["linewidth"] = np.abs(strength) * matplotlib.rcParams["lines.linewidth"]
+                style["color"] = hsv(norm_angle(np.angle(strength)))
                 return style
 
-        text_pos = np.array([1. - text_pos, text_pos], np.float64)
+        text_pos = np.array([1.0 - text_pos, text_pos], np.float64)
         for i in sorted(self.coupling_terms.keys()):
             d1 = self.coupling_terms[i]
             x_y[0, :] = pos[i]
-            for (op_i, op_string) in sorted(d1.keys()):
+            for op_i, op_string in sorted(d1.keys()):
                 d2 = d1[(op_i, op_string)]
                 for j in sorted(d2.keys()):
                     d3 = d2[j]
@@ -673,19 +676,21 @@ class CouplingTerms(Hdf5Exportable):
                             style = {}
                         style.update(common_style)
                         ax.plot(x_y[:, 0], x_y[:, 1], **style)
-                        if 'label' in common_style:
+                        if "label" in common_style:
                             common_style = common_style.copy()
-                            del common_style['label']
+                            del common_style["label"]
                         if text:
-                            annotate = text.format(i=i,
-                                                   j=j,
-                                                   op_i=op_i,
-                                                   op_string=op_string,
-                                                   op_j=op_j,
-                                                   strength=strength,
-                                                   strength_abs=np.abs(strength),
-                                                   strength_real=np.real(strength),
-                                                   strength_angle=np.angle(strength))
+                            annotate = text.format(
+                                i=i,
+                                j=j,
+                                op_i=op_i,
+                                op_string=op_string,
+                                op_j=op_j,
+                                strength=strength,
+                                strength_abs=np.abs(strength),
+                                strength_real=np.real(strength),
+                                strength_angle=np.angle(strength),
+                            )
                             loc = np.dot(x_y.T, text_pos)
                             ax.text(loc[0], loc[1], annotate)
         # done
@@ -704,11 +709,11 @@ class CouplingTerms(Hdf5Exportable):
         for i, d1 in self.coupling_terms.items():
             for (opname_i, op_string), d2 in d1.items():
                 label = ("left", i, opname_i, op_string)
-                graph.add(i, 'IdL', label, opname_i, 1., skip_existing=True)
+                graph.add(i, "IdL", label, opname_i, 1.0, skip_existing=True)
                 for j, d3 in d2.items():
                     label_j = graph.add_string_left_to_right(i, j, label, op_string)
                     for opname_j, strength in d3.items():
-                        graph.add(j, label_j, 'IdR', opname_j, strength)
+                        graph.add(j, label_j, "IdR", opname_j, strength)
         if graph.max_range is not None:
             graph.max_range = max(graph.max_range, self.max_range())
 
@@ -746,10 +751,10 @@ class CouplingTerms(Hdf5Exportable):
             H_bond[j] = add_with_None_0(H_bond[j], H_add)
         for H in H_bond:
             if H is not None:
-                H.iset_leg_labels(['p0', 'p0*', 'p1', 'p1*'])
+                H.iset_leg_labels(["p0", "p0*", "p1", "p1*"])
         return H_bond
 
-    def remove_zeros(self, tol_zero=1.e-15):
+    def remove_zeros(self, tol_zero=1.0e-15):
         """Remove entries close to 0 from :attr:`coupling_terms`.
 
         Parameters
@@ -784,7 +789,7 @@ class CouplingTerms(Hdf5Exportable):
         d0 = self.coupling_terms
         for i in sorted(d0):
             d1 = d0[i]
-            for (opname_i, op_str) in sorted(d1):
+            for opname_i, op_str in sorted(d1):
                 d2 = d1[(opname_i, op_str)]
                 for j in sorted(d2):
                     d3 = d2[j]
@@ -808,7 +813,7 @@ class CouplingTerms(Hdf5Exportable):
                 for j, other_d3 in other_d2.items():
                     self_d3 = self_d2.setdefault(j, dict())
                     for opname_j, strength in other_d3.items():
-                        self_d3[opname_j] = self_d3.get(opname_j, 0.) + strength
+                        self_d3[opname_j] = self_d3.get(opname_j, 0.0) + strength
         return self
 
     def _test_terms(self, sites):
@@ -899,6 +904,7 @@ class MultiCouplingTerms(CouplingTerms):
         The `shift` for the `terms_right` is a multiple of `L` such that
         ``0 <= ijkl[-1] - shift < L``.
     """
+
     def __init__(self, L):
         assert L > 0
         self.L = L
@@ -920,8 +926,7 @@ class MultiCouplingTerms(CouplingTerms):
         """
         return self._max_range
 
-    def add_multi_coupling_term(self, strength, ijkl, ops_ijkl, op_string="Id",
-                                switchLR='middle_i'):
+    def add_multi_coupling_term(self, strength, ijkl, ops_ijkl, op_string="Id", switchLR="middle_i"):
         """Add a multi-site coupling term.
 
         Parameters
@@ -965,11 +970,11 @@ class MultiCouplingTerms(CouplingTerms):
             if not i < j:
                 raise ValueError("Need i < j < k < ...")
         if switchLR is None:
-            switchLR = 'middle_i'
+            switchLR = "middle_i"
         if isinstance(switchLR, str):
-            if switchLR == 'middle_i':
+            if switchLR == "middle_i":
                 switchLR = (ijkl[0] + ijkl[-1] + 1) // 2
-            elif switchLR == 'middle_op':
+            elif switchLR == "middle_op":
                 switchLR = ijkl[len(ijkl) // 2]
         assert 0 <= ijkl[0] <= switchLR <= ijkl[-1] and ijkl[0] < L
         # find op_switch
@@ -981,17 +986,17 @@ class MultiCouplingTerms(CouplingTerms):
                 op_switch = op_string[n - 1]
                 break
         else:  # no break
-            assert False # can't happen, since switchLR <= ijkl[-1]
+            assert False  # can't happen, since switchLR <= ijkl[-1]
 
         d0L, d0R = self.terms_left, self.terms_right
-        #add left terms
+        # add left terms
         for i, op, op_str in zip(ijkl, ops_ijkl, op_string):
             if i >= switchLR:
                 break
             d1L = d0L.setdefault(i, dict())
             d0L = d1L.setdefault((op, op_str), dict())
         counters_left = d0L.setdefault(self._connect_left, [])
-        #add right terms
+        # add right terms
         shift = ijkl[-1] - (ijkl[-1] % L)
         for i, op, op_str in zip(reversed(ijkl), reversed(ops_ijkl), reversed(op_string)):
             if i <= switchLR:
@@ -1058,14 +1063,14 @@ class MultiCouplingTerms(CouplingTerms):
         number_ops = len(term)
         if number_ops < 2:
             raise ValueError("got onsite term instead of coupling")
-        if op_string == 'JW':
+        if op_string == "JW":
             warnings.warn("op_string='JW' is probably not what you want!")
         ops = [t[0] for t in term]
         ijkl = [t[1] for t in term]
         assert all([i < j for i, j in zip(ijkl, ijkl[1:])])  # ascending?
         op_needs_JW = [sites[i % L].op_needs_JW(op) for op, i in term]
         if not any(op_needs_JW):
-            op_string = 'Id'
+            op_string = "Id"
         # shift ijkl such that first site is inside unit cell
         i0 = ijkl[0]
         if not 0 <= i0 < L:  # ensure this condition with a shift
@@ -1082,17 +1087,17 @@ class MultiCouplingTerms(CouplingTerms):
                 if op_needs_JW[x]:
                     JW_right = not JW_right  # switch on the right
                 if JW_right:
-                    new_op_str.append('JW')
+                    new_op_str.append("JW")
                     # need also 'JW' on current site
-                    ops[x] = sites[ijkl[x] % L].multiply_op_names([ops[x], 'JW'])
+                    ops[x] = sites[ijkl[x] % L].multiply_op_names([ops[x], "JW"])
                 else:
-                    new_op_str.append('Id')
+                    new_op_str.append("Id")
             if JW_right:
                 raise ValueError("odd number of Jordan Wigner strings")
             new_op_str.pop()  # created one entry too much
         return strength, ijkl, ops, new_op_str
 
-    def add_coupling_term(self, strength, i, j, op_i, op_j, op_string='Id', switchLR=None):
+    def add_coupling_term(self, strength, i, j, op_i, op_j, op_string="Id", switchLR=None):
         """Add a two-site coupling term on given MPS sites.
 
         Parameters
@@ -1143,15 +1148,15 @@ class MultiCouplingTerms(CouplingTerms):
         for i, d1 in d0.items():
             if i == _connect:
                 for c in d1:
-                    all_keys[c] = 'IdL' if from_left else 'IdR'
+                    all_keys[c] = "IdL" if from_left else "IdR"
             else:
                 for (op_i, op_string_ij), d2 in d1.items():
                     if from_left:
                         key_from_i = ("left", i, op_i, op_string_ij)
-                        graph.add(i, 'IdL', key_from_i, op_i, 1., skip_existing=True)
+                        graph.add(i, "IdL", key_from_i, op_i, 1.0, skip_existing=True)
                     else:
                         key_from_i = ("right", i, op_i, op_string_ij)
-                        graph.add(i, key_from_i, 'IdR', op_i, 1., skip_existing=True)
+                        graph.add(i, key_from_i, "IdR", op_i, 1.0, skip_existing=True)
                     self._insert_to_graph_rec(graph, all_keys, d2, i, op_string_ij, key_from_i, from_left)
         return all_keys
 
@@ -1165,7 +1170,7 @@ class MultiCouplingTerms(CouplingTerms):
                     if from_left:
                         key_to_switch = graph.add_string_left_to_right(i, switchLR, key_from_i, op_string_ij)
                     else:
-                        key_to_switch = graph.add_string_right_to_left(i, switchLR-shift, key_from_i, op_string_ij)
+                        key_to_switch = graph.add_string_right_to_left(i, switchLR - shift, key_from_i, op_string_ij)
                     all_keys[c] = key_to_switch
             else:
                 if from_left:
@@ -1175,13 +1180,13 @@ class MultiCouplingTerms(CouplingTerms):
                 for (op_j, op_string_jk), d4 in d3.items():
                     if from_left:
                         key_from_j = key_to_j + (j, op_j, op_string_jk)
-                        graph.add(j, key_to_j, key_from_j, op_j, 1., skip_existing=True)
+                        graph.add(j, key_to_j, key_from_j, op_j, 1.0, skip_existing=True)
                     else:
                         key_from_j = key_to_j + (j, op_j, op_string_jk)
-                        graph.add(j, key_from_j, key_to_j, op_j, 1., skip_existing=True)
+                        graph.add(j, key_from_j, key_to_j, op_j, 1.0, skip_existing=True)
                     self._insert_to_graph_rec(graph, all_keys, d4, j, op_string_jk, key_from_j, from_left)
 
-    def remove_zeros(self, tol_zero=1.e-15):
+    def remove_zeros(self, tol_zero=1.0e-15):
         """Remove entries close to 0 from :attr:`coupling_terms`.
 
         Parameters
@@ -1265,7 +1270,7 @@ class MultiCouplingTerms(CouplingTerms):
         if other.L != self.L:
             raise ValueError("incompatible lengths")
         if not isinstance(other, MultiCouplingTerms):
-            #transform coupling to multi coupling
+            # transform coupling to multi coupling
             for i, d0 in other.coupling_terms.items():
                 for (op_i, op_str), d1 in d0.items():
                     for j, d2 in d1.items():
@@ -1355,18 +1360,13 @@ class ExponentiallyDecayingTerms(Hdf5Exportable):
         one of the terms as described above; see :meth:`add_exponentially_decaying_coupling` for
         more details.
     """
+
     def __init__(self, L):
         assert L > 0
         self.L = L
         self.exp_decaying_terms = []
 
-    def add_exponentially_decaying_coupling(self,
-                                            strength,
-                                            lambda_,
-                                            op_i,
-                                            op_j,
-                                            subsites=None,
-                                            op_string='Id'):
+    def add_exponentially_decaying_coupling(self, strength, lambda_, op_i, op_j, subsites=None, op_string="Id"):
         """Add an exponentially decaying long-range coupling.
 
         .. math ::
@@ -1422,9 +1422,9 @@ class ExponentiallyDecayingTerms(Hdf5Exportable):
                 except:  # not a tuple / wrong types
                     pass
         key_nr = 1000  # start with high value such that they get added in the end of the MPO
-        finite = (graph.bc == 'finite')
+        finite = graph.bc == "finite"
 
-        for (strength, lambda_, op_i, op_j, subsites, op_string) in self.exp_decaying_terms:
+        for strength, lambda_, op_i, op_j, subsites, op_string in self.exp_decaying_terms:
             while (key_nr, key) in all_states:
                 key_nr += 1
             label = (key_nr, key)
@@ -1437,22 +1437,22 @@ class ExponentiallyDecayingTerms(Hdf5Exportable):
             if not finite:
                 for i in range(self.L):
                     if in_subsites[i]:
-                        graph.add(i, 'IdL', label, op_i, lambda_)
+                        graph.add(i, "IdL", label, op_i, lambda_)
                         graph.add(i, label, label, op_string, lambda_)
-                        graph.add(i, label, 'IdR', op_j, strength)
+                        graph.add(i, label, "IdR", op_j, strength)
                     else:
-                        graph.add(i, label, label, op_string, 1.)
+                        graph.add(i, label, label, op_string, 1.0)
             else:
                 # first subsite
-                graph.add(first_subsite, 'IdL', label, op_i, lambda_)
+                graph.add(first_subsite, "IdL", label, op_i, lambda_)
                 for i in range(first_subsite + 1, last_subsite):
                     if in_subsites[i]:
-                        graph.add(i, 'IdL', label, op_i, lambda_)
+                        graph.add(i, "IdL", label, op_i, lambda_)
                         graph.add(i, label, label, op_string, lambda_)
-                        graph.add(i, label, 'IdR', op_j, strength)
+                        graph.add(i, label, "IdR", op_j, strength)
                     else:
-                        graph.add(i, label, label, op_string, 1.)
-                graph.add(last_subsite, label, 'IdR', op_j, strength)
+                        graph.add(i, label, label, op_string, 1.0)
+                graph.add(last_subsite, label, "IdR", op_j, strength)
         if graph.max_range is not None:
             graph.max_range = np.inf
 
@@ -1478,7 +1478,7 @@ class ExponentiallyDecayingTerms(Hdf5Exportable):
         for term in self.exp_decaying_terms:
             strength, lambda_, op_i, op_j, subsites, op_string = term
             N = len(subsites)
-            if bc == 'finite':
+            if bc == "finite":
                 for i2, i in enumerate(subsites):
                     for d, j in enumerate(subsites[i2:]):
                         if d == 0:
@@ -1488,7 +1488,7 @@ class ExponentiallyDecayingTerms(Hdf5Exportable):
                             break
                         terms.append([(op_i, i), (op_j, j)])
                         strengths.append(pref)
-            elif bc == 'infinite':
+            elif bc == "infinite":
                 for i2, i in enumerate(subsites):
                     for d in range(1, 1000):
                         j2 = i2 + d

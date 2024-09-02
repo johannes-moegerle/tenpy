@@ -11,9 +11,9 @@ import warnings
 
 from .hdf5_io import find_global
 
-__all__ = ['Listener', 'EventHandler']
+__all__ = ["Listener", "EventHandler"]
 
-Listener = namedtuple('Listener', "listener_id, callback, priority, extra_kwargs")
+Listener = namedtuple("Listener", "listener_id, callback, priority, extra_kwargs")
 
 
 class EventHandler:
@@ -103,6 +103,7 @@ class EventHandler:
         my_listener called: iteration 3 with data 12
         another_one called: iteration 3
     """
+
     def __init__(self, arg_descr=None):
         self.arg_descr = arg_descr
         self.listeners = []

@@ -11,7 +11,6 @@ the simulation class in a post-processing step. They follow the syntax
 """
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-
 import os
 import warnings
 from pathlib import Path
@@ -26,13 +25,12 @@ from ..models import Model
 
 try:
     import h5py
+
     h5py_version = h5py.version.version_tuple
 except ImportError:
     h5py_version = (0, 0)
 
-__all__ = [
-    'DataLoader', 'pp_spectral_function', 'pp_plot_correlations_on_lattice'
-]
+__all__ = ["DataLoader", "pp_spectral_function", "pp_plot_correlations_on_lattice"]
 
 
 class DataLoader:
@@ -58,6 +56,7 @@ class DataLoader:
     .. todo ::
         Include an Option for saving data into a ``.hdf5`` file without overwriting any results.
     """
+
     logger = logging.getLogger(__name__ + ".DataLoader")
 
     def __init__(self, filename=None, simulation=None, data=None):
@@ -69,20 +68,21 @@ class DataLoader:
         if filename is not None:
             self.filename = Path(filename)
             self.logger.info(f"Loading data from {self.filename.name}")
-            if self.filename.suffix == '.h5' or self.filename.suffix == '.hdf5':
+            if self.filename.suffix == ".h5" or self.filename.suffix == ".hdf5":
                 # create a h5group (which is open)
                 self.logger.info(
-                    f'Open file {self.filename.name}, when no context manager is used, it might be useful to '
-                    f'call self.close()')
+                    f"Open file {self.filename.name}, when no context manager is used, it might be useful to "
+                    f"call self.close()"
+                )
 
-                h5group = h5py.File(self.filename, 'r')
+                h5group = h5py.File(self.filename, "r")
                 self._Hdf5Loader = hdf5_io.Hdf5Loader(h5group)
             else:
                 self.logger.info(f"Not using hdf5 data-format.\nLoading data can be slow")
                 # all data is loaded as other filenames
                 self._all_data = hdf5_io.load(self.filename.name)
 
-            self.sim_params = self._load('simulation_parameters')
+            self.sim_params = self._load("simulation_parameters")
 
         elif simulation is not None:
             self.sim = simulation
@@ -91,14 +91,14 @@ class DataLoader:
             self._all_data = self.sim.results
 
             self._model = self.sim.model
-            if hasattr(self.sim, 'psi'):
+            if hasattr(self.sim, "psi"):
                 self._psi = self.sim.psi
 
         elif data is not None:
             self.logger.info(f"Initializing data loader from passed results")
             # all data is loaded as other filenames
             self._all_data = data
-            self.sim_params = self._load('simulation_parameters')
+            self.sim_params = self._load("simulation_parameters")
 
     def __enter__(self):
         return self
@@ -107,14 +107,14 @@ class DataLoader:
         self.close()
 
     def close(self):
-        if hasattr(self, '_Hdf5Loader'):
+        if hasattr(self, "_Hdf5Loader"):
             self._Hdf5Loader.h5group.close()
             self.logger.info(f"Closed {self.filename}")
 
     @property
     def measurements(self):
         if self._measurements is None:
-            self._measurements = self._load('measurements', convert_to_numpy=True)
+            self._measurements = self._load("measurements", convert_to_numpy=True)
         return self._measurements
 
     def _load_recursive(self, paths, **kwargs):
@@ -136,10 +136,10 @@ class DataLoader:
         res = dict()
         for path in paths:
             value = self._load(path, **kwargs)
-            set_recursive(res, path, value, separator='/', insert_dicts=True)
+            set_recursive(res, path, value, separator="/", insert_dicts=True)
         return res
 
-    def _load(self, path, prefix='', convert_to_numpy=False):
+    def _load(self, path, prefix="", convert_to_numpy=False):
         """Load data from either the hdf5 file or from _all_data.
 
         For hdf5 files, this function enables one to load data from a file, without loading the whole file.
@@ -161,10 +161,10 @@ class DataLoader:
         """
         key = prefix + path
         try:
-            if hasattr(self, '_Hdf5Loader'):
+            if hasattr(self, "_Hdf5Loader"):
                 value = self._Hdf5Loader.load(key)
-            elif hasattr(self, '_all_data'):
-                value = get_recursive(self._all_data, key, separator='/')
+            elif hasattr(self, "_all_data"):
+                value = get_recursive(self._all_data, key, separator="/")
             else:
                 raise ValueError("Can't find any results.")
             if isinstance(value, Config):
@@ -175,10 +175,10 @@ class DataLoader:
         except KeyError:
             warnings.warn(f"{key} does not exist!")
 
-    def get_data_m(self, key, prefix='measurements/', convert_to_numpy=True):
+    def get_data_m(self, key, prefix="measurements/", convert_to_numpy=True):
         return self._load(key, prefix=prefix, convert_to_numpy=convert_to_numpy)
 
-    def get_data(self, key, prefix='', convert_to_numpy=False):
+    def get_data(self, key, prefix="", convert_to_numpy=False):
         return self._load(key, prefix=prefix, convert_to_numpy=convert_to_numpy)
 
     @staticmethod
@@ -194,13 +194,13 @@ class DataLoader:
 
     @property
     def model(self):
-        if not hasattr(self, '_model'):
+        if not hasattr(self, "_model"):
             self._model = self.get_model()
         return self._model
 
     def get_model(self):
-        model_class_name = self.sim_params['model_class']
-        model_params = self.sim_params['model_params']
+        model_class_name = self.sim_params["model_class"]
+        model_params = self.sim_params["model_params"]
         model_class = find_subclass(Model, model_class_name)
         return model_class(model_params)
 
@@ -214,24 +214,20 @@ class DataLoader:
 
     @property
     def psi(self):
-        if not hasattr(self, '_psi'):
-            self._psi = self.get_data('psi')
+        if not hasattr(self, "_psi"):
+            self._psi = self.get_data("psi")
         return self._psi
 
     def get_all_keys_as_dict(self):
-        if hasattr(self, '_Hdf5Loader'):
+        if hasattr(self, "_Hdf5Loader"):
             return self._Hdf5Loader.get_all_hdf5_keys()
-        elif hasattr(self, '_all_data'):
+        elif hasattr(self, "_all_data"):
             return self._all_data
         else:
             raise ValueError("Can't find any results.")
 
 
-def pp_spectral_function(DL: DataLoader,
-                         *,
-                         correlation_key,
-                         conjugate_correlation=False,
-                         **kwargs):
+def pp_spectral_function(DL: DataLoader, *, correlation_key, conjugate_correlation=False, **kwargs):
     r"""Given a time dependent correlation function C(t, r), calculate its Spectral Function.
 
     After a run of :class:`~tenpy.simulations.time_evolution.TimeDependentCorrelation`, a :class:`DataLoader` instance
@@ -247,8 +243,8 @@ def pp_spectral_function(DL: DataLoader,
     **kwargs
         keyword arguments to :func:`~tenpy.tools.spectral_function_tools.spectral_function`
     """
-    dt: float = DL.sim_params['algorithm_params']['dt']
-    N_steps = DL.sim_params['algorithm_params'].get('N_steps', None)
+    dt: float = DL.sim_params["algorithm_params"]["dt"]
+    N_steps = DL.sim_params["algorithm_params"].get("N_steps", None)
     if N_steps is not None:
         dt *= N_steps
 
@@ -260,16 +256,18 @@ def pp_spectral_function(DL: DataLoader,
     return spectral_function(time_dep_corr, DL.lat, dt, **kwargs)
 
 
-def pp_plot_correlations_on_lattice(DL: DataLoader,
-                                    *,
-                                    data_key,
-                                    t_step=0,
-                                    keys='nearest_neighbors',
-                                    default_dir: str = 'plots',
-                                    save_as: str = 'Correlations.pdf',
-                                    markers='D',
-                                    figsize=(8, 8),
-                                    **kwargs):
+def pp_plot_correlations_on_lattice(
+    DL: DataLoader,
+    *,
+    data_key,
+    t_step=0,
+    keys="nearest_neighbors",
+    default_dir: str = "plots",
+    save_as: str = "Correlations.pdf",
+    markers="D",
+    figsize=(8, 8),
+    **kwargs,
+):
     """Save a plot during post-processing to plot correlations on a lattice.
 
     Parameters
@@ -293,6 +291,7 @@ def pp_plot_correlations_on_lattice(DL: DataLoader,
         kwargs to :func:`~tenpy.tools.spectral_function_tools.plot_correlations_on_lattice`
     """
     import matplotlib.pyplot as plt
+
     if not os.path.exists(default_dir):
         os.mkdir(default_dir)
 
@@ -302,12 +301,12 @@ def pp_plot_correlations_on_lattice(DL: DataLoader,
     correlations = DL.get_data_m(data_key)
     # loop over nearest_neighbors, next_nearest_neighbors, etc.
     fig, ax = plt.subplots(figsize=figsize)
-    ax.set_title(f'Correlations {data_key}')
+    ax.set_title(f"Correlations {data_key}")
     if correlations.ndim == 3:
         correlations = correlations[t_step]
-        ax.set_title(f'Correlations {data_key}, timestep {t_step}')
+        ax.set_title(f"Correlations {data_key}, timestep {t_step}")
     for key in keys:
         plot_correlations_on_lattice(ax, lat, correlations, pairs=key, **kwargs)
     lat.plot_sites(ax, markers=markers)
     saving_path = os.path.join(default_dir, save_as)
-    plt.savefig(saving_path, bbox_inches='tight')
+    plt.savefig(saving_path, bbox_inches="tight")

@@ -21,7 +21,7 @@ import warnings
 from ..linalg import np_conserved as npc
 from ..networks.mps import MPS
 
-__all__ = ['ExactDiag']
+__all__ = ["ExactDiag"]
 
 
 class ExactDiag:
@@ -75,8 +75,9 @@ class ExactDiag:
     _mask : 1D bool ndarray | ``None``
         Bool mask, which of the indices of the pipe are in the desired `charge_sector`.
     """
+
     def __init__(self, model, charge_sector=None, sparse=False, max_size=2e6):
-        if model.lat.bc_MPS != 'finite':
+        if model.lat.bc_MPS != "finite":
             raise ValueError("Full diagonalization works only on finite systems")
         self.model = model
         self.chinfo = model.lat.unit_cell[0].leg.chinfo
@@ -84,8 +85,8 @@ class ExactDiag:
         self.E = None
         self.V = None
         self.max_size = max_size
-        self._labels_p = ['p' + str(i) for i in range(model.lat.N_sites)]
-        self._labels_pconj = [l + '*' for l in self._labels_p]
+        self._labels_p = ["p" + str(i) for i in range(model.lat.N_sites)]
+        self._labels_pconj = [l + "*" for l in self._labels_p]
         self._sites = model.lat.mps_sites()
         legs = [s.leg for s in self._sites]
         self._pipe = npc.LegPipe(legs, qconj=1, sort=(not sparse), bunch=(not sparse))
@@ -103,8 +104,7 @@ class ExactDiag:
         return self._pipe.charge_sectors()
 
     @classmethod
-    def from_infinite_model(cls, model, first=0, last=None, enlarge=None,
-                                      **kwargs):
+    def from_infinite_model(cls, model, first=0, last=None, enlarge=None, **kwargs):
         """Initialize by extracting a finite segment from a ``bc_MPS=infinite'`` model.
 
         This method calls :meth:`~tenpy.models.model.Model.extract_segment` on the model and sets
@@ -123,9 +123,9 @@ class ExactDiag:
             Model with infinite bc and MPO.
         """
         model_segment = model.extract_segment(first, last, enlarge)
-        model_segment.lat.bc_MPS = 'finite'
-        model_segment.H_MPO.bc = 'finite'
-        if hasattr(model_segment, 'H_bond'):
+        model_segment.lat.bc_MPS = "finite"
+        model_segment.H_MPO.bc = "finite"
+        if hasattr(model_segment, "H_bond"):
             del model_segment.H_bond  # invalid since it wouldn't terminate onsite terms correctly
         return cls(model_segment, **kwargs)
 
@@ -144,7 +144,8 @@ class ExactDiag:
         """
         from ..models.model import MPOModel
         from ..models.lattice import TrivialLattice
-        assert H_MPO.bc == 'finite'
+
+        assert H_MPO.bc == "finite"
         M = MPOModel(TrivialLattice(H_MPO.sites), H_MPO)
         return cls(M, *args, **kwargs)
 
@@ -153,17 +154,17 @@ class ExactDiag:
         if self._exceeds_max_size():
             return
         mpo = self.model.H_MPO
-        full_H = mpo.get_W(0).take_slice(mpo.get_IdL(0), 'wL')
-        full_H.ireplace_labels(['p', 'p*'], [self._labels_p[0], self._labels_pconj[0]])
+        full_H = mpo.get_W(0).take_slice(mpo.get_IdL(0), "wL")
+        full_H.ireplace_labels(["p", "p*"], [self._labels_p[0], self._labels_pconj[0]])
         for i in range(1, mpo.L):
             W = mpo.get_W(i, copy=True)
-            W.ireplace_labels(['p', 'p*'], [self._labels_p[i], self._labels_pconj[i]])
+            W.ireplace_labels(["p", "p*"], [self._labels_p[i], self._labels_pconj[i]])
             if i == mpo.L - 1:
-                W = W.take_slice(mpo.get_IdR(mpo.L - 1), 'wR')
-            full_H = npc.tensordot(full_H, W, axes=['wR', 'wL'])
-        full_H = full_H.combine_legs([self._labels_p, self._labels_pconj],
-                                     new_axes=[0, 1],
-                                     pipes=[self._pipe, self._pipe_conj])
+                W = W.take_slice(mpo.get_IdR(mpo.L - 1), "wR")
+            full_H = npc.tensordot(full_H, W, axes=["wR", "wL"])
+        full_H = full_H.combine_legs(
+            [self._labels_p, self._labels_pconj], new_axes=[0, 1], pipes=[self._pipe, self._pipe_conj]
+        )
         if mpo.explicit_plus_hc:
             full_H = full_H + full_H.conj().itranspose(full_H.get_leg_labels())
         self._set_full_H(full_H)
@@ -176,8 +177,7 @@ class ExactDiag:
         H_bond = self.model.H_bond
         L = len(sites)
         Ids = [
-            s.Id.replace_labels(['p', 'p*'], [self._labels_p[i], self._labels_pconj[i]])
-            for i, s in enumerate(sites)
+            s.Id.replace_labels(["p", "p*"], [self._labels_p[i], self._labels_pconj[i]]) for i, s in enumerate(sites)
         ]
         Ids_L = [Ids[0]]  # Ids_L[j] has identity up to (including) site j
         Ids_R = [Ids[-1]]  # Ids_R[j] is identity starting from (including) site L-1-j
@@ -192,14 +192,14 @@ class ExactDiag:
             Hb = H_bond[i]
             if Hb is None:
                 continue
-            Hb = Hb.replace_labels(['p0', 'p0*', 'p1', 'p1*'], [lL, lLc, lR, lRc])
+            Hb = Hb.replace_labels(["p0", "p0*", "p1", "p1*"], [lL, lLc, lR, lRc])
             if i > 1:
                 Hb = npc.outer(Ids_L[i - 2], Hb)  # need i-2 == j
             if i < L - 1:
                 Hb = npc.outer(Hb, Ids_R[L - 2 - i])  # need i+1 == L-1-j   =>   j = L-2-i
-            Hb = Hb.combine_legs([self._labels_p, self._labels_pconj],
-                                 new_axes=[0, 1],
-                                 pipes=[self._pipe, self._pipe_conj])
+            Hb = Hb.combine_legs(
+                [self._labels_p, self._labels_pconj], new_axes=[0, 1], pipes=[self._pipe, self._pipe_conj]
+            )
             if full_H is None:
                 full_H = Hb
             else:
@@ -214,7 +214,7 @@ class ExactDiag:
         if self.full_H is None:
             raise ValueError("You need to call one of `build_full_H_*` first!")
         E, V = npc.eigh(self.full_H, *args, **kwargs)
-        V.iset_leg_labels(['ps', 'ps*'])
+        V.iset_leg_labels(["ps", "ps*"])
         self.E = E
         self.V = V
 
@@ -245,16 +245,14 @@ class ExactDiag:
             mask = np.all(self._pipe.to_qflat() == charge_sector[np.newaxis, :], axis=1)
             if np.sum(mask) == 0:
                 raise ValueError("The chosen charge sector is empty.")
-            i0 = np.argmin(np.where(mask, self.E, np.max(self.E) + 1.))
-        return self.E[i0], self.V.take_slice(i0, axes='ps*')
+            i0 = np.argmin(np.where(mask, self.E, np.max(self.E) + 1.0))
+        return self.E[i0], self.V.take_slice(i0, axes="ps*")
 
     def exp_H(self, dt):
         """Return ``U(dt) := exp(-i H dt)``."""
         if self.E is None or self.V is None:
             raise ValueError("You need to call `full_diagonalization` first!")
-        return npc.tensordot(self.V.scale_axis(np.exp(-1.j * dt * self.E), 'ps*'),
-                             self.V.conj(),
-                             axes=['ps*', 'ps'])
+        return npc.tensordot(self.V.scale_axis(np.exp(-1.0j * dt * self.E), "ps*"), self.V.conj(), axes=["ps*", "ps"])
 
     def mps_to_full(self, mps):
         """Contract an MPS along the virtual bonds and combine its legs.
@@ -269,17 +267,17 @@ class ExactDiag:
         psi : :class:`~tenpy.linalg.np_conserved.Array`
             The MPS contracted along the virtual bonds.
         """
-        if mps.bc != 'finite':
+        if mps.bc != "finite":
             raise ValueError("Full diagonalization works only on finite systems")
         psi = mps.get_theta(0, mps.L)  # does exactly what we need
-        psi = psi.take_slice([0, 0], ['vL', 'vR'])
+        psi = psi.take_slice([0, 0], ["vL", "vR"])
         psi = psi.combine_legs(range(mps.L))
         if self.charge_sector is not None:
             psi.legs[0] = psi.legs[0].to_LegCharge()
             psi = psi[self._mask]
         return psi
 
-    def full_to_mps(self, psi, canonical_form='B'):
+    def full_to_mps(self, psi, canonical_form="B"):
         """Convert a full state (with a single leg) to an MPS.
 
         Parameters
@@ -299,7 +297,7 @@ class ExactDiag:
             full_psi = npc.zeros([self._pipe], psi.dtype, psi.qtotal)
             full_psi[self._mask] = psi
             psi = full_psi
-        psi.iset_leg_labels(['(' + '.'.join(self._labels_p) + ')'])
+        psi.iset_leg_labels(["(" + ".".join(self._labels_p) + ")"])
         psi = psi.split_legs([0])  # split the combined leg into the physical legs of the sites
         return MPS.from_full(self._sites, psi, form=canonical_form)
 
@@ -323,7 +321,7 @@ class ExactDiag:
         self.full_H = full_H
 
     def _exceeds_max_size(self):
-        size = np.prod([float(s.dim) for s in self._sites])**2  # use float to avoid overflow!
+        size = np.prod([float(s.dim) for s in self._sites]) ** 2  # use float to avoid overflow!
         if size > self.max_size:
             msg = "size {0:.2e} exceeds max_size {1:.2e}".format(size, self.max_size)
             warnings.warn(msg, stacklevel=2)

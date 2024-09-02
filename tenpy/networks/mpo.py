@@ -56,9 +56,7 @@ from ..tools.math import lcm
 from ..tools.params import asConfig
 from ..algorithms.truncation import TruncationError, svd_theta
 
-__all__ = [
-    'MPO', 'make_W_II', 'MPOGraph', 'MPOEnvironment', 'MPOTransferMatrix', 'grid_insert_ops'
-]
+__all__ = ["MPO", "make_W_II", "MPOGraph", "MPOEnvironment", "MPOTransferMatrix", "grid_insert_ops"]
 
 
 class MPO:
@@ -118,14 +116,7 @@ class MPO:
 
     _valid_bc = _MPS._valid_bc  # same valid boundary conditions as an MPS.
 
-    def __init__(self,
-                 sites,
-                 Ws,
-                 bc='finite',
-                 IdL=None,
-                 IdR=None,
-                 max_range=None,
-                 explicit_plus_hc=False):
+    def __init__(self, sites, Ws, bc="finite", IdL=None, IdR=None, max_range=None, explicit_plus_hc=False):
         self.sites = list(sites)
         self.chinfo = self.sites[0].leg.chinfo
         self.dtype = dtype = np.result_type(*[W.dtype for W in Ws])
@@ -216,16 +207,18 @@ class MPO:
         return obj
 
     @classmethod
-    def from_grids(cls,
-                   sites,
-                   grids,
-                   bc='finite',
-                   IdL=None,
-                   IdR=None,
-                   Ws_qtotal=None,
-                   legs=None,
-                   max_range=None,
-                   explicit_plus_hc=False):
+    def from_grids(
+        cls,
+        sites,
+        grids,
+        bc="finite",
+        IdL=None,
+        IdR=None,
+        Ws_qtotal=None,
+        legs=None,
+        max_range=None,
+        explicit_plus_hc=False,
+    ):
         """Initialize an MPO from `grids`.
 
         Parameters
@@ -276,7 +269,7 @@ class MPO:
         IdL = cls._get_Id(IdL, L)
         IdR = cls._get_Id(IdR, L)
         if legs is None:
-            if bc != 'infinite':
+            if bc != "infinite":
                 # ensure that we have only a single entry in the first and last leg
                 # i.e. project grids[0][:, :] -> grids[0][IdL[0], :]
                 # and         grids[-1][:, :] -> grids[-1][:,IdR[-1], :]
@@ -297,12 +290,12 @@ class MPO:
         assert len(legs) == L + 1
         Ws = []
         for i in range(L):
-            W = npc.grid_outer(grids[i], [legs[i], legs[i + 1].conj()], Ws_qtotal[i], ['wL', 'wR'])
+            W = npc.grid_outer(grids[i], [legs[i], legs[i + 1].conj()], Ws_qtotal[i], ["wL", "wR"])
             Ws.append(W)
         return cls(sites, Ws, bc, IdL, IdR, max_range, explicit_plus_hc)
 
     @classmethod
-    def from_wavepacket(cls, sites, coeff, op, eps=1.e-15):
+    def from_wavepacket(cls, sites, coeff, op, eps=1.0e-15):
         r"""Create a (finite) MPO wave packet representing ``sum_i coeff[i] op_i``.
 
         Note that we define it only for finite systems; a generalization to infinite systems
@@ -358,17 +351,17 @@ class MPO:
             True
         """
         coeff = np.asarray(coeff)
-        assert coeff.shape == (len(sites), )
+        assert coeff.shape == (len(sites),)
         L = len(sites)
         assert L >= 2
         first_nonzero = np.nonzero(coeff)[0][0]
         needs_JW = sites[first_nonzero].op_needs_JW(op)
-        upper_left = 'JW' if needs_JW else 'Id'
+        upper_left = "JW" if needs_JW else "Id"
 
         grids = []
         for i in range(L):
             local = None if abs(coeff[i]) < eps else [(op, coeff[i])]
-            grid = [[upper_left, local], [None, 'Id']]
+            grid = [[upper_left, local], [None, "Id"]]
             if i == 0:
                 grid = grid[:1]  # first row only
             if i == L - 1:  # last column only
@@ -380,7 +373,7 @@ class MPO:
         # MPO to an MPS would need a non-trivial modification that is not captured when setting
         # IdL=0!
         IdR = [None] * L + [0]
-        return cls.from_grids(sites, grids, 'finite', IdL, IdR)
+        return cls.from_grids(sites, grids, "finite", IdL, IdR)
 
     def test_sanity(self):
         """Sanity check, raises ValueErrors, if something is wrong."""
@@ -390,11 +383,11 @@ class MPO:
         for i in range(self.L):
             S = self.sites[i]
             W = self._W[i]
-            S.leg.test_equal(W.get_leg('p'))
-            S.leg.test_contractible(W.get_leg('p*'))
-            if self.bc == 'infinite' or i + 1 < self.L:
+            S.leg.test_equal(W.get_leg("p"))
+            S.leg.test_contractible(W.get_leg("p*"))
+            if self.bc == "infinite" or i + 1 < self.L:
                 W2 = self.get_W(i + 1)
-                W.get_leg('wR').test_contractible(W2.get_leg('wL'))
+                W.get_leg("wR").test_contractible(W2.get_leg("wL"))
         if not (len(self.IdL) == len(self.IdR) == self.L + 1):
             raise ValueError("wrong len of `IdL`/`IdR`")
 
@@ -414,13 +407,13 @@ class MPO:
 
         True for an MPO (``bc='finite', 'segment'``), False for an iMPO (``bc='infinite'``).
         """
-        assert (self.bc in self._valid_bc)
-        return self.bc != 'infinite'
+        assert self.bc in self._valid_bc
+        return self.bc != "infinite"
 
     @property
     def chi(self):
         """Dimensions of the virtual bonds."""
-        return [W.get_leg('wL').ind_len for W in self._W] + [self._W[-1].get_leg('wR').ind_len]
+        return [W.get_leg("wL").ind_len for W in self._W] + [self._W[-1].get_leg("wR").ind_len]
 
     def get_W(self, i, copy=False):
         """Return `W` at site `i`."""
@@ -486,7 +479,7 @@ class MPO:
             The sites grouped together.
         """
         if grouped_sites is None:
-            grouped_sites = group_sites(self.sites, n, charges='same')
+            grouped_sites = group_sites(self.sites, n, charges="same")
         else:
             assert grouped_sites[0].n_sites == n
         if self.max_range is not None and self.max_range != np.inf:
@@ -497,13 +490,13 @@ class MPO:
         IdR = [self.IdR[0]]
         i = 0
         for gs in grouped_sites:
-            new_W = self.get_W(i).itranspose(['wL', 'p', 'p*', 'wR'])
+            new_W = self.get_W(i).itranspose(["wL", "p", "p*", "wR"])
             for j in range(1, gs.n_sites):
-                W = self.get_W(i + j).itranspose(['wL', 'p', 'p*', 'wR'])
+                W = self.get_W(i + j).itranspose(["wL", "p", "p*", "wR"])
                 new_W = npc.tensordot(new_W, W, axes=[-1, 0])
             comb = [list(range(1, 1 + 2 * gs.n_sites, 2)), list(range(2, 2 + 2 * gs.n_sites, 2))]
             new_W = new_W.combine_legs(comb, pipes=[gs.leg, gs.leg.conj()])
-            Ws.append(new_W.iset_leg_labels(['wL', 'p', 'p*', 'wR']))
+            Ws.append(new_W.iset_leg_labels(["wL", "p", "p*", "wR"]))
             IdL.append(self.get_IdL(i))
             i += gs.n_sites
             IdR.append(self.get_IdR(i - 1))
@@ -538,7 +531,7 @@ class MPO:
         IdL.append(self.IdL[last % L + 1])
         IdR = [self.IdR[i % L] for i in range(first, last + 1)]
         IdR.append(self.IdR[last % L + 1])
-        cp = self.__class__(sites, W, 'segment', IdL, IdR, self.max_range, self.explicit_plus_hc)
+        cp = self.__class__(sites, W, "segment", IdL, IdR, self.max_range, self.explicit_plus_hc)
         cp.grouped = self.grouped
         return cp
 
@@ -554,7 +547,7 @@ class MPO:
         new_W = [None] * self.L
         perms = [None] * (self.L + 1)
         for i, w in enumerate(self._W):
-            w = w.transpose(['wL', 'wR', 'p', 'p*'])
+            w = w.transpose(["wL", "wR", "p", "p*"])
             p, w = w.sort_legcharge([True, True, False, False], [True, True, False, False])
             if perms[i] is not None:
                 assert np.all(p[0] == perms[i])
@@ -573,7 +566,7 @@ class MPO:
                 self.IdR[b] = np.nonzero(p == IdR)[0][0]
         # done
 
-    def make_U(self, dt, approximation='II'):
+    def make_U(self, dt, approximation="II"):
         r"""Creates the U_I or U_II propagator.
 
         Approximations of MPO exponentials following :cite:`zaletel2015`.
@@ -591,9 +584,9 @@ class MPO:
         U : :class:`~tenpy.networks.mpo.MPO`
             The propagator, i.e. approximation :math:`U ~= exp(H*dt)`
         """
-        if approximation == 'II':
+        if approximation == "II":
             return self.make_U_II(dt)
-        elif approximation == 'I':
+        elif approximation == "I":
             return self.make_U_I(dt)
         raise ValueError(repr(approximation) + " not implemented")
 
@@ -612,12 +605,13 @@ class MPO:
             The propagator, i.e. approximation :math:`U_I ~= exp(H*dt)`
         """
         if self.explicit_plus_hc:
-            raise NotImplementedError("MPO.make_U_I() assumes hermitian H, you can't use "
-                                      "the `explicit_plus_hc=True` flag!\n"
-                                      "See also https://github.com/tenpy/tenpy/issues/265")
+            raise NotImplementedError(
+                "MPO.make_U_I() assumes hermitian H, you can't use "
+                "the `explicit_plus_hc=True` flag!\n"
+                "See also https://github.com/tenpy/tenpy/issues/265"
+            )
         U = [
-            self.get_W(i).astype(np.result_type(dt, self.dtype),
-                                 copy=True).itranspose(['wL', 'wR', 'p', 'p*'])
+            self.get_W(i).astype(np.result_type(dt, self.dtype), copy=True).itranspose(["wL", "wR", "p", "p*"])
             for i in range(self.L)
         ]
 
@@ -669,9 +663,11 @@ class MPO:
 
         """
         if self.explicit_plus_hc:
-            raise NotImplementedError("MPO.make_U_II() assumes hermitian H, you can't use "
-                                      "the `explicit_plus_hc=True` flag!\n"
-                                      "See also https://github.com/tenpy/tenpy/issues/265")
+            raise NotImplementedError(
+                "MPO.make_U_II() assumes hermitian H, you can't use "
+                "the `explicit_plus_hc=True` flag!\n"
+                "See also https://github.com/tenpy/tenpy/issues/265"
+            )
         dtype = np.result_type(dt, self.dtype)
         IdL = self.IdL
         IdR = self.IdR
@@ -680,7 +676,7 @@ class MPO:
         trivial = chinfo.make_valid()
         U = []
         for i in range(0, self.L):
-            labels = ['wL', 'wR', 'p', 'p*']
+            labels = ["wL", "wR", "p", "p*"]
             W = self.get_W(i).itranspose(labels)
             assert np.all(W.qtotal == trivial)
             DL, DR, _, _ = W.shape
@@ -692,7 +688,7 @@ class MPO:
             proj_R[IdL[i + 1]] = False
             proj_R[IdR[i + 1]] = False
 
-            #Extract (A, B, C, D)
+            # Extract (A, B, C, D)
             D = Wflat[IdL[i], IdR[i + 1], :, :]
             C = Wflat[IdL[i], proj_R, :, :]
             B = Wflat[proj_L, IdR[i + 1], :, :]
@@ -718,7 +714,7 @@ class MPO:
         Id = [0] * (self.L + 1)
         return MPO(self.sites, U, self.bc, Id, Id, max_range=self.max_range)
 
-    def expectation_value(self, psi, tol=1.e-10, max_range=100, init_env_data={}):
+    def expectation_value(self, psi, tol=1.0e-10, max_range=100, init_env_data={}):
         """Calculate ``<psi|self|psi>/<psi|psi>`` (or density for infinite).
 
         For infinite MPS, it **assumes** that `self` is extensive, e.g. a Hamiltonian
@@ -766,17 +762,19 @@ class MPO:
             The expectation value of `self` with respect to the state `psi`
             (extensive, not the density).
         """
-        if psi.bc == 'segment':
+        if psi.bc == "segment":
             if len(init_env_data) == 0:
-                init_env_data['start_env_sites'] = 0
-                warnings.warn("MPO.expectation_value(psi) with segment psi needs environments! "
-                              "Can only estimate value completely ignoring contributions "
-                              "across segment boundaries!")
+                init_env_data["start_env_sites"] = 0
+                warnings.warn(
+                    "MPO.expectation_value(psi) with segment psi needs environments! "
+                    "Can only estimate value completely ignoring contributions "
+                    "across segment boundaries!"
+                )
         env = MPOEnvironment(psi, self, psi, **init_env_data)
         val = env.full_contraction(0)  # handles explicit_plus_hc
         return np.real_if_close(val)
 
-    def expectation_value_TM(self, psi, tol=1.e-10, init_env_data={}):
+    def expectation_value_TM(self, psi, tol=1.0e-10, init_env_data={}):
         """Calculate ``<psi|self|psi>/<psi|psi> / L`` from the MPOTransferMatrix.
 
         Only for infinite MPS, and **assumes** that the Hamiltonian is an extensive sum of
@@ -805,15 +803,15 @@ class MPO:
         if np.linalg.norm(psi.norm_test()) > tol:
             psi = psi.copy()
             psi.canonical_form()
-        guess = init_env_data.get('init_RP', None)
+        guess = init_env_data.get("init_RP", None)
         TM = MPOTransferMatrix(self, psi, transpose=False, guess=guess)
         val, vec = TM.dominant_eigenvector(tol=tol)
-        if abs(1. - val) > tol * 10.:
-            logger.warning("MPOTransferMatrix eigenvalue not 1: got 1. - %.3e", 1. - val)
+        if abs(1.0 - val) > tol * 10.0:
+            logger.warning("MPOTransferMatrix eigenvalue not 1: got 1. - %.3e", 1.0 - val)
         E = TM.energy(vec)  #  handles explicit_plus_hc
         return np.real_if_close(E)
 
-    def expectation_value_power(self, psi, tol=1.e-10, max_range=100):
+    def expectation_value_power(self, psi, tol=1.0e-10, max_range=100):
         """Calculate ``<psi|self|psi>/<psi|psi>`` with a power-method.
 
         Only for infinite MPS, and **assumes** that the Hamiltonian is an extensive sum of
@@ -852,18 +850,18 @@ class MPO:
         masks_L_no_IdL = []
         masks_R_no_IdRL = []
         for i, W in enumerate(self._W):
-            mask_L = np.ones(W.get_leg('wL').ind_len, np.bool_)
+            mask_L = np.ones(W.get_leg("wL").ind_len, np.bool_)
             mask_L[self.get_IdL(i)] = False
             masks_L_no_IdL.append(mask_L)
-            mask_R = np.ones(W.get_leg('wR').ind_len, np.bool_)
+            mask_R = np.ones(W.get_leg("wR").ind_len, np.bool_)
             mask_R[self.get_IdL(i + 1)] = False
             mask_R[self.get_IdR(i)] = False
             masks_R_no_IdRL.append(mask_R)
         # contract first site with theta
         theta = psi.get_theta(0, 1)
-        LP = npc.tensordot(LP0, theta, axes=['vR', 'vL'])
-        LP = npc.tensordot(LP, self._W[0], axes=[['wR', 'p0'], ['wL', 'p*']])
-        LP = npc.tensordot(LP, theta.conj(), axes=[['vR*', 'p'], ['vL*', 'p0*']])
+        LP = npc.tensordot(LP0, theta, axes=["vR", "vL"])
+        LP = npc.tensordot(LP, self._W[0], axes=[["wR", "p0"], ["wL", "p*"]])
+        LP = npc.tensordot(LP, theta.conj(), axes=[["vR*", "p"], ["vL*", "p0*"]])
 
         for i in range(1, max(max_range, 1) * L):
             i0 = i % self.L
@@ -871,22 +869,19 @@ class MPO:
             if i >= L:
                 # have one full unit cell: don't use further terms starting with IdL
                 mask_L = masks_L_no_IdL[i0]
-                LP.iproject(mask_L, 'wR')
+                LP.iproject(mask_L, "wR")
                 W = W.copy()
-                W.iproject(mask_L, 'wL')
-            B = psi.get_B(i, form='B')
-            LP = npc.tensordot(LP, B, axes=['vR', 'vL'])
-            LP = npc.tensordot(LP, W, axes=[['wR', 'p'], ['wL', 'p*']])
-            LP = npc.tensordot(LP, B.conj(), axes=[['vR*', 'p'], ['vL*', 'p*']])
+                W.iproject(mask_L, "wL")
+            B = psi.get_B(i, form="B")
+            LP = npc.tensordot(LP, B, axes=["vR", "vL"])
+            LP = npc.tensordot(LP, W, axes=[["wR", "p"], ["wL", "p*"]])
+            LP = npc.tensordot(LP, B.conj(), axes=[["vR*", "p"], ["vL*", "p*"]])
 
             if i >= L - 1:
                 RP = env.init_RP(i)
-                current_value = npc.inner(LP,
-                                          RP,
-                                          axes=[['vR*', 'wR', 'vR'], ['vL*', 'wL', 'vL']],
-                                          do_conj=False)
+                current_value = npc.inner(LP, RP, axes=[["vR*", "wR", "vR"], ["vL*", "wL", "vL"]], do_conj=False)
                 LP_converged = LP.copy()
-                LP_converged.iproject(masks_R_no_IdRL[i0], 'wR')
+                LP_converged.iproject(masks_R_no_IdRL[i0], "wR")
                 if npc.norm(LP_converged) < tol:
                     break  # no more terms left
         else:  # no break
@@ -915,11 +910,11 @@ class MPO:
             otherwise obtained from :meth:`expectation_value`.
             (Set this to 0 to obtain only the part ``<psi|self^2|psi>``.)
         """
-        if self.bc != 'finite':
+        if self.bc != "finite":
             raise ValueError("works only for finite systems")
         if self.L != psi.L:
             raise ValueError("expect same L")
-        if psi._p_label != ['p']:
+        if psi._p_label != ["p"]:
             raise NotImplementedError("not adjusted for non-standard MPS.")
         if self.explicit_plus_hc:
             raise NotImplementedError("not implemented for explicit_plus_hc flag")
@@ -928,23 +923,19 @@ class MPO:
             exp_val = self.expectation_value(psi)
 
         th = psi.get_theta(0, n=1)
-        W = self.get_W(0).take_slice(self.get_IdL(0), 'wL')
-        contr = npc.tensordot(th, W.replace_label('wR', 'wR1'), axes=['p0', 'p*'])
-        contr = npc.tensordot(contr, W.replace_label('wR', 'wR2'), axes=['p', 'p*'])
-        contr = npc.tensordot(th.conj(), contr, axes=[['vL*', 'p0*'], ['vL', 'p']])
+        W = self.get_W(0).take_slice(self.get_IdL(0), "wL")
+        contr = npc.tensordot(th, W.replace_label("wR", "wR1"), axes=["p0", "p*"])
+        contr = npc.tensordot(contr, W.replace_label("wR", "wR2"), axes=["p", "p*"])
+        contr = npc.tensordot(th.conj(), contr, axes=[["vL*", "p0*"], ["vL", "p"]])
         for i in range(1, self.L):
-            B = psi.get_B(i, form='B')
+            B = psi.get_B(i, form="B")
             W = self.get_W(i)
-            contr = npc.tensordot(contr, B, axes=['vR', 'vL'])
-            contr = npc.tensordot(contr,
-                                  W.replace_label('wR', 'wR1'),
-                                  axes=[['wR1', 'p'], ['wL', 'p*']])
-            contr = npc.tensordot(contr,
-                                  W.replace_label('wR', 'wR2'),
-                                  axes=[['wR2', 'p'], ['wL', 'p*']])
-            contr = npc.tensordot(contr, B.conj(), axes=[['vR*', 'p'], ['vL*', 'p*']])
-        contr = contr.take_slice([self.get_IdR(self.L - 1)] * 2, ['wR1', 'wR2'])
-        contr = npc.trace(contr, 'vR', 'vR*')
+            contr = npc.tensordot(contr, B, axes=["vR", "vL"])
+            contr = npc.tensordot(contr, W.replace_label("wR", "wR1"), axes=[["wR1", "p"], ["wL", "p*"]])
+            contr = npc.tensordot(contr, W.replace_label("wR", "wR2"), axes=[["wR2", "p"], ["wL", "p*"]])
+            contr = npc.tensordot(contr, B.conj(), axes=[["vR*", "p"], ["vL*", "p*"]])
+        contr = contr.take_slice([self.get_IdR(self.L - 1)] * 2, ["wR1", "wR2"])
+        contr = npc.trace(contr, "vR", "vR*")
         return np.real_if_close(contr - exp_val**2)
 
     def prefactor(self, i, ops):
@@ -969,35 +960,31 @@ class MPO:
         IdL = self.get_IdL(i)
         IdR_final = self.get_IdR(i + len(ops) - 1)
         if IdL is None or IdR_final is None:
-            return 0.
+            return 0.0
         contr = None
         for k, opname in enumerate(ops):
             j = i + k
             W = self.get_W(j)
             if contr is None:
-                contr = W.take_slice(IdL, 'wL')
+                contr = W.take_slice(IdL, "wL")
             else:
                 proj = np.ones(contr.shape[0])
                 IdL = self.get_IdL(j)
-                IdR = self.get_IdR(j-1)
+                IdR = self.get_IdR(j - 1)
                 if IdL is not None:
-                    proj[IdL] = 0.
+                    proj[IdL] = 0.0
                 if IdR is not None:
-                    proj[IdR] = 0.
+                    proj[IdR] = 0.0
                 contr.iscale_axis(proj, 0)
-                contr = npc.tensordot(contr, W, axes=['wR', 'wL'])
+                contr = npc.tensordot(contr, W, axes=["wR", "wL"])
             site = self.sites[j % len(self.sites)]
             op = site.get_op(opname)
-            op_norm = npc.tensordot(op.conj(), op, axes=[['p', 'p*'], ['p*', 'p']])
-            contr = npc.tensordot(op.conj(), contr, axes=[['p', 'p*'], ['p*', 'p']]) / op_norm
+            op_norm = npc.tensordot(op.conj(), op, axes=[["p", "p*"], ["p*", "p"]])
+            contr = npc.tensordot(op.conj(), contr, axes=[["p", "p*"], ["p*", "p"]]) / op_norm
         contr = contr[IdR_final]
         return contr
 
-    def to_TermList(self, op_basis,
-                    start=None,
-                    max_range=None,
-                    cutoff=1.e-12,
-                    ignore=['Id', 'JW']):
+    def to_TermList(self, op_basis, start=None, max_range=None, cutoff=1.0e-12, ignore=["Id", "JW"]):
         """Obtain a `TermList` represented by self.
 
         This function is meant for debugging MPOs to make sure they have the terms one expects.
@@ -1044,10 +1031,10 @@ class MPO:
         all_terms = []
         all_prefs = []
         for i in start:
-            partial_L = [None] * self.get_W(i).get_leg('wL').ind_len
+            partial_L = [None] * self.get_W(i).get_leg("wL").ind_len
             if self.get_IdL(i) is None:
                 continue
-            partial_L[self.get_IdL(i)] = [([], 1.)]
+            partial_L[self.get_IdL(i)] = [([], 1.0)]
             if self.finite:
                 max_range = min(max_range, L - i)
             for k in range(max_range):
@@ -1058,25 +1045,25 @@ class MPO:
                     IdR = -1  # not equal to positive index
                 site_j = self.sites[j % L]
                 W = self.get_W(j)
-                W = W.transpose(['wL', 'wR', 'p', 'p*'])
+                W = W.transpose(["wL", "wR", "p", "p*"])
                 op_basis_j = op_basis[j % len(op_basis)]
-                partial_R = [None] * W.get_leg('wR').ind_len
+                partial_R = [None] * W.get_leg("wR").ind_len
                 if k > 0 and IdL is not None:
-                    partial_L[IdL] = None # drop terms not starting at `start`
+                    partial_L[IdL] = None  # drop terms not starting at `start`
                 for opname in op_basis_j:
                     op = site_j.get_op(opname)
                     op_dagger = op.conj().transpose()
-                    op_norm = npc.tensordot(op, op_dagger, axes=[['p', 'p*'], ['p*', 'p']])
-                    op_W = npc.tensordot(W, op_dagger, axes=[['p', 'p*'], ['p*', 'p']])
+                    op_norm = npc.tensordot(op, op_dagger, axes=[["p", "p*"], ["p*", "p"]])
+                    op_W = npc.tensordot(W, op_dagger, axes=[["p", "p*"], ["p*", "p"]])
                     op_W = op_W.to_ndarray() / op_norm
-                    op_W[np.abs(op_W) < cutoff] = 0.
+                    op_W[np.abs(op_W) < cutoff] = 0.0
                     for x, y in zip(*np.nonzero(op_W)):
                         if partial_L[x] is None:
                             continue
-                        pref_j = op_W[x,y]
+                        pref_j = op_W[x, y]
                         if y == IdR:
                             # finish terms
-                            for (term, pref) in partial_L[x]:
+                            for term, pref in partial_L[x]:
                                 if abs(pref * pref_j) < cutoff:
                                     continue
                                 all_terms.append(term + [(opname, j)])
@@ -1086,10 +1073,10 @@ class MPO:
                                 partial_R[y] = []
                             new_partial = partial_R[y]
                             if k > 0 and opname in ignore:
-                                for (term, pref) in partial_L[x]:
+                                for term, pref in partial_L[x]:
                                     new_partial.append((term, pref * pref_j))
                             else:
-                                for (term, pref) in partial_L[x]:
+                                for term, pref in partial_L[x]:
                                     new_partial.append((term + [(opname, j)], pref * pref_j))
                 partial_L = partial_R
                 if all(t is None for t in partial_L):
@@ -1101,11 +1088,11 @@ class MPO:
         if self.explicit_plus_hc:
             return self.copy()
         # complex conjugate and transpose everything
-        Ws = [w.conj().itranspose(['wL*', 'wR*', 'p', 'p*']) for w in self._W]
+        Ws = [w.conj().itranspose(["wL*", "wR*", "p", "p*"]) for w in self._W]
         # and now revert conjugation of the wL/wR legs
         # rename labels 'wL*' -> 'wL', 'wR*' -> 'wR'
         for w in Ws:
-            w.ireplace_labels(['wL*', 'wR*'], ['wL', 'wR'])
+            w.ireplace_labels(["wL*", "wR*"], ["wL", "wR"])
         # flip charges and qconj back
         for i in range(self.L - 1):
             Ws[i].legs[1] = wR = Ws[i].legs[1].flip_charges_qconj()
@@ -1117,7 +1104,7 @@ class MPO:
             Ws[0].legs[0] = wR.conj()
         return MPO(self.sites, Ws, self.bc, self.IdL, self.IdR, self.max_range)
 
-    def is_hermitian(self, eps=1.e-10, max_range=None):
+    def is_hermitian(self, eps=1.0e-10, max_range=None):
         """Check if `self` is a hermitian MPO.
 
         Shorthand for ``self.is_equal(self.dagger(), eps, max_range)``.
@@ -1126,7 +1113,7 @@ class MPO:
             return True
         return self.is_equal(self.dagger(), eps, max_range)
 
-    def is_equal(self, other, eps=1.e-10, max_range=None):
+    def is_equal(self, other, eps=1.0e-10, max_range=None):
         """Check if `self` and `other` represent the same MPO to precision `eps`.
 
         To compare them efficiently we view `self` and `other` as MPS and compare the overlaps
@@ -1160,19 +1147,17 @@ class MPO:
 
         def overlap(A, B):
             """<A|B> on sites 0 to max_i."""
-            wA = A.get_W(0).take_slice([A.get_IdL(0)], ['wL']).conj()
-            wB = B.get_W(0).take_slice([B.get_IdL(0)], ['wL'])
-            trAdB = npc.tensordot(wA, wB, axes=[['p*', 'p'], ['p', 'p*']])  # wR* wR
+            wA = A.get_W(0).take_slice([A.get_IdL(0)], ["wL"]).conj()
+            wB = B.get_W(0).take_slice([B.get_IdL(0)], ["wL"])
+            trAdB = npc.tensordot(wA, wB, axes=[["p*", "p"], ["p", "p*"]])  # wR* wR
             i = 0
             for i in range(1, max_i):
-                trAdB = npc.tensordot(trAdB, A.get_W(i).conj(), axes=['wR*', 'wL*'])
-                trAdB = npc.tensordot(trAdB,
-                                      B.get_W(i),
-                                      axes=[['wR', 'p*', 'p'], ['wL', 'p', 'p*']])
-            trAdB = trAdB.itranspose(['wR*', 'wR'])[A.get_IdR(i), B.get_IdR(i)]
+                trAdB = npc.tensordot(trAdB, A.get_W(i).conj(), axes=["wR*", "wL*"])
+                trAdB = npc.tensordot(trAdB, B.get_W(i), axes=[["wR", "p*", "p"], ["wL", "p", "p*"]])
+            trAdB = trAdB.itranspose(["wR*", "wR"])[A.get_IdR(i), B.get_IdR(i)]
             return trAdB
 
-        self_other = 2. * np.real(overlap(other, self))
+        self_other = 2.0 * np.real(overlap(other, self))
         norms = overlap(self, self) + overlap(other, other)
         return abs(norms - self_other) < eps * abs(norms)
 
@@ -1204,19 +1189,21 @@ class MPO:
             See above.
         """
         options = asConfig(options, "ApplyMPO")
-        method = options['compression_method']
-        trunc_params = options.subconfig('trunc_params')
-        if method == 'SVD':
+        method = options["compression_method"]
+        trunc_params = options.subconfig("trunc_params")
+        if method == "SVD":
             self.apply_naively(psi)
             return psi.compress_svd(trunc_params)
-        elif method == 'variational':
+        elif method == "variational":
             from ..algorithms.mps_common import VariationalApplyMPO
+
             return VariationalApplyMPO(psi, self, options).run()
-        elif method == 'zip_up':
+        elif method == "zip_up":
             trunc_err = self.apply_zipup(psi, options)
             return trunc_err + psi.compress_svd(trunc_params)
-        elif method == 'variationalQR':
+        elif method == "variationalQR":
             from ..algorithms.mps_common import QRBasedVariationalApplyMPO
+
             return QRBasedVariationalApplyMPO(psi, self, options).run()
 
         # TODO: zipup method infinite?
@@ -1247,35 +1234,35 @@ class MPO:
         if self.explicit_plus_hc:
             raise NotImplementedError("Can't use explicit_plus_hc with apply_naively")
         for i in range(psi.L):
-            B = npc.tensordot(psi.get_B(i, 'B'), self.get_W(i), axes=('p', 'p*'))
-            if i == 0 and bc == 'finite':
-                B = B.take_slice(self.get_IdL(i), 'wL')
-                B = B.combine_legs(['wR', 'vR'], qconj=[-1])
-                B.ireplace_labels(['(wR.vR)'], ['vR'])
-                B.legs[B.get_leg_index('vR')] = B.get_leg('vR').to_LegCharge()
-            elif i == psi.L - 1 and bc == 'finite':
-                B = B.take_slice(self.get_IdR(i), 'wR')
-                B = B.combine_legs(['wL', 'vL'], qconj=[1])
-                B.ireplace_labels(['(wL.vL)'], ['vL'])
-                B.legs[B.get_leg_index('vL')] = B.get_leg('vL').to_LegCharge()
+            B = npc.tensordot(psi.get_B(i, "B"), self.get_W(i), axes=("p", "p*"))
+            if i == 0 and bc == "finite":
+                B = B.take_slice(self.get_IdL(i), "wL")
+                B = B.combine_legs(["wR", "vR"], qconj=[-1])
+                B.ireplace_labels(["(wR.vR)"], ["vR"])
+                B.legs[B.get_leg_index("vR")] = B.get_leg("vR").to_LegCharge()
+            elif i == psi.L - 1 and bc == "finite":
+                B = B.take_slice(self.get_IdR(i), "wR")
+                B = B.combine_legs(["wL", "vL"], qconj=[1])
+                B.ireplace_labels(["(wL.vL)"], ["vL"])
+                B.legs[B.get_leg_index("vL")] = B.get_leg("vL").to_LegCharge()
             else:
-                B = B.combine_legs([['wL', 'vL'], ['wR', 'vR']], qconj=[+1, -1])
-                B.ireplace_labels(['(wL.vL)', '(wR.vR)'], ['vL', 'vR'])
-                B.legs[B.get_leg_index('vL')] = B.get_leg('vL').to_LegCharge()
-                B.legs[B.get_leg_index('vR')] = B.get_leg('vR').to_LegCharge()
-            psi.set_B(i, B, 'B')
+                B = B.combine_legs([["wL", "vL"], ["wR", "vR"]], qconj=[+1, -1])
+                B.ireplace_labels(["(wL.vL)", "(wR.vR)"], ["vL", "vR"])
+                B.legs[B.get_leg_index("vL")] = B.get_leg("vL").to_LegCharge()
+                B.legs[B.get_leg_index("vR")] = B.get_leg("vR").to_LegCharge()
+            psi.set_B(i, B, "B")
 
-        if bc == 'infinite':
+        if bc == "infinite":
             # calculate (rather arbitrary) guess for S[0] (no we don't like it either)
-            weight = np.ones(self.get_W(0).shape[self.get_W(0).get_leg_index('wL')]) * 0.05
+            weight = np.ones(self.get_W(0).shape[self.get_W(0).get_leg_index("wL")]) * 0.05
             weight[self.get_IdL(0)] = 1
             weight = weight / np.linalg.norm(weight)
             S0 = np.kron(weight, psi.get_SL(0))  # order dictated by '(wL,vL)'
         else:
-            S0 = np.ones(psi.get_B(0, None).get_leg('vL').ind_len)
+            S0 = np.ones(psi.get_B(0, None).get_leg("vL").ind_len)
         psi.set_SL(0, S0)
         for i in range(psi.L):
-            psi.set_SR(i, np.ones(psi.get_B(i, None).get_leg('vR').ind_len))
+            psi.set_SR(i, np.ones(psi.get_B(i, None).get_leg("vR").ind_len))
 
     def apply_zipup(self, psi, options):
         """Applies an MPO to an MPS (in place) with the zip-up method.
@@ -1312,57 +1299,57 @@ class MPO:
                 reduces cut for Schmidt values to `trunc_weight * svd_min`
         """
         options = asConfig(options, "zip_up")
-        m_temp = options.get('m_temp', 2, int)
-        trunc_weight = options.get('trunc_weight', 1., 'real')
-        trunc_params = options.subconfig('trunc_params')
+        m_temp = options.get("m_temp", 2, int)
+        trunc_weight = options.get("trunc_weight", 1.0, "real")
+        trunc_params = options.subconfig("trunc_params")
         relax_trunc = trunc_params.copy()  # relaxed truncation criteria
-        relax_trunc['chi_max'] *= m_temp
-        if 'svd_min' in relax_trunc.keys():
-            relax_trunc['svd_min'] *= trunc_weight
+        relax_trunc["chi_max"] *= m_temp
+        if "svd_min" in relax_trunc.keys():
+            relax_trunc["svd_min"] *= trunc_weight
         trunc_err = TruncationError()
         bc = psi.bc
         if bc != self.bc:
             raise ValueError("Boundary conditions of MPS and MPO are not the same")
         if psi.L != self.L:
             raise ValueError("Length of MPS and MPO not the same")
-        if bc != 'finite':
+        if bc != "finite":
             raise ValueError("Only finite boundary conditions implemented")
         if self.explicit_plus_hc:
             raise NotImplementedError("Can't use explicit_plus_hc with apply_zipup")
         for i in range(psi.L):
-            B = npc.tensordot(psi.get_B(i, 'B'), self.get_W(i), axes=('p', 'p*'))
-            if i == 0 and bc == 'finite':
-                B = B.take_slice(self.get_IdL(i), 'wL')
-                B = B.combine_legs([['vL', 'p'], ['wR', 'vR']], qconj=[+1, -1])
+            B = npc.tensordot(psi.get_B(i, "B"), self.get_W(i), axes=("p", "p*"))
+            if i == 0 and bc == "finite":
+                B = B.take_slice(self.get_IdL(i), "wL")
+                B = B.combine_legs([["vL", "p"], ["wR", "vR"]], qconj=[+1, -1])
                 U, S, VH, err, norm_new = svd_theta(B, relax_trunc)
                 trunc_err += err
                 psi.norm *= norm_new
                 U = U.split_legs()
                 VH = VH.split_legs()
-                VH.iscale_axis(S, 'vL')
+                VH.iscale_axis(S, "vL")
                 psi.set_SR(i, S)
-                psi.set_B(i, U, 'A')
-            elif i == psi.L - 1 and bc == 'finite':
-                B = npc.tensordot(VH, B, axes=(['wR', 'vR'], ['wL', 'vL']))
-                B = B.take_slice(self.get_IdR(i), 'wR')
-                B = B.combine_legs(['vL', 'p'], qconj=[-1])
+                psi.set_B(i, U, "A")
+            elif i == psi.L - 1 and bc == "finite":
+                B = npc.tensordot(VH, B, axes=(["wR", "vR"], ["wL", "vL"]))
+                B = B.take_slice(self.get_IdR(i), "wR")
+                B = B.combine_legs(["vL", "p"], qconj=[-1])
                 U, S, VH, err, norm_new = svd_theta(B, relax_trunc, [B.qtotal, None])
                 trunc_err += err
                 psi.norm *= norm_new
                 U = U.split_legs()
                 psi.set_SR(i, S)
-                psi.set_B(i, U, 'A')
+                psi.set_B(i, U, "A")
             else:
-                B = npc.tensordot(VH, B, axes=(['wR', 'vR'], ['wL', 'vL']))
-                B = B.combine_legs([['vL', 'p'], ['wR', 'vR']], qconj=[1, -1])
+                B = npc.tensordot(VH, B, axes=(["wR", "vR"], ["wL", "vL"]))
+                B = B.combine_legs([["vL", "p"], ["wR", "vR"]], qconj=[1, -1])
                 U, S, VH, err, norm_new = svd_theta(B, relax_trunc)
                 trunc_err += err
                 psi.norm *= norm_new
                 U = U.split_legs()
                 VH = VH.split_legs()
-                VH.iscale_axis(S, 'vL')
+                VH.iscale_axis(S, "vL")
                 psi.set_SR(i, S)
-                psi.set_B(i, U, 'A')
+                psi.set_B(i, U, "A")
 
         return trunc_err
 
@@ -1407,7 +1394,7 @@ class MPO:
             The sum `self + other`.
         """
         if self.explicit_plus_hc != other.explicit_plus_hc:
-            raise ValueError('Can not add MPOs with different explicit_plus_hc flags')
+            raise ValueError("Can not add MPOs with different explicit_plus_hc flags")
 
         L = self.L
         assert self.bc == other.bc
@@ -1432,8 +1419,8 @@ class MPO:
         IdR = [None] * (L + 1)
         IdR[-1] = -1
         for i in range(L):
-            ws = self._W[i].itranspose(['wL', 'wR', 'p', 'p*'])
-            wo = other._W[i].itranspose(['wL', 'wR', 'p', 'p*'])
+            ws = self._W[i].itranspose(["wL", "wR", "p", "p*"])
+            wo = other._W[i].itranspose(["wL", "wR", "p", "p*"])
             s = (ws, ps[i], ps[i + 1])
             o = (wo, po[i], po[i + 1])
             onsite = add_with_None_0(block(s, 0, 2), block(o, 0, 2))
@@ -1468,13 +1455,13 @@ class MPO:
         """projections onto (IdL, other, IdR) on bond `i` in range(0, L+1)"""
         if self.finite:  # allows i = L for finite bc
             if i < self.L:
-                length = self._W[i].get_leg('wL').ind_len
+                length = self._W[i].get_leg("wL").ind_len
             else:
                 assert i == self.L
-                length = self._W[i - 1].get_leg('wR').ind_len
+                length = self._W[i - 1].get_leg("wR").ind_len
         else:
             i = i % self.L
-            length = self._W[i].get_leg('wL').ind_len
+            length = self._W[i].get_leg("wL").ind_len
         IdL = self.IdL[i]
         IdR = self.IdR[i]
         proj_other = np.ones(length, np.bool_)
@@ -1516,28 +1503,32 @@ def make_W_II(t, A, B, C, D):
         Blocks of the MPO tensor to be exponentiated, as defined in :cite:`zaletel2015`.
         Legs ``'wL', 'wR', 'p', 'p*'``; legs projected to a single IdL/IdR can be dropped.
     """
-    tC = np.sqrt(np.abs(t))  #spread time step across B, C
+    tC = np.sqrt(np.abs(t))  # spread time step across B, C
     tB = t / tC
     d = D.shape[0]
 
-    #The virtual size of W is  (1+Nr, 1+Nc)
+    # The virtual size of W is  (1+Nr, 1+Nc)
     Nr = A.shape[0]
     Nc = A.shape[1]
     W = np.zeros((1 + Nr, 1 + Nc, d, d), dtype=np.result_type(D, t))
 
-    Id_ = np.array([[1, 0], [0, 1]])  #2x2 operators in a hard-core boson space
+    Id_ = np.array([[1, 0], [0, 1]])  # 2x2 operators in a hard-core boson space
     b = np.array([[0, 0], [1, 0]])
 
-    Id = np.kron(Id_, Id_)  #4x4 operators in the 2x hard core boson space
+    Id = np.kron(Id_, Id_)  # 4x4 operators in the 2x hard core boson space
     Br = np.kron(b, Id_)
     Bc = np.kron(Id_, b)
     Brc = np.kron(b, b)
-    for r in range(Nr):  #double loop over row / column of A
+    for r in range(Nr):  # double loop over row / column of A
         for c in range(Nc):
-            #Select relevant part of virtual space and extend by hardcore bosons
-            h = np.kron(Brc, A[r, c, :, :]) + np.kron(Br, tB * B[r, :, :]) + np.kron(
-                Bc, tC * C[c, :, :]) + t * np.kron(Id, D)
-            w = expm(h)  #Exponentiate in the extended Hilbert space
+            # Select relevant part of virtual space and extend by hardcore bosons
+            h = (
+                np.kron(Brc, A[r, c, :, :])
+                + np.kron(Br, tB * B[r, :, :])
+                + np.kron(Bc, tC * C[c, :, :])
+                + t * np.kron(Id, D)
+            )
+            w = expm(h)  # Exponentiate in the extended Hilbert space
             w = w.reshape((2, 2, d, 2, 2, d))
             w = w[:, :, :, 0, 0, :]
             W[1 + r, 1 + c, :, :] = w[1, 1]  # extracts relevant parts according to Eqn 11
@@ -1547,7 +1538,7 @@ def make_W_II(t, A, B, C, D):
                 W[0, 1 + c] = w[0, 1]
                 if c == 0:
                     W[0, 0] = w[0, 0]
-        if Nc == 0:  #technically only need one boson
+        if Nc == 0:  # technically only need one boson
             h = np.kron(Br, tB * B[r, :, :]) + t * np.kron(Id, D)
             w = expm(h)
             w = w.reshape((2, 2, d, 2, 2, d))
@@ -1619,7 +1610,7 @@ class MPOGraph:
         The charges for the MPO
     """
 
-    def __init__(self, sites, bc='finite', max_range=None):
+    def __init__(self, sites, bc="finite", max_range=None):
         self.sites = list(sites)
         self.chinfo = self.sites[0].leg.chinfo
         self.bc = bc
@@ -1704,7 +1695,7 @@ class MPOGraph:
         for i, site in enumerate(self.sites):
             if site.leg.chinfo != self.chinfo:
                 raise ValueError("invalid ChargeInfo for site {i:d}".format(i=i))
-            stL, stR = self.states[i:i + 2]
+            stL, stR = self.states[i : i + 2]
             # check graph
             gr = self.graph[i]
             for keyL in gr:
@@ -1757,7 +1748,7 @@ class MPOGraph:
             if not skip_existing or not any([op == opname for op, _ in entry]):
                 entry.append((opname, strength))
 
-    def add_string_left_to_right(self, i, j, key, opname='Id', check_op=True, skip_existing=True):
+    def add_string_left_to_right(self, i, j, key, opname="Id", check_op=True, skip_existing=True):
         r"""Insert a bunch of edges for an 'operator string' into the graph.
 
         Terms like :math:`S^z_i S^z_j` actually stand for
@@ -1793,11 +1784,11 @@ class MPOGraph:
                 # (i, op_i, op_str_right_of_i) e.g. in MultiCouplingTerms.add_to_graph
             k = k % self.L
             if not self.has_edge(k, keyL, keyR):
-                self.add(k, keyL, keyR, opname, 1., check_op=check_op, skip_existing=skip_existing)
+                self.add(k, keyL, keyR, opname, 1.0, check_op=check_op, skip_existing=skip_existing)
             keyL = keyR
         return keyL
 
-    def add_string_right_to_left(self, j, i, key, opname='Id', check_op=True, skip_existing=True):
+    def add_string_right_to_left(self, j, i, key, opname="Id", check_op=True, skip_existing=True):
         r"""Insert a bunch of edges for an 'operator string' into the graph.
 
         Similar as :meth:`add_string_left_to_right`, but in the other direction.
@@ -1829,7 +1820,7 @@ class MPOGraph:
                 keyL = keyR + (k, opname, opname)
             k = k % self.L
             if not self.has_edge(k, keyL, keyR):
-                self.add(k, keyL, keyR, opname, 1., check_op=check_op, skip_existing=skip_existing)
+                self.add(k, keyL, keyR, opname, 1.0, check_op=check_op, skip_existing=skip_existing)
             keyR = keyL
         return keyR
 
@@ -1848,18 +1839,18 @@ class MPOGraph:
             The latter avoid "dead ends" in the MPO, but some functions (like `make_WI`) expect
             'IdL'/'IdR' to exist on all bonds.
         """
-        if self.bc == 'infinite' or insert_all_id:
+        if self.bc == "infinite" or insert_all_id:
             max_IdL = self.L  # add identities for all sites
             min_IdR = 0
         else:
-            max_IdL = max([0] + [i for i, s in enumerate(self.states[:-1]) if 'IdL' in s])
-            min_IdR = min([self.L] + [i for i, s in enumerate(self.states[:-1]) if 'IdR' in s])
+            max_IdL = max([0] + [i for i, s in enumerate(self.states[:-1]) if "IdL" in s])
+            min_IdR = min([self.L] + [i for i, s in enumerate(self.states[:-1]) if "IdR" in s])
         for k in range(0, max_IdL):
-            if not self.has_edge(k, 'IdL', 'IdL'):
-                self.add(k, 'IdL', 'IdL', 'Id', 1.)
+            if not self.has_edge(k, "IdL", "IdL"):
+                self.add(k, "IdL", "IdL", "Id", 1.0)
         for k in range(min_IdR, self.L):
-            if not self.has_edge(k, 'IdR', 'IdR'):
-                self.add(k, 'IdR', 'IdR', 'Id', 1.)
+            if not self.has_edge(k, "IdR", "IdR"):
+                self.add(k, "IdR", "IdR", "Id", 1.0)
         # done
 
     def has_edge(self, i, keyL, keyR):
@@ -1884,8 +1875,8 @@ class MPOGraph:
         # pre-work: generate the grid
         self._set_ordered_states()
         grids = self._build_grids()
-        IdL = [s.get('IdL', None) for s in self._ordered_states]
-        IdR = [s.get('IdR', None) for s in self._ordered_states]
+        IdL = [s.get("IdL", None) for s in self._ordered_states]
+        IdR = [s.get("IdR", None) for s in self._ordered_states]
         legs, Ws_qtotal = self._calc_legcharges(Ws_qtotal)
         H = MPO.from_grids(self.sites, grids, self.bc, IdL, IdR, Ws_qtotal, legs, self.max_range)
         return H
@@ -1908,11 +1899,11 @@ class MPOGraph:
                     for optuple in D[keyR]:
                         s.append("  " + repr(optuple))
                 strs.append("\n".join(s))
-            res.append(vert_join(strs, delim='|'))
-            res.append('')
+            res.append(vert_join(strs, delim="|"))
+            res.append("")
         # & states on last MPO bond
-        res.append(vert_join([repr(keyR) for keyR in self.states[-1]], delim=' |'))
-        return '\n'.join(res)
+        res.append(vert_join([repr(keyR) for keyR in self.states[-1]], delim=" |"))
+        return "\n".join(res)
 
     def _set_ordered_states(self):
         """Define an ordering of the 'states' on each MPO bond.
@@ -1929,10 +1920,10 @@ class MPOGraph:
     def _build_grids(self):
         """translate the graph dictionaries into grids for the `Ws`."""
         states = self._ordered_states
-        assert (states is not None)  # make sure that _set_ordered_states was called
+        assert states is not None  # make sure that _set_ordered_states was called
         grids = []
         for i in range(self.L):
-            stL, stR = states[i:i + 2]
+            stL, stR = states[i : i + 2]
             graph = self.graph[i]  # ``{keyL: {keyR: [(opname, strength)]}}``
             grid = [None] * len(stL)
             for keyL, a in stL.items():
@@ -1967,7 +1958,7 @@ class MPOGraph:
         L = self.L
         states = self._ordered_states
         sites = self.sites
-        infinite = (self.bc == 'infinite')
+        infinite = self.bc == "infinite"
         chinfo = self.chinfo
 
         if Ws_qtotal is None:
@@ -1978,7 +1969,7 @@ class MPOGraph:
                 Ws_qtotal = [Ws_qtotal] * L
 
         charges = [[None] * len(st) for st in states]
-        charges[0][states[0]['IdL']] = chinfo.make_valid(None)  # default charge = 0.
+        charges[0][states[0]["IdL"]] = chinfo.make_valid(None)  # default charge = 0.
         if infinite:
             charges[-1] = charges[0]  # bond is identical
 
@@ -2012,7 +2003,7 @@ class MPOGraph:
                             edge_stack.append(((i + 1) % L, keyR))
                 stack = edge_stack + stack
 
-        travel_q_LR(0, 'IdL')
+        travel_q_LR(0, "IdL")
 
         # now we can still have unknown edges in the case of "dead ends" in the MPO graph.
 
@@ -2122,12 +2113,7 @@ class MPOEnvironment(BaseEnvironment):
         super().__init__(bra, ket, cache, **init_env_data)
         self.dtype = np.result_type(bra.dtype, ket.dtype, H.dtype)
 
-    def init_first_LP_last_RP(self,
-                              init_LP=None,
-                              init_RP=None,
-                              age_LP=0,
-                              age_RP=0,
-                              start_env_sites=None):
+    def init_first_LP_last_RP(self, init_LP=None, init_RP=None, age_LP=0, age_RP=0, start_env_sites=None):
         """(Re)initialize first LP and last RP from the given data.
 
         If `init_LP` and `init_RP` are not given, we try to find sensible initial values.
@@ -2153,16 +2139,22 @@ class MPOEnvironment(BaseEnvironment):
             Number of sites over which to converge the environment for infinite systems.
             See above.
         """
-        if not self.finite  and (init_LP is None or init_RP is None) and \
-                start_env_sites is None and self.bra is self.ket:
+        if (
+            not self.finite
+            and (init_LP is None or init_RP is None)
+            and start_env_sites is None
+            and self.bra is self.ket
+        ):
             norm_err = np.linalg.norm(self.ket.norm_test())
-            if norm_err > 1.e-10:
-                warnings.warn("call psi.canonical_form() to regenerate MPO environments from psi"
-                              f" with current norm error {norm_err:.2e}")
+            if norm_err > 1.0e-10:
+                warnings.warn(
+                    "call psi.canonical_form() to regenerate MPO environments from psi"
+                    f" with current norm error {norm_err:.2e}"
+                )
                 self.ket.canonical_form()
             env_data = MPOTransferMatrix.find_init_LP_RP(self.H, self.ket, 0, self.L - 1)
-            init_LP = env_data['init_LP']
-            init_RP = env_data['init_RP']
+            init_LP = env_data["init_LP"]
+            init_RP = env_data["init_RP"]
             start_env_sites = 0
         if start_env_sites is None:
             start_env_sites = 0 if self.finite else self.L
@@ -2170,7 +2162,7 @@ class MPOEnvironment(BaseEnvironment):
             warnings.warn("setting `start_env_sites` to 0 for finite MPS")
             start_env_sites = 0
         init_LP, init_RP = self._check_compatible_legs(init_LP, init_RP, start_env_sites)
-        if self.ket.bc == 'segment' and (init_LP is None or init_RP is None):
+        if self.ket.bc == "segment" and (init_LP is None or init_RP is None):
             raise ValueError("Environments with segment b.c. need explicit environments!")
         super().init_first_LP_last_RP(init_LP, init_RP, age_LP, age_RP, start_env_sites)
 
@@ -2178,14 +2170,14 @@ class MPOEnvironment(BaseEnvironment):
         if init_LP is not None:
             try:
                 i = -start_env_sites
-                init_LP.get_leg('wR').test_contractible(self.H.get_W(i).get_leg('wL'))
+                init_LP.get_leg("wR").test_contractible(self.H.get_W(i).get_leg("wL"))
             except ValueError:
                 warnings.warn("dropping `init_LP` with incompatible MPO legs")
                 init_LP = None
         if init_RP is not None:
             try:
                 j = self.L - 1 + start_env_sites
-                init_RP.get_leg('wL').test_contractible(self.H.get_W(j).get_leg('wR'))
+                init_RP.get_leg("wL").test_contractible(self.H.get_W(j).get_leg("wR"))
             except ValueError:
                 warnings.warn("dropping `init_RP` with incompatible MPO legs")
                 init_RP = None
@@ -2193,7 +2185,7 @@ class MPOEnvironment(BaseEnvironment):
 
     def test_sanity(self):
         """Sanity check, raises ValueErrors, if something is wrong."""
-        assert (self.bra.finite == self.ket.finite == self.H.finite == self.finite)
+        assert self.bra.finite == self.ket.finite == self.H.finite == self.finite
         # check that the physical legs are contractable
         for b_s, H_s, k_s in zip(self.bra.sites, self.H.sites, self.ket.sites):
             b_s.leg.test_equal(k_s.leg)
@@ -2244,10 +2236,10 @@ class MPOEnvironment(BaseEnvironment):
         i0 = i - start_env_sites
         IdL = self.H.get_IdL(i0)
         if IdL is None:
-            raise RuntimeError(f'Need to set IdL at i0={i0} for the MPO self.H')
+            raise RuntimeError(f"Need to set IdL at i0={i0} for the MPO self.H")
         init_LP = super().init_LP(i0, 0)
-        leg_mpo = self.H.get_W(i0).get_leg('wL').conj()
-        init_LP = init_LP.add_leg(leg_mpo, IdL, axis=1, label='wR')
+        leg_mpo = self.H.get_W(i0).get_leg("wL").conj()
+        init_LP = init_LP.add_leg(leg_mpo, IdL, axis=1, label="wR")
         for j in range(i0, i):
             init_LP = self._contract_LP(j, init_LP)
         return init_LP
@@ -2270,10 +2262,10 @@ class MPOEnvironment(BaseEnvironment):
         i0 = i + start_env_sites
         IdR = self.H.get_IdR(i0)
         if IdR is None:
-            raise RuntimeError(f'Need to set IdR at i0={i0} for the MPO self.H')
+            raise RuntimeError(f"Need to set IdR at i0={i0} for the MPO self.H")
         init_RP = super().init_RP(i0, 0)
-        leg_mpo = self.H.get_W(i0).get_leg('wR').conj()
-        init_RP = init_RP.add_leg(leg_mpo, IdR, axis=1, label='wL')
+        leg_mpo = self.H.get_W(i0).get_leg("wR").conj()
+        init_RP = init_RP.add_leg(leg_mpo, IdR, axis=1, label="wL")
         for j in range(i0, i, -1):
             init_RP = self._contract_RP(j, init_RP)
         return init_RP
@@ -2351,7 +2343,7 @@ class MPOEnvironment(BaseEnvironment):
         """
         # same as MPSEnvironment.full_contraction, but also contract 'wL' with 'wR'
         LP, RP = self._full_contraction_LP_RP(i0)
-        res = npc.inner(LP, RP, axes=[['vR*', 'wR', 'vR'], ['vL*', 'wL', 'vL']], do_conj=False)
+        res = npc.inner(LP, RP, axes=[["vR*", "wR", "vR"], ["vL*", "wL", "vL"]], do_conj=False)
         if self.H.explicit_plus_hc:
             res = res + np.conj(res)
         return res
@@ -2359,46 +2351,42 @@ class MPOEnvironment(BaseEnvironment):
     def _contract_LP(self, i, LP):
         """Contract LP with the tensors on site `i` to form ``self._LP[i+1]``"""
         # same as MPSEnvironment._contract_LP, but also contract with `H.get_W(i)`
-        LP = npc.tensordot(LP, self.ket.get_B(i, form='A'), axes=('vR', 'vL'))
-        LP = npc.tensordot(self.H.get_W(i), LP, axes=(['p*', 'wL'], ['p', 'wR']))
-        axes = (self.bra._get_p_label('*') + ['vL*'], self.ket._p_label + ['vR*'])
+        LP = npc.tensordot(LP, self.ket.get_B(i, form="A"), axes=("vR", "vL"))
+        LP = npc.tensordot(self.H.get_W(i), LP, axes=(["p*", "wL"], ["p", "wR"]))
+        axes = (self.bra._get_p_label("*") + ["vL*"], self.ket._p_label + ["vR*"])
         # for a usual MPS, axes = (['p*', 'vL*'], ['p', 'vR*'])
-        LP = npc.tensordot(self.bra.get_B(i, form='A').conj(), LP, axes=axes)
+        LP = npc.tensordot(self.bra.get_B(i, form="A").conj(), LP, axes=axes)
         return LP  # labels 'vR*', 'wR', 'vR'
 
     def _contract_RP(self, i, RP):
         """Contract RP with the tensors on site `i` to form ``self._RP[i-1]``"""
         # same as MPSEnvironment._contract_RP, but also contract with `H.get_W(i)`
-        RP = npc.tensordot(self.ket.get_B(i, form='B'), RP, axes=('vR', 'vL'))
-        RP = npc.tensordot(RP, self.H.get_W(i), axes=(['p', 'wL'], ['p*', 'wR']))
-        axes = (self.ket._p_label + ['vL*'], self.ket._get_p_label('*') + ['vR*'])
+        RP = npc.tensordot(self.ket.get_B(i, form="B"), RP, axes=("vR", "vL"))
+        RP = npc.tensordot(RP, self.H.get_W(i), axes=(["p", "wL"], ["p*", "wR"]))
+        axes = (self.ket._p_label + ["vL*"], self.ket._get_p_label("*") + ["vR*"])
         # for a usual MPS, axes = (['p', 'vL*'], ['p*', 'vR*'])
-        RP = npc.tensordot(RP, self.bra.get_B(i, form='B').conj(), axes=axes)
+        RP = npc.tensordot(RP, self.bra.get_B(i, form="B").conj(), axes=axes)
         return RP  # labels 'vL', 'wL', 'vL*'
 
-    def _contract_LHeff(self, i, label_p='p0', pipe=None):
+    def _contract_LHeff(self, i, label_p="p0", pipe=None):
         LP = self.get_LP(i)
-        p, ps = label_p, label_p + '*'
-        W = self.H.get_W(i).replace_labels(['p', 'p*'], [p, ps])
-        LHeff = npc.tensordot(LP, W, axes=['wR', 'wL'])
+        p, ps = label_p, label_p + "*"
+        W = self.H.get_W(i).replace_labels(["p", "p*"], [p, ps])
+        LHeff = npc.tensordot(LP, W, axes=["wR", "wL"])
         if pipe is None:
-            pipe = LHeff.make_pipe(['vR*', p], qconj=+1)
+            pipe = LHeff.make_pipe(["vR*", p], qconj=+1)
 
-        LHeff = LHeff.combine_legs([['vR*', p], ['vR', ps]],
-                                   pipes=[pipe, pipe.conj()],
-                                   new_axes=[0, 2])
+        LHeff = LHeff.combine_legs([["vR*", p], ["vR", ps]], pipes=[pipe, pipe.conj()], new_axes=[0, 2])
         return LHeff
 
-    def _contract_RHeff(self, i, label_p='p1', pipe=None):
+    def _contract_RHeff(self, i, label_p="p1", pipe=None):
         RP = self.get_RP(i)
-        p, ps = label_p, label_p + '*'
-        W = self.H.get_W(i).replace_labels(['p', 'p*'], [p, ps])
-        RHeff = npc.tensordot(W, RP, axes=['wR', 'wL'])
+        p, ps = label_p, label_p + "*"
+        W = self.H.get_W(i).replace_labels(["p", "p*"], [p, ps])
+        RHeff = npc.tensordot(W, RP, axes=["wR", "wL"])
         if pipe is None:
-            pipe = RHeff.make_pipe([p, 'vL*'], qconj=-1)
-        RHeff = RHeff.combine_legs([[p, 'vL*'], [ps, 'vL']],
-                                   pipes=[pipe, pipe.conj()],
-                                   new_axes=[2, 1])
+            pipe = RHeff.make_pipe([p, "vL*"], qconj=-1)
+        RHeff = RHeff.combine_legs([[p, "vL*"], [ps, "vL"]], pipes=[pipe, pipe.conj()], new_axes=[2, 1])
         return RHeff
 
     def _to_valid_index(self, i):
@@ -2453,13 +2441,14 @@ class MPOTransferMatrix(NpcLinearOperator):
     flat_guess :
         Initial guess suitable for `flat_linop` in non-tenpy form.
     """
-    def __init__(self, H, psi, transpose=False, guess=None, _subtraction_gauge='rho'):
-        if psi.finite or H.bc != 'infinite':
+
+    def __init__(self, H, psi, transpose=False, guess=None, _subtraction_gauge="rho"):
+        if psi.finite or H.bc != "infinite":
             raise ValueError("Only makes sense for infinite MPS")
         self.L = lcm(H.L, psi.L)
-        if np.linalg.norm(psi.norm_test()) > 1.e-10:
+        if np.linalg.norm(psi.norm_test()) > 1.0e-10:
             raise ValueError("psi should be in canonical form!")
-        if psi._p_label != ['p']:
+        if psi._p_label != ["p"]:
             raise NotImplementedError("What would the MPO act on...?")
         self.dtype = dtype = np.promote_types(psi.dtype, H.dtype)
         self.transpose = transpose
@@ -2470,59 +2459,59 @@ class MPOTransferMatrix(NpcLinearOperator):
         self.IdR = H.get_IdR(-1)  # on bond between MPS unit cells
         if self.IdL is None or self.IdR is None:
             raise ValueError("MPO needs to have structure with IdL/IdR")
-        wL = H.get_W(0).get_leg('wL')
+        wL = H.get_W(0).get_leg("wL")
         wR = wL.conj()
         S = psi.get_SL(0)
         if not transpose:  # right to left
-            vR = psi.get_B(psi.L-1, 'B').get_leg('vR')
+            vR = psi.get_B(psi.L - 1, "B").get_leg("vR")
             if isinstance(S, npc.Array):
-                rho = npc.tensordot(S, S.conj(), axes=['vL', 'vL*'])
+                rho = npc.tensordot(S, S.conj(), axes=["vL", "vL*"])
             else:
                 S2 = S**2
-                rho = npc.diag(S2, vR, labels=['vR', 'vR*'])
+                rho = npc.diag(S2, vR, labels=["vR", "vR*"])
 
-            self.acts_on = ['vL', 'wL', 'vL*']  # vec: vL wL vL*
+            self.acts_on = ["vL", "wL", "vL*"]  # vec: vL wL vL*
 
             for i in reversed(range(self.L)):
                 # optimize: transpose arrays to mostly avoid it in matvec
-                B = psi.get_B(i, 'B').astype(dtype, False)
-                self._M.append(B.transpose(['vL', 'p', 'vR']))
-                self._W.append(H.get_W(i).transpose(['p*', 'wR', 'p', 'wL']).astype(dtype, False))
-                self._M_conj.append(B.conj().itranspose(['vR*', 'p*', 'vL*']))
+                B = psi.get_B(i, "B").astype(dtype, False)
+                self._M.append(B.transpose(["vL", "p", "vR"]))
+                self._W.append(H.get_W(i).transpose(["p*", "wR", "p", "wL"]).astype(dtype, False))
+                self._M_conj.append(B.conj().itranspose(["vR*", "p*", "vL*"]))
 
-            #vR = self._M[0].get_leg('vR')
+            # vR = self._M[0].get_leg('vR')
             self._chi0 = chi0 = vR.ind_len
-            eye_R = npc.diag(1., vR.conj(), dtype=dtype, labels=['vL', 'vL*'])
-            self._E_shift = eye_R.add_leg(wL, self.IdL, axis=1, label='wL')  # vL wL vL*
-            self._proj_trace = self._E_shift.conj().iset_leg_labels(['vR', 'wR', 'vR*']) / chi0
-            self._proj_norm = eye_R.add_leg(wL, self.IdR, axis=1, label='wL').conj()  # vL* wL* vL
-            self._proj_rho = rho.add_leg(wR, self.IdL, axis=1, label='wR')  # vR wR vR*
+            eye_R = npc.diag(1.0, vR.conj(), dtype=dtype, labels=["vL", "vL*"])
+            self._E_shift = eye_R.add_leg(wL, self.IdL, axis=1, label="wL")  # vL wL vL*
+            self._proj_trace = self._E_shift.conj().iset_leg_labels(["vR", "wR", "vR*"]) / chi0
+            self._proj_norm = eye_R.add_leg(wL, self.IdR, axis=1, label="wL").conj()  # vL* wL* vL
+            self._proj_rho = rho.add_leg(wR, self.IdL, axis=1, label="wR")  # vR wR vR*
         else:  # left to right
-            vL = psi.get_B(0, 'A').get_leg('vL')
+            vL = psi.get_B(0, "A").get_leg("vL")
             if isinstance(S, npc.Array):
-                rho = npc.tensordot(S.conj(), S, axes=['vR*', 'vR'])
+                rho = npc.tensordot(S.conj(), S, axes=["vR*", "vR"])
             else:
                 S2 = S**2
-                rho = npc.diag(S2, vL.conj(), labels=['vL*', 'vL'])
+                rho = npc.diag(S2, vL.conj(), labels=["vL*", "vL"])
 
-            self.acts_on = ['vR*', 'wR', 'vR']  # labels of the vec
+            self.acts_on = ["vR*", "wR", "vR"]  # labels of the vec
 
             for i in range(self.L):
-                A = psi.get_B(i, 'A').astype(dtype, False)
-                self._M.append(A.transpose(['vL', 'p', 'vR']))
-                self._W.append(H.get_W(i).transpose(['wR', 'p', 'wL', 'p*']).astype(dtype, False))
-                self._M_conj.append(A.conj().itranspose(['vR*', 'p*', 'vL*']))
+                A = psi.get_B(i, "A").astype(dtype, False)
+                self._M.append(A.transpose(["vL", "p", "vR"]))
+                self._W.append(H.get_W(i).transpose(["wR", "p", "wL", "p*"]).astype(dtype, False))
+                self._M_conj.append(A.conj().itranspose(["vR*", "p*", "vL*"]))
 
-            #vL = self._M[0].get_leg('vL')
+            # vL = self._M[0].get_leg('vL')
             self._chi0 = chi0 = vL.ind_len
-            eye_L = npc.diag(1., vL, dtype=dtype, labels=['vR*', 'vR'])
-            self._E_shift = eye_L.add_leg(wR, self.IdR, axis=1, label='wR')  # vR* wR vR
-            self._proj_trace = self._E_shift.conj().iset_leg_labels(['vL*', 'wL', 'vL']) / chi0
-            self._proj_norm = eye_L.add_leg(wR, self.IdL, axis=1, label='wR').conj()  # vR wR* vR*
-            self._proj_rho = rho.add_leg(wL, self.IdR, axis=1, label='wL')  # vL* wL vL
-        if _subtraction_gauge == 'trace':
+            eye_L = npc.diag(1.0, vL, dtype=dtype, labels=["vR*", "vR"])
+            self._E_shift = eye_L.add_leg(wR, self.IdR, axis=1, label="wR")  # vR* wR vR
+            self._proj_trace = self._E_shift.conj().iset_leg_labels(["vL*", "wL", "vL"]) / chi0
+            self._proj_norm = eye_L.add_leg(wR, self.IdL, axis=1, label="wR").conj()  # vR wR* vR*
+            self._proj_rho = rho.add_leg(wL, self.IdR, axis=1, label="wL")  # vL* wL vL
+        if _subtraction_gauge == "trace":
             self._proj_subtr = self._proj_trace
-        elif _subtraction_gauge == 'rho':
+        elif _subtraction_gauge == "rho":
             self._proj_subtr = self._proj_rho
         else:
             raise ValueError(f"unknown _subtraction_gauge={_subtraction_gauge!r}")
@@ -2530,32 +2519,30 @@ class MPOTransferMatrix(NpcLinearOperator):
         if guess is not None:
             try:
                 if not transpose:
-                    guess.get_leg('wL').test_equal(wL)
-                    guess.get_leg('vL').test_contractible(vR)
-                    guess.get_leg('vL*').test_equal(vR)
+                    guess.get_leg("wL").test_equal(wL)
+                    guess.get_leg("vL").test_contractible(vR)
+                    guess.get_leg("vL*").test_equal(vR)
                 else:
-                    guess.get_leg('wR').test_equal(wR)
-                    guess.get_leg('vR').test_contractible(vL)
-                    guess.get_leg('vR*').test_equal(vL)
+                    guess.get_leg("wR").test_equal(wR)
+                    guess.get_leg("vR").test_contractible(vL)
+                    guess.get_leg("vR*").test_equal(vL)
             except ValueError:
                 logger.warning("dropping guess for MPOTransferMatrix with incompatible legs")
                 guess = None
         if guess is None:
             if not transpose:
-                guess = eye_R.add_leg(wL, self.IdR, axis=1, label='wL')  # vL wL vL*
+                guess = eye_R.add_leg(wL, self.IdR, axis=1, label="wL")  # vL wL vL*
             else:
-                guess = eye_L.add_leg(wR, self.IdL, axis=1, label='wR')  # vR* wR vR
+                guess = eye_L.add_leg(wR, self.IdL, axis=1, label="wR")  # vR* wR vR
             # no need to _project: E = 0
         else:
             if not transpose:
-                guess = guess.transpose(['vL', 'wL', 'vL*'])  # copy!
+                guess = guess.transpose(["vL", "wL", "vL*"])  # copy!
             else:
-                guess = guess.transpose(['vR*', 'wR', 'vR'])  # copy!
+                guess = guess.transpose(["vR*", "wR", "vR"])  # copy!
             self._project(guess)
         self.guess = guess
-        self.flat_linop, self.flat_guess = FlatLinearOperator.from_guess_with_pipe(self.matvec,
-                                                                                   self.guess,
-                                                                                   dtype=dtype)
+        self.flat_linop, self.flat_guess = FlatLinearOperator.from_guess_with_pipe(self.matvec, self.guess, dtype=dtype)
         self._explicit_plus_hc = H.explicit_plus_hc
 
     def matvec(self, vec, project=True):
@@ -2569,31 +2556,31 @@ class MPOTransferMatrix(NpcLinearOperator):
             into something that is translation invariant.
         """
         if not self.transpose:  # right to left
-            vec.itranspose(['vL', 'wL', 'vL*'])  # shouldn't do anything
+            vec.itranspose(["vL", "wL", "vL*"])  # shouldn't do anything
             for Bc, W, B in zip(self._M_conj, self._W, self._M):
                 # vec: vL wL vL*
-                vec = npc.tensordot(B, vec, axes=['vR', 'vL'])  # vL p wL vL*
-                vec = npc.tensordot(vec, W, axes=[['p', 'wL'], ['p*', 'wR']])  # vL vL* p wL
-                vec = npc.tensordot(vec, Bc, axes=[['vL*', 'p'], ['vR*', 'p*']])  # vL wL vL*
+                vec = npc.tensordot(B, vec, axes=["vR", "vL"])  # vL p wL vL*
+                vec = npc.tensordot(vec, W, axes=[["p", "wL"], ["p*", "wR"]])  # vL vL* p wL
+                vec = npc.tensordot(vec, Bc, axes=[["vL*", "p"], ["vR*", "p*"]])  # vL wL vL*
         else:
-            vec.itranspose(['vR*', 'wR', 'vR'])  # shouldn't do anything
+            vec.itranspose(["vR*", "wR", "vR"])  # shouldn't do anything
             for Ac, W, A in zip(self._M_conj, self._W, self._M):
-                vec = npc.tensordot(vec, A, axes=['vR', 'vL'])  # vR* wR p vR
-                vec = npc.tensordot(W, vec, axes=[['wL', 'p*'], ['wR', 'p']])  # wR p vR* vR
-                vec = npc.tensordot(Ac, vec, axes=[['p*', 'vL*'], ['p', 'vR*']])  # vR* wR vR
+                vec = npc.tensordot(vec, A, axes=["vR", "vL"])  # vR* wR p vR
+                vec = npc.tensordot(W, vec, axes=[["wL", "p*"], ["wR", "p"]])  # wR p vR* vR
+                vec = npc.tensordot(Ac, vec, axes=[["p*", "vL*"], ["p", "vR*"]])  # vR* wR vR
         if project:
             self._project(vec)
         return vec
 
     def _project(self, vec):
         """Project out additive energy part from vec."""
-        if not self.transpose: # Acts to the right, T * RP = RP + e_R * I
-            vec.itranspose(['vL', 'wL', 'vL*'])  # shouldn't do anything
-            E = npc.inner(vec, self._proj_subtr, axes=[['vL', 'wL', 'vL*'], ['vR', 'wR', 'vR*']])
+        if not self.transpose:  # Acts to the right, T * RP = RP + e_R * I
+            vec.itranspose(["vL", "wL", "vL*"])  # shouldn't do anything
+            E = npc.inner(vec, self._proj_subtr, axes=[["vL", "wL", "vL*"], ["vR", "wR", "vR*"]])
             vec -= self._E_shift * E
-        else: # Acts to the left, LP * T = LP + e_L * I
-            vec.itranspose(['vR*', 'wR', 'vR'])  # shouldn't do anything
-            E = npc.inner(vec, self._proj_subtr, axes=[['vR*', 'wR', 'vR'], ['vL*', 'wL', 'vL']])
+        else:  # Acts to the left, LP * T = LP + e_L * I
+            vec.itranspose(["vR*", "wR", "vR"])  # shouldn't do anything
+            E = npc.inner(vec, self._proj_subtr, axes=[["vR*", "wR", "vR"], ["vL*", "wL", "vL"]])
             vec -= self._E_shift * E
 
     def dominant_eigenvector(self, **kwargs):
@@ -2611,13 +2598,13 @@ class MPOTransferMatrix(NpcLinearOperator):
         vec :
             Eigenvector to be used as initial LP/RP for an :class:`MPOEnvironment`.
         """
-        if 'v0_npc' not in kwargs:
-            kwargs.setdefault('v0', self.flat_guess)
+        if "v0_npc" not in kwargs:
+            kwargs.setdefault("v0", self.flat_guess)
         vals, vecs = self.flat_linop.eigenvectors(**kwargs)
         val = vals[0]
         v0 = vecs[0]
         v0 = v0.split_legs()
-        norm = npc.inner(self._proj_norm, v0, axes='range', do_conj=False) / self._chi0
+        norm = npc.inner(self._proj_norm, v0, axes="range", do_conj=False) / self._chi0
         return val, v0 / norm
 
     def energy(self, dom_vec):
@@ -2631,9 +2618,9 @@ class MPOTransferMatrix(NpcLinearOperator):
             Energy *per site* of the MPS.
         """
         if not self.transpose:
-            axes= (['vL', 'wL', 'vL*'], ['vR', 'wR', 'vR*'])
+            axes = (["vL", "wL", "vL*"], ["vR", "wR", "vR*"])
         else:
-            axes= (['vR*', 'wR', 'vR'], ['vL*', 'wL', 'vL'])
+            axes = (["vR*", "wR", "vR"], ["vL*", "wL", "vL"])
         E0 = npc.inner(dom_vec, self._proj_rho, axes)
         vec = self.matvec(dom_vec, project=False)
         E = npc.inner(vec, self._proj_rho, axes)
@@ -2643,16 +2630,18 @@ class MPOTransferMatrix(NpcLinearOperator):
         return E
 
     @classmethod
-    def find_init_LP_RP(cls,
-                        H,
-                        psi,
-                        first=0,
-                        last=None,
-                        guess_init_env_data=None,
-                        calc_E=False,
-                        tol_ev0=1.e-8,
-                        _subtraction_gauge='rho',
-                        **kwargs):
+    def find_init_LP_RP(
+        cls,
+        H,
+        psi,
+        first=0,
+        last=None,
+        guess_init_env_data=None,
+        calc_E=False,
+        tol_ev0=1.0e-8,
+        _subtraction_gauge="rho",
+        **kwargs,
+    ):
         """Find the initial LP and RP.
 
         Parameters
@@ -2691,35 +2680,37 @@ class MPOTransferMatrix(NpcLinearOperator):
         if guess_init_env_data is None:
             guess_init_env_data = {}
         for transpose in [False, True]:
-            guess = guess_init_env_data.get('init_LP' if transpose else 'init_RP', None)
+            guess = guess_init_env_data.get("init_LP" if transpose else "init_RP", None)
             TM = cls(H, psi, transpose=transpose, guess=guess, _subtraction_gauge=_subtraction_gauge)
             val, vec = TM.dominant_eigenvector(**kwargs)
-            if abs(1. - val) > tol_ev0:
+            if abs(1.0 - val) > tol_ev0:
                 logger.warning("MPOTransferMatrix eigenvalue not 1: got %s", val)
             envs.append(vec)
             if calc_E:
-                Es.append(TM.energy(vec)) #E_R, E_L
+                Es.append(TM.energy(vec))  # E_R, E_L
             L = TM.L
             del TM
-        init_env_data = {'init_LP': envs[1], 'init_RP': envs[0], 'age_LP': 0, 'age_RP': 0}
+        init_env_data = {"init_LP": envs[1], "init_RP": envs[0], "age_LP": 0, "age_RP": 0}
         if first != 0 or (last is not None and last % L != L - 1):
             env = MPOEnvironment(psi, H, psi, **init_env_data)
             if first % L != 0:
-                init_env_data['init_LP'] = env.get_LP(first, store=False)
+                init_env_data["init_LP"] = env.get_LP(first, store=False)
             if last is not None and last % L != L - 1:
-                init_env_data['init_RP'] = env.get_RP(last, store=False)
+                init_env_data["init_RP"] = env.get_RP(last, store=False)
         if calc_E:
             # We need this for segment excitation energies.
             # TODO: this doesn't work for non-default first/last!?
             if first != 0 or last is not None:
-                assert (last + 1) % L == first % L, "Need to have an integer number of unit cells for the bond to be the same."
+                assert (
+                    last + 1
+                ) % L == first % L, "Need to have an integer number of unit cells for the bond to be the same."
             SL = psi.get_SL(first)
             if not isinstance(SL, npc.Array):
-                vL, vR = init_env_data['init_LP'].get_leg('vR').conj(), init_env_data['init_RP'].get_leg('vL').conj()
-                SL = npc.diag(SL, vL, dtype=np.promote_types(psi.dtype, H.dtype), labels=['vL', 'vR'])
-            E0 = npc.tensordot(init_env_data['init_LP'], SL, axes=(['vR'], ['vL']))
-            E0 = npc.tensordot(E0, SL.conj(), axes=(['vR*'], ['vL*']))
-            E0 = npc.tensordot(E0, init_env_data['init_RP'], axes=(['vR', 'wR', 'vR*'], ['vL', 'wL', 'vL*']))
+                vL, vR = init_env_data["init_LP"].get_leg("vR").conj(), init_env_data["init_RP"].get_leg("vL").conj()
+                SL = npc.diag(SL, vL, dtype=np.promote_types(psi.dtype, H.dtype), labels=["vL", "vR"])
+            E0 = npc.tensordot(init_env_data["init_LP"], SL, axes=(["vR"], ["vL"]))
+            E0 = npc.tensordot(E0, SL.conj(), axes=(["vR*"], ["vL*"]))
+            E0 = npc.tensordot(E0, init_env_data["init_RP"], axes=(["vR", "wR", "vR*"], ["vL", "wL", "vL*"]))
             # E0 = LP * s^2 * RP on site 0
             return init_env_data, Es, E0
         # else:
@@ -2779,11 +2770,7 @@ def _calc_grid_legs_finite(chinfo, grids, Ws_qtotal, leg0):
     legs = [leg0]
     for i, gr in enumerate(grids):
         gr_legs = [legs[-1], None]
-        gr_legs = npc.detect_grid_outer_legcharge(gr,
-                                                  gr_legs,
-                                                  qtotal=Ws_qtotal[i],
-                                                  qconj=-1,
-                                                  bunch=False)
+        gr_legs = npc.detect_grid_outer_legcharge(gr, gr_legs, qtotal=Ws_qtotal[i], qconj=-1, bunch=False)
         legs.append(gr_legs[1].conj())
     return legs
 
@@ -2816,7 +2803,7 @@ def _calc_grid_legs_infinite(chinfo, grids, Ws_qtotal, leg0, IdL_0):
     for _ in range(1000 * L):  # I don't expect interactions with larger range than that...
         for i in range(L):
             grid = grids[i]
-            QsL, QsR = charges[i:i + 2]
+            QsL, QsR = charges[i : i + 2]
             for vL, row in enumerate(grid):
                 qL = QsL[vL]
                 if qL is None:
@@ -2852,16 +2839,16 @@ def _mpo_graph_state_order(key):
     The goal is to ensure that standard TeNPy MPOs yield an upper-right W for the MPO.
     """
     if isinstance(key, tuple):
-        if key[0] == "left":  #left states first
+        if key[0] == "left":  # left states first
             return (-1, len(key)) + key[1:]
-        elif key[0] == "right":  #right states afterwards
+        elif key[0] == "right":  # right states afterwards
             return (1, -len(key)) + key[1:]
         return key
     if isinstance(key, str):
-        if key == 'IdL':  # should be first
-            return (-2, )
-        if key == 'IdR':  # should be last
-            return (2, )
+        if key == "IdL":  # should be first
+            return (-2,)
+        if key == "IdR":  # should be last
+            return (2,)
         # fallback: compare strings
         return (0, key)
     return (0, str(key))

@@ -74,6 +74,7 @@ import numpy as np
 import importlib
 import warnings
 import sys
+
 try:
     from packaging.version import parse as parse_version
 except:
@@ -82,29 +83,67 @@ except:
     except ImportError:
 
         def parse_version(version_str):
-            return version_str.split('.')  # bad but better than nothing
+            return version_str.split(".")  # bad but better than nothing
 
 
 try:
     import h5py
+
     h5py_version = h5py.version.version_tuple
 except ImportError:
     h5py_version = (0, 0)
 
 __all__ = [
-    'save', 'load', 'find_global', 'valid_hdf5_path_component', 'Hdf5FormatError',
-    'Hdf5ExportError', 'Hdf5ImportError', 'Hdf5Exportable', 'Hdf5Ignored', 'Hdf5Saver',
-    'Hdf5Loader', 'save_to_hdf5', 'load_from_hdf5', 'REPR_IGNORED', 'REPR_HDF5EXPORTABLE',
-    'REPR_REDUCE', 'REPR_ARRAY', 'REPR_INT', 'REPR_INT_AS_STR', 'REPR_FLOAT', 'REPR_STR',
-    'REPR_COMPLEX', 'REPR_INT64', 'REPR_FLOAT64', 'REPR_COMPLEX128', 'REPR_INT32', 'REPR_FLOAT32',
-    'REPR_COMPLEX64', 'REPR_BOOL', 'REPR_NONE', 'REPR_RANGE', 'REPR_LIST', 'REPR_TUPLE',
-    'REPR_SET', 'REPR_DICT_GENERAL', 'REPR_DICT_SIMPLE', 'REPR_DTYPE', 'REPR_FUNCTION',
-    'REPR_CLASS', 'REPR_GLOBAL', 'TYPES_FOR_HDF5_DATASETS', 'ATTR_TYPE', 'ATTR_CLASS',
-    'ATTR_MODULE', 'ATTR_LEN', 'ATTR_FORMAT'
+    "save",
+    "load",
+    "find_global",
+    "valid_hdf5_path_component",
+    "Hdf5FormatError",
+    "Hdf5ExportError",
+    "Hdf5ImportError",
+    "Hdf5Exportable",
+    "Hdf5Ignored",
+    "Hdf5Saver",
+    "Hdf5Loader",
+    "save_to_hdf5",
+    "load_from_hdf5",
+    "REPR_IGNORED",
+    "REPR_HDF5EXPORTABLE",
+    "REPR_REDUCE",
+    "REPR_ARRAY",
+    "REPR_INT",
+    "REPR_INT_AS_STR",
+    "REPR_FLOAT",
+    "REPR_STR",
+    "REPR_COMPLEX",
+    "REPR_INT64",
+    "REPR_FLOAT64",
+    "REPR_COMPLEX128",
+    "REPR_INT32",
+    "REPR_FLOAT32",
+    "REPR_COMPLEX64",
+    "REPR_BOOL",
+    "REPR_NONE",
+    "REPR_RANGE",
+    "REPR_LIST",
+    "REPR_TUPLE",
+    "REPR_SET",
+    "REPR_DICT_GENERAL",
+    "REPR_DICT_SIMPLE",
+    "REPR_DTYPE",
+    "REPR_FUNCTION",
+    "REPR_CLASS",
+    "REPR_GLOBAL",
+    "TYPES_FOR_HDF5_DATASETS",
+    "ATTR_TYPE",
+    "ATTR_CLASS",
+    "ATTR_MODULE",
+    "ATTR_LEN",
+    "ATTR_FORMAT",
 ]
 
 
-def save(data, filename, mode='w'):
+def save(data, filename, mode="w"):
     """Save `data` to file with given `filename`.
 
     This function guesses the type of the file from the filename ending.
@@ -130,13 +169,13 @@ def save(data, filename, mode='w'):
         See :py:func:`open` for more details.
     """
     filename = str(filename)
-    if filename.endswith('.pkl'):
-        with open(filename, mode + 'b') as f:
+    if filename.endswith(".pkl"):
+        with open(filename, mode + "b") as f:
             pickle.dump(data, f)
-    elif filename.endswith('.pklz'):
-        with gzip.open(filename, mode + 'b') as f:
+    elif filename.endswith(".pklz"):
+        with gzip.open(filename, mode + "b") as f:
             pickle.dump(data, f)
-    elif filename.endswith('.hdf5') or filename.endswith('.h5'):
+    elif filename.endswith(".hdf5") or filename.endswith(".h5"):
         with h5py.File(filename, mode) as f:
             save_to_hdf5(f, data)
     else:
@@ -159,14 +198,14 @@ def load(filename):
         The object loaded from the file.
     """
     filename = str(filename)
-    if filename.endswith('.pkl'):
-        with open(filename, 'rb') as f:
+    if filename.endswith(".pkl"):
+        with open(filename, "rb") as f:
             data = pickle.load(f)
-    elif filename.endswith('.pklz'):
-        with gzip.open(filename, 'rb') as f:
+    elif filename.endswith(".pklz"):
+        with gzip.open(filename, "rb") as f:
             data = pickle.load(f)
-    elif filename.endswith('.hdf5') or filename.endswith('.h5'):
-        with h5py.File(filename, 'r') as f:
+    elif filename.endswith(".hdf5") or filename.endswith(".h5"):
+        with h5py.File(filename, "r") as f:
             data = load_from_hdf5(f)
     else:
         raise ValueError("Don't recognize file ending of " + repr(filename))
@@ -185,7 +224,7 @@ def find_global(module, qualified_name):
     """
     mod = importlib.import_module(module)
     obj = mod
-    for subpath in qualified_name.split('.'):
+    for subpath in qualified_name.split("."):
         obj = getattr(obj, subpath)
     return obj
 
@@ -231,22 +270,24 @@ REPR_CLASS = "class"  #: saved object is a (global) class
 REPR_GLOBAL = "global"  #: saved object is a global variable (like a class or function)
 
 #: tuple of (type, type_repr) which h5py can save as datasets; one entry for each type.
-TYPES_FOR_HDF5_DATASETS = tuple([
-    (np.ndarray, REPR_ARRAY),
-    (int, REPR_INT),
-    (float, REPR_FLOAT),
-    (str, REPR_STR),
-    (bytes, REPR_BYTES),
-    (complex, REPR_COMPLEX),
-    (np.int64, REPR_INT64),
-    (np.float64, REPR_FLOAT64),
-    (np.complex128, REPR_COMPLEX128),
-    (np.int32, REPR_INT32),
-    (np.float32, REPR_FLOAT32),
-    (np.complex64, REPR_COMPLEX64),
-    (np.bool_, REPR_BOOL),
-    (bool, REPR_BOOL),
-])
+TYPES_FOR_HDF5_DATASETS = tuple(
+    [
+        (np.ndarray, REPR_ARRAY),
+        (int, REPR_INT),
+        (float, REPR_FLOAT),
+        (str, REPR_STR),
+        (bytes, REPR_BYTES),
+        (complex, REPR_COMPLEX),
+        (np.int64, REPR_INT64),
+        (np.float64, REPR_FLOAT64),
+        (np.complex128, REPR_COMPLEX128),
+        (np.int32, REPR_INT32),
+        (np.float32, REPR_FLOAT32),
+        (np.complex64, REPR_COMPLEX64),
+        (np.bool_, REPR_BOOL),
+        (bool, REPR_BOOL),
+    ]
+)
 
 ATTR_TYPE = "type"  #: Attribute name for type of the saved object, should be one of the ``REPR_*``
 ATTR_CLASS = "class"  #: Attribute name for the class name of an HDF5Exportable
@@ -261,21 +302,24 @@ def valid_hdf5_path_component(name):
     Conditions: String, no ``'/'``, and overall ``name != '.'``.
     """
     # unicode is encoded correctly by h5py and works - amazing!
-    return isinstance(name, str) and '/' not in name and name != '.'
+    return isinstance(name, str) and "/" not in name and name != "."
 
 
 class Hdf5FormatError(Exception):
     """Common base class for errors regarding our HDF5 format."""
+
     pass
 
 
 class Hdf5ExportError(Hdf5FormatError):
     """This exception is raised when something went wrong during export to hdf5."""
+
     pass
 
 
 class Hdf5ImportError(Hdf5FormatError):
     """This exception is raised when something went wrong during import from hdf5."""
+
     pass
 
 
@@ -293,6 +337,7 @@ class Hdf5Exportable:
     In particular, this works for python-defined classes which simply store data using
     ``self.data = data`` in their methods.
     """
+
     def save_hdf5(self, hdf5_saver, h5gr, subpath):
         """Export `self` into a HDF5 file.
 
@@ -371,7 +416,8 @@ class Hdf5Ignored:
     name : str
         See above.
     """
-    def __init__(self, name='unknown'):
+
+    def __init__(self, name="unknown"):
         self.name = name
 
 
@@ -418,6 +464,7 @@ class Hdf5Saver:
         :meth:`Hdf5Exportable.save_hdf5` implementations.
         For example, :class:`~tenpy.linalg.LegCharge` checks it for the key ``"LegCharge"``.
     """
+
     def __init__(self, h5group, format_selection=None):
         self.h5group = h5group
         self.memo_save = {}
@@ -425,7 +472,7 @@ class Hdf5Saver:
             format_selection = {}
         self.format_selection = format_selection
 
-    def save(self, obj, path='/'):
+    def save(self, obj, path="/"):
         """Save `obj` in ``self.h5group[path]``.
 
         Parameters
@@ -464,7 +511,7 @@ class Hdf5Saver:
             return h5gr
 
         # handle classes with `save_hdf5` method
-        obj_save_hdf5 = getattr(obj, 'save_hdf5', None)
+        obj_save_hdf5 = getattr(obj, "save_hdf5", None)
         if obj_save_hdf5 is not None:  # of Hdf5Exportable type
             # `obj_save_hdf5` should be the bound method `obj.save_hdf5`,
             # so it does not need an explicit reference of `obj`
@@ -476,12 +523,14 @@ class Hdf5Saver:
             return h5gr
 
         warnings.warn(
-            "Hdf5Saver: object of type {t!r} without explicit HDF5 format; "
-            "fall back to pickle protocol".format(t=type(obj)), UserWarning)
+            "Hdf5Saver: object of type {t!r} without explicit HDF5 format; " "fall back to pickle protocol".format(
+                t=type(obj)
+            ),
+            UserWarning,
+        )
 
         obj_reduce = getattr(obj, "__reduce__", None)
         if obj_reduce is not None:
-
             rv = obj_reduce()
             if isinstance(rv, str):
                 h5gr = self.save_global(obj, REPR_GLOBAL)
@@ -523,11 +572,11 @@ class Hdf5Saver:
         ------
         ValueError : if `self.h5group[path]`` already existed and `path` is not ``'/'``.
         """
-        if path == '/':
+        if path == "/":
             gr = self.h5group[path]
         else:
             gr = self.h5group.create_group(path)  # raises ValueError if path already exists.
-        subpath = path if path[-1] == '/' else (path + '/')
+        subpath = path if path[-1] == "/" else (path + "/")
         self.memorize_save(gr, obj)
         return gr, subpath
 
@@ -551,28 +600,22 @@ class Hdf5Saver:
         assert obj_id not in self.memo_save
         self.memo_save[obj_id] = (h5gr, obj)
 
-    def save_reduce(self,
-                    func,
-                    args,
-                    state=None,
-                    listitems=None,
-                    dictitems=None,
-                    state_setter=None,
-                    obj=None,
-                    path=None):
+    def save_reduce(
+        self, func, args, state=None, listitems=None, dictitems=None, state_setter=None, obj=None, path=None
+    ):
         """Save the return values of ``obj.__reduce__`` following the pickle protocol."""
         h5gr, subpath = self.create_group_for_obj(path, obj)
         h5gr.attrs[ATTR_TYPE] = REPR_REDUCE
-        self.save(func, subpath + 'func')
-        self.save(args, subpath + 'args')
+        self.save(func, subpath + "func")
+        self.save(args, subpath + "args")
         if state is not None:
-            self.save(state, subpath + 'state')
+            self.save(state, subpath + "state")
         if listitems is not None:
-            self.save(state, subpath + 'listitems')
+            self.save(state, subpath + "listitems")
         if dictitems is not None:
-            self.save(state, subpath + 'dictitems')
+            self.save(state, subpath + "dictitems")
         if state_setter is not None:
-            self.save(state, subpath + 'state_setter')
+            self.save(state, subpath + "state_setter")
         return h5gr
 
     # save_reduce is called directly from `save()`, not dispatched.
@@ -619,18 +662,18 @@ class Hdf5Saver:
             # there are elements in `obj` that are `fill_value`, so need to save
             # data and mask separately
             h5gr, subpath = self.create_group_for_obj(path, obj)
-            h5gr['data'] = obj.data
-            h5gr['mask'] = obj.mask
-            h5gr.attrs['saved_mask'] = True
+            h5gr["data"] = obj.data
+            h5gr["mask"] = obj.mask
+            h5gr.attrs["saved_mask"] = True
         else:
             # fill_value + data is enough to recover the masked array
             # directly save as dataset
             self.h5group[path] = filled
             h5gr = self.h5group[path]
-            h5gr.attrs['saved_mask'] = False
+            h5gr.attrs["saved_mask"] = False
             self.memorize_save(h5gr, obj)
         h5gr.attrs[ATTR_TYPE] = type_repr
-        h5gr.attrs['fill_value'] = fill_value
+        h5gr.attrs["fill_value"] = fill_value
         return h5gr
 
     dispatch_save[np.ma.MaskedArray] = (save_masked_array, REPR_MASKED_ARRAY)
@@ -716,9 +759,9 @@ class Hdf5Saver:
         """Save a range object; in dispatch table."""
         h5gr, subpath = self.create_group_for_obj(path, obj)
         h5gr.attrs[ATTR_TYPE] = REPR_RANGE
-        self.save(obj.start, subpath + 'start')
-        self.save(obj.stop, subpath + 'stop')
-        self.save(obj.step, subpath + 'step')
+        self.save(obj.start, subpath + "start")
+        self.save(obj.stop, subpath + "stop")
+        self.save(obj.step, subpath + "step")
         return h5gr
 
     dispatch_save[range] = (save_range, REPR_RANGE)
@@ -729,16 +772,16 @@ class Hdf5Saver:
         h5gr.attrs[ATTR_TYPE] = REPR_DTYPE
         name = getattr(obj, "name", "void")
         h5gr.attrs["name"] = name
-        self.save(obj.descr, subpath + 'descr')
+        self.save(obj.descr, subpath + "descr")
         return h5gr
 
-    if parse_version(np.__version__) < parse_version('1.20.0'):
+    if parse_version(np.__version__) < parse_version("1.20.0"):
         dispatch_save[np.dtype] = (save_dtype, REPR_DTYPE)
     else:
         # numpy version 1.20 introduced separate subclasses of dtype for the standard types
         for t in np.dtype.__subclasses__():
-            if t.__name__.startswith('_'):
-                 # HACK: numpy version 2.0 introduced subclasses of subclasses
+            if t.__name__.startswith("_"):
+                # HACK: numpy version 2.0 introduced subclasses of subclasses
                 for t2 in t.__subclasses__():
                     dispatch_save[t2] = (save_dtype, REPR_DTYPE)
             else:
@@ -758,12 +801,15 @@ class Hdf5Saver:
             obj2 = find_global(module, qualname)
         except (ImportError, KeyError, AttributeError):
             raise Hdf5ExportError(
-                "Can't export `{0!r}`: it's not found as {1} in module {2}".format(
-                    obj, qualname, module)) from None
+                "Can't export `{0!r}`: it's not found as {1} in module {2}".format(obj, qualname, module)
+            ) from None
         else:
             if obj2 is not obj:
-                raise Hdf5ExportError("Can't export `{0!r}`: it's not the same object"
-                                      "as {1} in module {2}".format(obj, qualname, module))
+                raise Hdf5ExportError(
+                    "Can't export `{0!r}`: it's not the same object" "as {1} in module {2}".format(
+                        obj, qualname, module
+                    )
+                )
         full_name = qualname + " in " + module
         self.h5group[path] = full_name  # save as string dataset
         h5gr = self.h5group[path]
@@ -825,6 +871,7 @@ class Hdf5Loader:
         The dictionary key is a h5py group- or dataset ``id``;
         the value is the loaded object. See :meth:`memorize_load`.
     """
+
     def __init__(self, h5group, ignore_unknown=True, exclude=None):
         self.h5group = h5group
         self.ignore_unknown = ignore_unknown
@@ -834,8 +881,7 @@ class Hdf5Loader:
                 try:
                     data = self.h5group[path]
                 except KeyError:
-                    warnings.warn(
-                        "can't exclude {0!r} from loading: not existent in h5group".format(path))
+                    warnings.warn("can't exclude {0!r} from loading: not existent in h5group".format(path))
                     continue
                 self.memorize_load(data, Hdf5Ignored(path))
 
@@ -861,7 +907,7 @@ class Hdf5Loader:
             path = self.h5group.name
         else:
             h5gr = self.h5group[path]
-        subpath = path if path[-1] == '/' else (path + '/')
+        subpath = path if path[-1] == "/" else (path + "/")
         # check memo_load
         in_memo = self.memo_load.get(h5gr.id)  # default=None
         if in_memo is not None:  # loaded the object before
@@ -980,11 +1026,11 @@ class Hdf5Loader:
 
     def load_masked_array(self, h5gr, type_info, subpath):
         """Load a masked array."""
-        fill_value = self.get_attr(h5gr, 'fill_value')
-        saved_mask = self.get_attr(h5gr, 'saved_mask')
+        fill_value = self.get_attr(h5gr, "fill_value")
+        saved_mask = self.get_attr(h5gr, "saved_mask")
         if saved_mask:
-            data = h5gr['data'][()]
-            mask = h5gr['mask'][()]
+            data = h5gr["data"][()]
+            mask = h5gr["mask"][()]
             obj = np.ma.MaskedArray(data, mask=mask, fill_value=fill_value)
         else:
             filled = h5gr[()]
@@ -1050,8 +1096,8 @@ class Hdf5Loader:
         """Load a dictionary with general keys."""
         obj = {}
         self.memorize_load(h5gr, obj)
-        keys = self.load_list(h5gr['keys'], REPR_LIST, subpath + 'keys/')
-        values = self.load_list(h5gr['values'], REPR_LIST, subpath + 'values/')
+        keys = self.load_list(h5gr["keys"], REPR_LIST, subpath + "keys/")
+        values = self.load_list(h5gr["values"], REPR_LIST, subpath + "values/")
         obj.update(zip(keys, values))
         return obj
 
@@ -1070,9 +1116,9 @@ class Hdf5Loader:
 
     def load_range(self, h5gr, type_info, subpath):
         """Load a range."""
-        start = self.load(subpath + 'start')
-        stop = self.load(subpath + 'stop')
-        step = self.load(subpath + 'step')
+        start = self.load(subpath + "start")
+        stop = self.load(subpath + "stop")
+        step = self.load(subpath + "step")
         obj = range(start, stop, step)
         self.memorize_load(h5gr, obj)  # late, but okay: no cyclic reference expected
         return obj
@@ -1083,7 +1129,7 @@ class Hdf5Loader:
         """Load a :class:`numpy.dtype`."""
         name = self.get_attr(h5gr, "name")
         if name.startswith("void"):
-            descr = self.load(subpath + 'descr')
+            descr = self.load(subpath + "descr")
             obj = np.dtype(descr)
         else:
             obj = np.dtype(name)
@@ -1137,19 +1183,19 @@ class Hdf5Loader:
 
     def load_reduce(self, h5gr, type_info, subpath):
         """Load an object where the return values of  ``obj.__reduce__`` has been exported."""
-        func = self.load(subpath + 'func')
-        args = self.load(subpath + 'args')
+        func = self.load(subpath + "func")
+        args = self.load(subpath + "args")
         obj = func(*args)
         self.memorize_load(h5gr, obj)
-        if 'state' in h5gr:
-            state = self.load(subpath + 'state')
-            if 'state_setter' in h5gr:
-                state_setter = self.load(subpath + 'state_setter')
+        if "state" in h5gr:
+            state = self.load(subpath + "state")
+            if "state_setter" in h5gr:
+                state_setter = self.load(subpath + "state_setter")
                 obj = state_setter(obj, state)
                 self.memorize_load(h5gr, obj)  # overwrites old memo entry
             else:
                 # see pickle._Unpickler.load_build
-                setstate = getattr(obj, '__setstate__', None)
+                setstate = getattr(obj, "__setstate__", None)
                 if setstate is not None:
                     setstate(state)
                 else:
@@ -1166,12 +1212,12 @@ class Hdf5Loader:
                     if slotstate:
                         for k, v in slotstate.items():
                             setattr(obj, k, v)
-        if 'listitems' in h5gr:
-            listitems = self.load(subpath + 'listitems')
+        if "listitems" in h5gr:
+            listitems = self.load(subpath + "listitems")
             for item in listitems:
                 obj.append(item)
-        if 'dictitems' in h5gr:
-            dictitems = self.load(subpath + 'dictitems')
+        if "dictitems" in h5gr:
+            dictitems = self.load(subpath + "dictitems")
             for key, val in dictitems:
                 obj[key] = val
         return obj
@@ -1183,7 +1229,7 @@ class Hdf5Loader:
     del _type_repr
 
 
-def save_to_hdf5(h5group, obj, path='/'):
+def save_to_hdf5(h5group, obj, path="/"):
     """Save an object `obj` into a hdf5 file or group.
 
     Roughly equivalent to ``h5group[path] = obj``, but handle different types of `obj`.

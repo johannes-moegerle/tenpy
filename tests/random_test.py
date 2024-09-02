@@ -13,8 +13,13 @@ from tenpy.networks.mps import MPS
 np.random.seed(3141592)  # (it should work for any seed)
 
 __all__ = [
-    'rand_permutation', 'rand_distinct_int', 'rand_partitions', 'gen_random_legcharge_nq',
-    'gen_random_legcharge', 'random_Array', 'random_MPS'
+    "rand_permutation",
+    "rand_distinct_int",
+    "rand_partitions",
+    "gen_random_legcharge_nq",
+    "gen_random_legcharge",
+    "random_Array",
+    "random_MPS",
 ]
 
 
@@ -50,7 +55,7 @@ def gen_random_legcharge_nq(chinfo, ind_len, n_qsector):
     if np.isscalar(n_qsector):
         n_qsector = [n_qsector] * chinfo.qnumber
     n_qsector = np.asarray(n_qsector, dtype=np.intp)
-    if n_qsector.shape != (chinfo.qnumber, ):
+    if n_qsector.shape != (chinfo.qnumber,):
         raise ValueError
     slices = rand_partitions(0, ind_len, np.prod(n_qsector, dtype=int))
     qs = np.zeros((len(slices) - 1, len(n_qsector)), int)
@@ -77,24 +82,24 @@ def gen_random_legcharge(chinfo, ind_len, qconj=None):
     return charges.LegCharge.from_qflat(chinfo, qflat, qconj).bunch()[1]
 
 
-def random_Array(shape, chinfo, func=np.random.random, shape_kw='size', qtotal=None, sort=True):
+def random_Array(shape, chinfo, func=np.random.random, shape_kw="size", qtotal=None, sort=True):
     """generates a random npc.Array of given shape with random legcharges and entries."""
     legs = [gen_random_legcharge(chinfo, s) for s in shape]
     a = npc.Array.from_func(func, legs, qtotal=qtotal, shape_kw=shape_kw)
-    a.iset_leg_labels([chr(i + ord('a')) for i in range(a.rank)])
+    a.iset_leg_labels([chr(i + ord("a")) for i in range(a.rank)])
     if sort:
         _, a = a.sort_legcharge(True, True)  # increase the probability for larger blocks
     return a
 
 
-def random_MPS(L, d, chimax, func=randmat.standard_normal_complex, bc='finite', form='B'):
+def random_MPS(L, d, chimax, func=randmat.standard_normal_complex, bc="finite", form="B"):
     site = Site(charges.LegCharge.from_trivial(d))
-    site.add_op('D', np.diag(np.arange(1, d+1)), hc='D')
-    h = func(size=(d,d))
-    h = 0.5*(h + h.T.conj())
-    site.add_op('h', h, hc='D')
+    site.add_op("D", np.diag(np.arange(1, d + 1)), hc="D")
+    h = func(size=(d, d))
+    h = 0.5 * (h + h.T.conj())
+    site.add_op("h", h, hc="D")
     chi = [chimax] * (L + 1)
-    if bc == 'finite':
+    if bc == "finite":
         for i in range(L // 2 + 1):
             chi[i] = chi[L - i] = min(chi[i], d**i)
     Bs = []

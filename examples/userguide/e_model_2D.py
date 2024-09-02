@@ -9,8 +9,8 @@ model_params = {
     "bc_y": "cylinder",
     "Ly": 2,  # defines cylinder circumference
     "conserve": "Sz",  # use Sz conservation
-    "Jx": 1.,
-    "Jy": 1.,
-    "Jz": 1.  # Heisenberg coupling
+    "Jx": 1.0,
+    "Jy": 1.0,
+    "Jz": 1.0,  # Heisenberg coupling
 }
 model = SpinModel(model_params)

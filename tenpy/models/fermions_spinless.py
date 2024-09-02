@@ -4,12 +4,11 @@
 """
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-
 from .model import CouplingMPOModel, NearestNeighborModel
 from ..networks.site import FermionSite
 from .lattice import Chain
 
-__all__ = ['FermionModel', 'FermionChain']
+__all__ = ["FermionModel", "FermionChain"]
 
 
 class FermionModel(CouplingMPOModel):
@@ -52,28 +51,29 @@ class FermionModel(CouplingMPOModel):
             Hopping amplitudes for bonds 'across' the periodic boundary are modified such that
             particles hopping around the circumference of the cylinder acquire a phase `phi_ext`.
     """
+
     def init_sites(self, model_params):
-        conserve = model_params.get('conserve', 'N', str)
-        if conserve == 'best':
-            conserve = 'N'
+        conserve = model_params.get("conserve", "N", str)
+        if conserve == "best":
+            conserve = "N"
             self.logger.info("%s: set conserve to %s", self.name, conserve)
         site = FermionSite(conserve=conserve)
         return site
 
     def init_terms(self, model_params):
-        J = model_params.get('J', 1., 'real_or_array')
-        V = model_params.get('V', 1., 'real_or_array')
-        mu = model_params.get('mu', 0., 'real_or_array')
-        phi_ext = model_params.get('phi_ext', None, 'real')
+        J = model_params.get("J", 1.0, "real_or_array")
+        V = model_params.get("V", 1.0, "real_or_array")
+        mu = model_params.get("mu", 0.0, "real_or_array")
+        phi_ext = model_params.get("phi_ext", None, "real")
         for u in range(len(self.lat.unit_cell)):
-            self.add_onsite(-mu, u, 'N')
-        for u1, u2, dx in self.lat.pairs['nearest_neighbors']:
+            self.add_onsite(-mu, u, "N")
+        for u1, u2, dx in self.lat.pairs["nearest_neighbors"]:
             if phi_ext is None:
                 hop = -J
             else:
                 hop = self.coupling_strength_add_ext_flux(-J, dx, [0, phi_ext])
-            self.add_coupling(hop, u1, 'Cd', u2, 'C', dx, plus_hc=True)
-            self.add_coupling(V, u1, 'N', u2, 'N', dx)
+            self.add_coupling(hop, u1, "Cd", u2, "C", dx, plus_hc=True)
+            self.add_coupling(V, u1, "N", u2, "N", dx)
 
 
 class FermionChain(FermionModel, NearestNeighborModel):
@@ -81,5 +81,6 @@ class FermionChain(FermionModel, NearestNeighborModel):
 
     See the :class:`FermionModel` for the documentation of parameters.
     """
+
     default_lattice = Chain
     force_default_lattice = True

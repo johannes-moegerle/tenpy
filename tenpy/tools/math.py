@@ -12,8 +12,17 @@ import scipy.linalg
 import scipy.sparse.linalg
 
 __all__ = [
-    'LeviCivita3', 'matvec_to_array', 'entropy', 'gcd', 'gcd_array', 'lcm', 'speigs', 'speigsh',
-    'perm_sign', 'qr_li', 'rq_li'
+    "LeviCivita3",
+    "matvec_to_array",
+    "entropy",
+    "gcd",
+    "gcd_array",
+    "lcm",
+    "speigs",
+    "speigsh",
+    "perm_sign",
+    "qr_li",
+    "rq_li",
 ]
 
 #: 3-dim identity matrix of type int
@@ -37,7 +46,7 @@ def matvec_to_array(H):
         a dense array version of `H`.
     """
     dim, dim2 = H.shape
-    assert (dim == dim2)
+    assert dim == dim2
     X = np.zeros((dim, dim), H.dtype)
     v = np.zeros((dim), H.dtype)
     for i in range(dim):
@@ -71,13 +80,13 @@ def entropy(p, n=1):
         Renyi-entropy :math:`\frac{1}{1-n} \log(\sum_i p_i^n)` (n != 1)
         of the distribution `p`.
     """
-    p = p[p > 1.e-30]  # just for stability reasons / to avoid NaN in log
+    p = p[p > 1.0e-30]  # just for stability reasons / to avoid NaN in log
     if n == 1:
         return -np.inner(np.log(p), p)
     elif n == np.inf:
         return -np.log(np.max(p))
     else:  # general n != 1, inf
-        return np.log(np.sum(p**n)) / (1. - n)
+        return np.log(np.sum(p**n)) / (1.0 - n)
 
 
 def gcd(a, b):
@@ -147,8 +156,8 @@ def speigs(A, k, *args, **kwargs):
             Amat = A
         else:
             Amat = matvec_to_array(A)  # Constructs the matrix
-        ret_eigv = kwargs.get('return_eigenvectors', args[7] if len(args) > 7 else True)
-        which = kwargs.get('which', args[2] if len(args) > 2 else 'LM')
+        ret_eigv = kwargs.get("return_eigenvectors", args[7] if len(args) > 7 else True)
+        which = kwargs.get("which", args[2] if len(args) > 2 else "LM")
         if ret_eigv:
             W, V = np.linalg.eig(Amat)
             keep = misc.argsort(W, which)[:k]
@@ -194,8 +203,8 @@ def speigsh(A, k, *args, **kwargs):
             Amat = A
         else:
             Amat = matvec_to_array(A)  # Constructs the matrix
-        ret_eigv = kwargs.get('return_eigenvectors', args[7] if len(args) > 7 else True)
-        which = kwargs.get('which', args[2] if len(args) > 2 else 'LM')
+        ret_eigv = kwargs.get("return_eigenvectors", args[7] if len(args) > 7 else True)
+        which = kwargs.get("which", args[2] if len(args) > 2 else "LM")
         if ret_eigv:
             W, V = np.linalg.eigh(Amat)
             keep = misc.argsort(W, which)[:k]
@@ -237,7 +246,7 @@ def perm_sign(p):
     return s
 
 
-def qr_li(A, cutoff=1.e-15):
+def qr_li(A, cutoff=1.0e-15):
     """QR decomposition with cutoff to discard nearly linear dependent columns in `Q`.
 
     Perform a QR decomposition with pivoting, discard columns where ``R[i,i] < cutoff``,
@@ -255,18 +264,18 @@ def qr_li(A, cutoff=1.e-15):
         Decomposition of `A` into isometry `Q^d Q = 1` and upper right `R` with diagonal entries
         larger than `cutoff`.
     """
-    Q, R, P = scipy.linalg.qr(A, mode='economic', pivoting=True)
+    Q, R, P = scipy.linalg.qr(A, mode="economic", pivoting=True)
     keep = np.abs(np.diag(R)) > cutoff
     assert len(keep) == R.shape[0]
     Q = Q[:, keep]
     R = R[keep, :]
     # here, A P = Q R, thus A = Q R inv(P)
     R = R[:, misc.inverse_permutation(P)]
-    q, R = scipy.linalg.qr(R, mode='economic', pivoting=False)
+    q, R = scipy.linalg.qr(R, mode="economic", pivoting=False)
     return np.dot(Q, q), R
 
 
-def rq_li(A, cutoff=1.e-15):
+def rq_li(A, cutoff=1.0e-15):
     """RQ decomposition with cutoff to discard nearly linear dependent columns in `Q`.
 
     Uses :func:`qr_li` on transpose of `A`.

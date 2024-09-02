@@ -18,6 +18,7 @@ import os
 import pathlib
 import warnings
 import logging
+
 logger = logging.getLogger(__name__)
 
 from .misc import find_subclass
@@ -86,6 +87,7 @@ class DictCache(collections.abc.MutableMapping):
         False
         >>> assert cache.get('c', default=None) is None
     """
+
     def __init__(self, storage):
         self.long_term_storage = storage
         self.long_term_keys = set()
@@ -208,13 +210,9 @@ class CacheFile(DictCache):
     and make sure that you call :meth:`close` after usage.
     The easiest way to ensure this is to use a ``with`` statement, see :meth:`open`.
     """
+
     @classmethod
-    def open(cls,
-             storage_class="Storage",
-             use_threading=False,
-             delete=True,
-             max_queue_size=2,
-             **storage_kwargs):
+    def open(cls, storage_class="Storage", use_threading=False, delete=True, max_queue_size=2, **storage_kwargs):
         """Interface for opening a :class:`Storage` and creating a :class:`DictCache` from it.
 
         Default parameters just give a dummy cache that keeps everything in memory.
@@ -292,6 +290,7 @@ class Storage:
     The vanilla :class:`Storage` class is "trivial" in the sense that it actually doesn't save
     the data to disk, but keeps explicit references in RAM.
     """
+
     #: Whether the storage is actually kept in memory, instead of saving to disk.
     trivial = True
 
@@ -384,10 +383,11 @@ class PickleStorage(Storage):
     directory : path-like
         An existing directory within which pickle files will be saved for each `key`.
     """
+
     trivial = False
 
     #: filename extension
-    extension = '.pkl'
+    extension = ".pkl"
 
     def __init__(self, directory):
         super().__init__()
@@ -411,7 +411,7 @@ class PickleStorage(Storage):
             Whether to automatically remove the directory in :meth:`close`.
         """
         if directory is None:
-            directory = tempfile.mkdtemp(prefix='tenpy_cache_' + cls.__name__, dir=tmpdir)
+            directory = tempfile.mkdtemp(prefix="tenpy_cache_" + cls.__name__, dir=tmpdir)
             exist_ok = True
         else:
             exist_ok = False
@@ -446,14 +446,14 @@ class PickleStorage(Storage):
     def load(self, key):
         if not self._opened:
             raise ValueError("Trying to access closed storage")
-        with open(self.directory / (key + self.extension), 'rb') as f:
+        with open(self.directory / (key + self.extension), "rb") as f:
             data = pickle.load(f)
         return data
 
     def save(self, key, value):
         if not self._opened:
             raise ValueError("Trying to access closed storage")
-        with open(self.directory / (key + self.extension), 'wb') as f:
+        with open(self.directory / (key + self.extension), "wb") as f:
             pickle.dump(value, f)
 
     def delete(self, key):
@@ -478,7 +478,8 @@ class _NumpyStorage(PickleStorage):
     directory : path-like
         An existing directory within which numpy files will be saved for each `key`.
     """
-    extension = '.npy'
+
+    extension = ".npy"
 
     def load(self, key):
         if not self._opened:
@@ -504,7 +505,7 @@ class _NpcArrayStorage(PickleStorage):
         An existing directory within which numpy files will be saved for each `key`.
     """
 
-    extension = '.npy'
+    extension = ".npy"
 
     def __init__(self, directory):
         super().__init__(directory)
@@ -516,7 +517,7 @@ class _NpcArrayStorage(PickleStorage):
         value = self._array_except_data[key].copy(deep=False)
         N = value._data
         data = value._data = []
-        with open(self.directory / (key + self.extension), 'rb') as f:
+        with open(self.directory / (key + self.extension), "rb") as f:
             value._qdata = np.load(f)
             for _ in range(N):
                 data.append(np.load(f))
@@ -528,7 +529,7 @@ class _NpcArrayStorage(PickleStorage):
         value = value.copy(deep=False)
         data = value._data
         N = value._data = len(data)  # replace _data attribute with just the length
-        with open(self.directory / (key + self.extension), 'wb') as f:
+        with open(self.directory / (key + self.extension), "wb") as f:
             np.save(f, value._qdata)
             for T in data:
                 np.save(f, T)
@@ -555,6 +556,7 @@ class Hdf5Storage(Storage):
         The hdf5 group in which data will be saved using
         :func:`~tenpy.tools.hdf5_io.save_to_hdf5` under the specified keys.
     """
+
     trivial = False
 
     def __init__(self, h5group):
@@ -582,11 +584,12 @@ class Hdf5Storage(Storage):
         """
         warnings.warn("Benchmarks suggest that PickleStorage is faster than Hdf5Storage")
         import h5py
+
         if filename is None:
             # h5py supports file-like objects, but this gives a python overhead for I/O.
             # hence h5py doc recommends using a temporary directory
             # and creating an hdf5 file inside that
-            directory = tempfile.mkdtemp(prefix='tenpy_Hdf5Cache', dir=tmpdir)
+            directory = tempfile.mkdtemp(prefix="tenpy_Hdf5Cache", dir=tmpdir)
             logger.info("create temporary cache directory %s", directory)
             filename = os.path.join(directory, "cache.h5")
         else:
@@ -674,6 +677,7 @@ class ThreadedStorage(Storage):
     disk_storage : :class:`Storage`
         Instance of one of the other storage classes to wrap around.
     """
+
     def __init__(self, worker, disk_storage):
         if disk_storage.trivial:
             raise ValueError("ThreadedStorage with trivial `disk_storage` doesn't make sense")
@@ -729,10 +733,7 @@ class ThreadedStorage(Storage):
         if key not in self._loaded and key not in self._waiting_for_load:
             logger.debug("ThreadedStorage.load %s", key)
             self._waiting_for_load.add(key)
-            self.worker.put_task(self.disk_storage.load,
-                                 key,
-                                 return_dict=self._loaded,
-                                 return_key=key)
+            self.worker.put_task(self.disk_storage.load, key, return_dict=self._loaded, return_key=key)
         else:
             logger.debug("ThreadedStorage.load %s (have pre-loaded)", key)
         assert key in self._waiting_for_load

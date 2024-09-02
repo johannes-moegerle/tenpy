@@ -21,8 +21,12 @@ from ctypes.util import find_library
 import sys
 
 __all__ = [
-    'memory_usage', 'load_omp_library', 'omp_get_nthreads', 'omp_set_nthreads', 'mkl_get_nthreads',
-    'mkl_set_nthreads'
+    "memory_usage",
+    "load_omp_library",
+    "omp_get_nthreads",
+    "omp_set_nthreads",
+    "mkl_get_nthreads",
+    "mkl_set_nthreads",
 ]
 
 _omp_lib = None
@@ -40,25 +44,24 @@ def memory_usage():
     """
     try:
         import resource  # linux-only
-        unit_to_MB = 1024**2 if sys.platform == 'darwin' else 1024  # linux uses kB, but MacOS byte
+
+        unit_to_MB = 1024**2 if sys.platform == "darwin" else 1024  # linux uses kB, but MacOS byte
         # see also issue #262
         return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / unit_to_MB
     except ImportError:
         pass
     try:
         import psutil
+
         proc = psutil.Process()
         return proc.memory_info().rss / 1024**2
     except ImportError:
         pass
     warnings.warn("No tool to determine memory_usage")
-    return -1.
+    return -1.0
 
 
-def load_omp_library(libs=["libiomp5.so",
-                           find_library("libiomp5md"),
-                           find_library("gomp")],
-                     verbose=True):
+def load_omp_library(libs=["libiomp5.so", find_library("libiomp5md"), find_library("gomp")], verbose=True):
     """Tries to load openMP library.
 
     Parameters
@@ -136,10 +139,11 @@ def mkl_get_nthreads():
     """
     try:
         import mkl  # available in conda MKL
+
         return mkl.get_max_threads()
     except ImportError:
         try:
-            mkl_rt = ctypes.CDLL('libmkl_rt.so')
+            mkl_rt = ctypes.CDLL("libmkl_rt.so")
             return mkl_rt.mkl_get_max_threads()
         except OSError:
             warnings.warn("MKL library not found: can't get nthreads")
@@ -161,11 +165,12 @@ def mkl_set_nthreads(n):
     """
     try:
         import mkl  # available in conda MKL
+
         mkl.set_num_threads(n)
         return True
     except ImportError:
         try:
-            mkl_rt = ctypes.CDLL('libmkl_rt.so')
+            mkl_rt = ctypes.CDLL("libmkl_rt.so")
             mkl_rt.mkl_set_num_threads(ctypes.byref(ctypes.c_int(n)))
             return True
         except OSError:

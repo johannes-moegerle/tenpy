@@ -49,8 +49,7 @@ from ..tools.hdf5_io import Hdf5Exportable
 import warnings
 from ..tools.params import asConfig
 
-__all__ = ['TruncationError', 'truncate', 'svd_theta', 'decompose_theta_qr_based']
-
+__all__ = ["TruncationError", "truncate", "svd_theta", "decompose_theta_qr_based"]
 
 
 class TruncationError(Hdf5Exportable):
@@ -80,7 +79,8 @@ class TruncationError(Hdf5Exportable):
         Takes into account the factor 2 explained in the section on Errors in the
         `TEBD Wikipedia article <https://en.wikipedia.org/wiki/Time-evolving_block_decimation>`.
     """
-    def __init__(self, eps=0., ov=1.):
+
+    def __init__(self, eps=0.0, ov=1.0):
         self.eps = eps
         self.ov = ov
 
@@ -89,7 +89,7 @@ class TruncationError(Hdf5Exportable):
         return TruncationError(self.eps, self.ov)
 
     @classmethod
-    def from_norm(cls, norm_new, norm_old=1.):
+    def from_norm(cls, norm_new, norm_old=1.0):
         r"""Construct TruncationError from norm after and before the truncation.
 
         Parameters
@@ -100,8 +100,8 @@ class TruncationError(Hdf5Exportable):
         norm_old : float
             Norm of all Schmidt values before truncation, :math:`\sqrt{\sum_{a} \lambda_a^2}`.
         """
-        eps = 1. - norm_new**2 / norm_old**2  # = (norm_old**2 - norm_new**2)/norm_old**2
-        return cls(eps, 1. - 2. * eps)
+        eps = 1.0 - norm_new**2 / norm_old**2  # = (norm_old**2 - norm_new**2)/norm_old**2
+        return cls(eps, 1.0 - 2.0 * eps)
 
     @classmethod
     def from_S(cls, S_discarded, norm_old=None):
@@ -118,7 +118,7 @@ class TruncationError(Hdf5Exportable):
         eps = np.sum(np.square(S_discarded))
         if norm_old:
             eps /= norm_old * norm_old
-        return cls(eps, 1. - 2. * eps)
+        return cls(eps, 1.0 - 2.0 * eps)
 
     def __add__(self, other):
         res = TruncationError()
@@ -129,10 +129,10 @@ class TruncationError(Hdf5Exportable):
     @property
     def ov_err(self):
         """Error ``1.-ov`` of the overlap with the correct state."""
-        return 1. - self.ov
+        return 1.0 - self.ov
 
     def __repr__(self):
-        if self.eps != 0 or self.ov != 1.:
+        if self.eps != 0 or self.ov != 1.0:
             return "TruncationError(eps={eps:.4e}, ov={ov:.10f})".format(eps=self.eps, ov=self.ov)
         else:
             return "TruncationError()"
@@ -187,21 +187,21 @@ def truncate(S, options):
     options = asConfig(options, "truncation")
     # by default, only truncate values which are much closer to zero than machine precision.
     # This is only to avoid problems with taking the inverse of `S`.
-    chi_max = options.get('chi_max', 100, int)
-    chi_min = options.get('chi_min', None, int)
-    deg_tol = options.get('degeneracy_tol', None, 'real')
-    svd_min = options.get('svd_min', 1.e-14, 'real')
-    trunc_cut = options.get('trunc_cut', 1.e-14, 'real')
+    chi_max = options.get("chi_max", 100, int)
+    chi_min = options.get("chi_min", None, int)
+    deg_tol = options.get("degeneracy_tol", None, "real")
+    svd_min = options.get("svd_min", 1.0e-14, "real")
+    trunc_cut = options.get("trunc_cut", 1.0e-14, "real")
 
-    if trunc_cut is not None and trunc_cut >= 1.:
+    if trunc_cut is not None and trunc_cut >= 1.0:
         raise ValueError("trunc_cut >=1.")
-    if not np.any(S > 1.e-10):
+    if not np.any(S > 1.0e-10):
         warnings.warn("no Schmidt value above 1.e-10", stacklevel=2)
-    if np.any(S < -1.e-10):
+    if np.any(S < -1.0e-10):
         warnings.warn("negative Schmidt values!", stacklevel=2)
 
     # use 1.e-100 as replacement for <=0 values for a well-defined logarithm.
-    logS = np.log(np.choose(S <= 0., [S, 1.e-100 * np.ones(len(S))]))
+    logS = np.log(np.choose(S <= 0.0, [S, 1.0e-100 * np.ones(len(S))]))
     piv = np.argsort(logS)  # sort *ascending*.
     logS = logS[piv]
     # goal: find an index 'cut' such that we keep piv[cut:], i.e. cut between `cut-1` and `cut`.
@@ -217,7 +217,7 @@ def truncate(S, options):
     if chi_min is not None and chi_min > 1:
         # keep at most chi_max values
         good2 = np.ones(len(piv), dtype=np.bool_)
-        good2[-chi_min + 1:] = False
+        good2[-chi_min + 1 :] = False
         good = _combine_constraints(good, good2, "chi_min")
 
     if deg_tol:
@@ -235,17 +235,21 @@ def truncate(S, options):
         good = _combine_constraints(good, good2, "svd_min")
 
     if trunc_cut is not None:
-        good2 = (np.cumsum(S[piv]**2) > trunc_cut * trunc_cut)
+        good2 = np.cumsum(S[piv] ** 2) > trunc_cut * trunc_cut
         good = _combine_constraints(good, good2, "trunc_cut")
 
     cut = np.nonzero(good)[0][0]  # smallest possible cut: keep as many S as allowed
     mask = np.zeros(len(S), dtype=np.bool_)
     np.put(mask, piv[cut:], True)
     norm_new = np.linalg.norm(S[mask])
-    return mask, norm_new, TruncationError.from_S(S[np.logical_not(mask)]),
+    return (
+        mask,
+        norm_new,
+        TruncationError.from_S(S[np.logical_not(mask)]),
+    )
 
 
-def svd_theta(theta, trunc_par, qtotal_LR=[None, None], inner_labels=['vR', 'vL']):
+def svd_theta(theta, trunc_par, qtotal_LR=[None, None], inner_labels=["vR", "vL"]):
     """Performs SVD of a matrix `theta` (= the wavefunction) and truncates it.
 
     Perform a singular value decomposition (SVD) with :func:`~tenpy.linalg.np_conserved.svd`
@@ -282,17 +286,12 @@ def svd_theta(theta, trunc_par, qtotal_LR=[None, None], inner_labels=['vR', 'vL'
     renormalization : float
         Factor, by which S was renormalized.
     """
-    U, S, VH = npc.svd(theta,
-                       full_matrices=False,
-                       compute_uv=True,
-                       qtotal_LR=qtotal_LR,
-                       inner_labels=inner_labels)
+    U, S, VH = npc.svd(theta, full_matrices=False, compute_uv=True, qtotal_LR=qtotal_LR, inner_labels=inner_labels)
     renormalization = np.linalg.norm(S)
     S = S / renormalization
     piv, new_norm, err = truncate(S, trunc_par)
     new_len_S = np.sum(piv, dtype=np.int_)
-    if new_len_S * 100 < len(S) and (trunc_par['chi_max'] is None
-                                     or new_len_S != trunc_par['chi_max']):
+    if new_len_S * 100 < len(S) and (trunc_par["chi_max"] is None or new_len_S != trunc_par["chi_max"]):
         msg = "Catastrophic reduction in chi: {0:d} -> {1:d}".format(len(S), new_len_S)
         # NANs are excluded in npc.svd
         UHU = npc.tensordot(U.conj(), U, axes=[[0], [0]])
@@ -307,7 +306,9 @@ def svd_theta(theta, trunc_par, qtotal_LR=[None, None], inner_labels=['vR', 'vL'
     return U, S, VH, err, renormalization
 
 
-def _qr_theta_Y0(old_qtotal_L, old_qtotal_R, old_bond_leg, theta: npc.Array, move_right: bool, expand: float, min_block_increase: int):
+def _qr_theta_Y0(
+    old_qtotal_L, old_qtotal_R, old_bond_leg, theta: npc.Array, move_right: bool, expand: float, min_block_increase: int
+):
     """Generate the initial guess `Y0` for the (left) right isometry for the QR based theta decomposition `decompose_theta_qr_based()`.
 
     Parameters
@@ -339,25 +340,25 @@ def _qr_theta_Y0(old_qtotal_L, old_qtotal_R, old_bond_leg, theta: npc.Array, mov
     if move_right:
         Y0 = theta.copy(deep=False)
         Y0.legs[1] = Y0.legs[1].to_LegCharge()
-        Y0.ireplace_label('(p1.vR)', 'vR')
+        Y0.ireplace_label("(p1.vR)", "vR")
         if any(old_qtotal_R != 0):
-            Y0.gauge_total_charge('vR', new_qtotal=old_qtotal_L)
+            Y0.gauge_total_charge("vR", new_qtotal=old_qtotal_L)
         vR_old = old_bond_leg
         if not vR_old.is_blocked():
             vR_old = vR_old.sort()[1]
-        vR_new = Y0.get_leg('vR')  # is blocked, since created from pipe
+        vR_new = Y0.get_leg("vR")  # is blocked, since created from pipe
         v_old, v_new = vR_old, vR_new
         q_axis, norm_axis = 1, 0
     else:
         Y0 = theta.copy(deep=False)
         Y0.legs[0] = Y0.legs[0].to_LegCharge()
-        Y0.ireplace_label('(vL.p0)', 'vL')
+        Y0.ireplace_label("(vL.p0)", "vL")
         if any(old_qtotal_L != 0):
-            Y0.gauge_total_charge('vL', new_qtotal=old_qtotal_R)
+            Y0.gauge_total_charge("vL", new_qtotal=old_qtotal_R)
         vL_old = old_bond_leg
         if not vL_old.is_blocked():
             vL_old = vL_old.sort()[1]
-        vL_new = Y0.get_leg('vL')  # is blocked, since created from pipe
+        vL_new = Y0.get_leg("vL")  # is blocked, since created from pipe
         v_old, v_new = vL_old, vL_new
         q_axis, norm_axis = 0, 1
 
@@ -401,15 +402,14 @@ def _qr_theta_Y0(old_qtotal_L, old_qtotal_R, old_bond_leg, theta: npc.Array, mov
             break
 
     if move_right:
-        Y0.iproject(piv, 'vR')
+        Y0.iproject(piv, "vR")
     else:
-        Y0.iproject(piv, 'vL')
+        Y0.iproject(piv, "vL")
 
     return Y0
 
 
-def _eig_based_svd(A, need_U: bool = True, need_Vd: bool = True, inner_labels=[None, None],
-                   trunc_params=None):
+def _eig_based_svd(A, need_U: bool = True, need_Vd: bool = True, inner_labels=[None, None], trunc_params=None):
     """Computes the singular value decomposition of a matrix A via eigh
 
     Singular values and vectors are obtained by diagonalizing the "square" A.hc @ A and/or A @ A.hc,
@@ -421,7 +421,7 @@ def _eig_based_svd(A, need_U: bool = True, need_Vd: bool = True, inner_labels=[N
 
     Does not (yet) support computing both U and Vd
     """
-    warnings.warn('_eig_based_svd is nonsensical on CPU!!')
+    warnings.warn("_eig_based_svd is nonsensical on CPU!!")
     assert A.rank == 2
 
     if need_U and need_Vd:
@@ -433,15 +433,15 @@ def _eig_based_svd(A, need_U: bool = True, need_Vd: bool = True, inner_labels=[N
     if need_U:
         Vd = None
         A_Ahc = npc.tensordot(A, A.conj(), [1, 1])
-        L, U = npc.eigh(A_Ahc, sort='>')
+        L, U = npc.eigh(A_Ahc, sort=">")
         S = np.sqrt(np.abs(L))  # abs to avoid `nan` due to accidentally negative values close to zero
-        U = U.ireplace_label('eig', inner_labels[0])
+        U = U.ireplace_label("eig", inner_labels[0])
     elif need_Vd:
         U = None
         Ahc_A = npc.tensordot(A.conj(), A, [0, 0])
-        L, V = npc.eigh(Ahc_A, sort='>')
+        L, V = npc.eigh(Ahc_A, sort=">")
         S = np.sqrt(np.abs(L))  # abs to avoid `nan` due to accidentally negative values close to zero
-        Vd = V.iconj().itranspose().ireplace_label('eig*', inner_labels[1])
+        Vd = V.iconj().itranspose().ireplace_label("eig*", inner_labels[1])
     else:
         U = None
         Vd = None
@@ -469,10 +469,19 @@ def _eig_based_svd(A, need_U: bool = True, need_Vd: bool = True, inner_labels=[N
     return U, S, Vd, trunc_err, renormalize
 
 
-def decompose_theta_qr_based(old_qtotal_L, old_qtotal_R, old_bond_leg, theta: npc.Array,
-                             move_right: bool, expand: float, min_block_increase: int,
-                             use_eig_based_svd: bool, trunc_params: dict, compute_err: bool,
-                             return_both_T: bool):
+def decompose_theta_qr_based(
+    old_qtotal_L,
+    old_qtotal_R,
+    old_bond_leg,
+    theta: npc.Array,
+    move_right: bool,
+    expand: float,
+    min_block_increase: int,
+    use_eig_based_svd: bool,
+    trunc_params: dict,
+    compute_err: bool,
+    return_both_T: bool,
+):
     r"""Performs a QR based decomposition of a matrix `theta` (= the wavefunction) and truncates it.
     The result is an approximation.
 
@@ -549,84 +558,96 @@ def decompose_theta_qr_based(old_qtotal_L, old_qtotal_R, old_bond_leg, theta: np
 
     if move_right:
         # Get initial guess for the left isometry
-        Y0 = _qr_theta_Y0(old_qtotal_L, old_qtotal_R, old_bond_leg, theta, move_right, expand, min_block_increase) # Y0: [(vL.p0), vR]
+        Y0 = _qr_theta_Y0(
+            old_qtotal_L, old_qtotal_R, old_bond_leg, theta, move_right, expand, min_block_increase
+        )  # Y0: [(vL.p0), vR]
 
         # QR based updates
-        theta_i1 = npc.tensordot(Y0.conj(), theta, ['(vL*.p0*)', '(vL.p0)']).ireplace_label('vR*', 'vL') # theta_i1: [vL,(p1.vR)]
-        theta_i1.itranspose(['(p1.vR)', 'vL']) # theta_i1: [(p1.vR),vL]
-        B_R, _ = npc.qr(theta_i1, inner_labels=['vL', 'vR'], inner_qconj=-1) # B_R: [(p1.vR),vL]
-        B_R.itranspose(['vL', '(p1.vR)']) # B_R: [vL,(p1.vR)]
+        theta_i1 = npc.tensordot(Y0.conj(), theta, ["(vL*.p0*)", "(vL.p0)"]).ireplace_label(
+            "vR*", "vL"
+        )  # theta_i1: [vL,(p1.vR)]
+        theta_i1.itranspose(["(p1.vR)", "vL"])  # theta_i1: [(p1.vR),vL]
+        B_R, _ = npc.qr(theta_i1, inner_labels=["vL", "vR"], inner_qconj=-1)  # B_R: [(p1.vR),vL]
+        B_R.itranspose(["vL", "(p1.vR)"])  # B_R: [vL,(p1.vR)]
 
-        theta_i0 = npc.tensordot(theta, B_R.conj(), ['(p1.vR)', '(p1*.vR*)']).ireplace_label('vL*', 'vR') # theta_i0: [(vL.p0),vR]
-        A_L, Xi = npc.qr(theta_i0, inner_labels=['vR', 'vL']) # A_L: [(vL.p0), vR]
+        theta_i0 = npc.tensordot(theta, B_R.conj(), ["(p1.vR)", "(p1*.vR*)"]).ireplace_label(
+            "vL*", "vR"
+        )  # theta_i0: [(vL.p0),vR]
+        A_L, Xi = npc.qr(theta_i0, inner_labels=["vR", "vL"])  # A_L: [(vL.p0), vR]
 
     else:
         # Get initial guess for the right isometry
-        Y0 = _qr_theta_Y0(old_qtotal_L, old_qtotal_R, old_bond_leg, theta, move_right, expand, min_block_increase) # Y0: [vL, (p1.vR)]
+        Y0 = _qr_theta_Y0(
+            old_qtotal_L, old_qtotal_R, old_bond_leg, theta, move_right, expand, min_block_increase
+        )  # Y0: [vL, (p1.vR)]
 
         # QR based updates
-        theta_i0 = npc.tensordot(theta, Y0.conj(), ['(p1.vR)', '(p1*.vR*)']).ireplace_label('vL*', 'vR') # theta_i0: [(vL.p0),vR]
-        A_L, _ = npc.qr(theta_i0, inner_labels=['vR', 'vL']) # A_L: [(vL.p0), vR]
+        theta_i0 = npc.tensordot(theta, Y0.conj(), ["(p1.vR)", "(p1*.vR*)"]).ireplace_label(
+            "vL*", "vR"
+        )  # theta_i0: [(vL.p0),vR]
+        A_L, _ = npc.qr(theta_i0, inner_labels=["vR", "vL"])  # A_L: [(vL.p0), vR]
 
-        theta_i1 = npc.tensordot(A_L.conj(), theta, ['(vL*.p0*)', '(vL.p0)']).ireplace_label('vR*', 'vL') # theta_i1: [vL,(p1.vR)]
-        theta_i1.itranspose(['(p1.vR)', 'vL']) # theta_i1: [(p1.vR),vL]
-        B_R, Xi = npc.qr(theta_i1, inner_labels=['vL', 'vR'], inner_qconj=-1)
-        B_R.itranspose(['vL', '(p1.vR)'])
-        Xi.itranspose(['vL', 'vR'])
+        theta_i1 = npc.tensordot(A_L.conj(), theta, ["(vL*.p0*)", "(vL.p0)"]).ireplace_label(
+            "vR*", "vL"
+        )  # theta_i1: [vL,(p1.vR)]
+        theta_i1.itranspose(["(p1.vR)", "vL"])  # theta_i1: [(p1.vR),vL]
+        B_R, Xi = npc.qr(theta_i1, inner_labels=["vL", "vR"], inner_qconj=-1)
+        B_R.itranspose(["vL", "(p1.vR)"])
+        Xi.itranspose(["vL", "vR"])
 
     # SVD of bond matrix Xi
     if use_eig_based_svd:
         U, S, Vd, _, renormalization = _eig_based_svd(
-            Xi, need_U=move_right, need_Vd=(not move_right), inner_labels=['vR', 'vL'], trunc_params=trunc_params
+            Xi, need_U=move_right, need_Vd=(not move_right), inner_labels=["vR", "vL"], trunc_params=trunc_params
         )
     else:
         U, S, Vd, _, renormalization = svd_theta(Xi, trunc_params)
 
     # Assign return matrices
     T_Lc, T_Rc = None, None
-    form = ['A','B']
+    form = ["A", "B"]
     if move_right:
-        T_Lc = npc.tensordot(A_L, U, ['vR', 'vL'])
+        T_Lc = npc.tensordot(A_L, U, ["vR", "vL"])
         if return_both_T:
             if use_eig_based_svd:
-                T_Rc = npc.tensordot(Xi, B_R, ['vR', 'vL'])
-                T_Rc = npc.tensordot(U.iconj(), T_Rc, ['vL*', 'vL']).ireplace_label('vR*', 'vL')
+                T_Rc = npc.tensordot(Xi, B_R, ["vR", "vL"])
+                T_Rc = npc.tensordot(U.iconj(), T_Rc, ["vL*", "vL"]).ireplace_label("vR*", "vL")
                 T_Rc /= npc.norm(T_Rc)
-                form[1] = 'Th'
+                form[1] = "Th"
             else:
-                T_Rc = npc.tensordot(Vd, B_R, ['vR', 'vL'])
+                T_Rc = npc.tensordot(Vd, B_R, ["vR", "vL"])
     else:
-        T_Rc = npc.tensordot(Vd, B_R, ['vR', 'vL'])
+        T_Rc = npc.tensordot(Vd, B_R, ["vR", "vL"])
         if return_both_T:
             if use_eig_based_svd:
-                T_Lc = npc.tensordot(A_L, Xi, ['vR', 'vL'])
-                T_Lc = npc.tensordot(T_Lc, Vd.iconj(), ['vR', 'vR*']).ireplace_label('vL*', 'vR')
+                T_Lc = npc.tensordot(A_L, Xi, ["vR", "vL"])
+                T_Lc = npc.tensordot(T_Lc, Vd.iconj(), ["vR", "vR*"]).ireplace_label("vL*", "vR")
                 T_Lc /= npc.norm(T_Lc)
-                form[0] = 'Th'
+                form[0] = "Th"
             else:
-                T_Lc = npc.tensordot(A_L, U, ['vR', 'vL'])
+                T_Lc = npc.tensordot(A_L, U, ["vR", "vL"])
 
     # Compute error
     if compute_err:
         if use_eig_based_svd:
-            theta_approx = npc.tensordot(T_Lc, T_Rc, ['vR', 'vL'])
+            theta_approx = npc.tensordot(T_Lc, T_Rc, ["vR", "vL"])
         else:
-            theta_approx = npc.tensordot(T_Lc.scale_axis(S, axis='vR'), T_Rc, ['vR', 'vL'])
+            theta_approx = npc.tensordot(T_Lc.scale_axis(S, axis="vR"), T_Rc, ["vR", "vL"])
         N_theta = npc.norm(theta)
         eps = npc.norm(theta / N_theta - theta_approx * renormalization / N_theta) ** 2
-        trunc_err = TruncationError(eps, 1. - 2. * eps)
+        trunc_err = TruncationError(eps, 1.0 - 2.0 * eps)
     else:
         trunc_err = TruncationError(np.nan, np.nan)
 
     # Replace labels
     if move_right:
-        T_Lc.ireplace_label('(vL.p0)', '(vL.p)')
+        T_Lc.ireplace_label("(vL.p0)", "(vL.p)")
         if return_both_T:
-            T_Rc.ireplace_label('(p1.vR)', '(p.vR)')
+            T_Rc.ireplace_label("(p1.vR)", "(p.vR)")
     else:
-        T_Rc.ireplace_label('(p1.vR)', '(p.vR)')
+        T_Rc.ireplace_label("(p1.vR)", "(p.vR)")
         if return_both_T:
-            T_Lc.ireplace_label('(vL.p0)', '(vL.p)')
+            T_Lc.ireplace_label("(vL.p0)", "(vL.p)")
 
     return T_Lc, S, T_Rc, form, trunc_err, renormalization
 
@@ -645,8 +666,7 @@ def _combine_constraints(good1, good2, warn):
 
 # truncation parameter for truncating svd values at machine precision
 # excluding 0. and negative S values only
-_machine_prec_trunc_par = asConfig({'svd_min': np.finfo(np.float64).eps,
-                                    'trunc_cut': None,
-                                    'chi_max': None},
-                                   'machine_prec_trunc_params')
+_machine_prec_trunc_par = asConfig(
+    {"svd_min": np.finfo(np.float64).eps, "trunc_cut": None, "chi_max": None}, "machine_prec_trunc_params"
+)
 _machine_prec_trunc_par.unused.clear()

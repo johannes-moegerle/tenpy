@@ -10,7 +10,7 @@ from .lattice import Chain
 from ..networks.site import ClockSite
 
 
-__all__ = ['ClockModel', 'ClockChain']
+__all__ = ["ClockModel", "ClockChain"]
 
 
 class ClockModel(CouplingMPOModel):
@@ -51,23 +51,23 @@ class ClockModel(CouplingMPOModel):
     """
 
     def init_sites(self, model_params):
-        conserve = model_params.get('conserve', 'Z', str)
-        if conserve == 'best':
-            conserve = 'Z'
+        conserve = model_params.get("conserve", "Z", str)
+        if conserve == "best":
+            conserve = "Z"
             self.logger.info("%s: set conserve to %s", self.name, conserve)
-        q = model_params.get('q', None, int)
+        q = model_params.get("q", None, int)
         if q is None:
-            raise ValueError('Need to specify q.')
-        sort_charge = model_params.get('sort_charge', True, bool)
+            raise ValueError("Need to specify q.")
+        sort_charge = model_params.get("sort_charge", True, bool)
         return ClockSite(q=q, conserve=conserve, sort_charge=sort_charge)
 
     def init_terms(self, model_params):
-        J = np.asarray(model_params.get('J', 1., 'real_or_array'))
-        g = np.asarray(model_params.get('g', 1., 'real_or_array'))
+        J = np.asarray(model_params.get("J", 1.0, "real_or_array"))
+        g = np.asarray(model_params.get("g", 1.0, "real_or_array"))
         for u in range(len(self.lat.unit_cell)):
-            self.add_onsite(-g, u, 'Z', plus_hc=True)
-        for u1, u2, dx in self.lat.pairs['nearest_neighbors']:
-            self.add_coupling(-J, u1, 'X', u2, 'Xhc', dx, plus_hc=True)
+            self.add_onsite(-g, u, "Z", plus_hc=True)
+        for u1, u2, dx in self.lat.pairs["nearest_neighbors"]:
+            self.add_coupling(-J, u1, "X", u2, "Xhc", dx, plus_hc=True)
 
 
 class ClockChain(ClockModel, NearestNeighborModel):
@@ -75,5 +75,6 @@ class ClockChain(ClockModel, NearestNeighborModel):
 
     See the :class:`ClockModel` for the documentation of parameters.
     """
+
     default_lattice = Chain
     force_default_lattice = True

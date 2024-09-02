@@ -20,12 +20,13 @@ class TwoSiteHThreadPlusHC(TwoSiteH):
     Using threads instead of e.g. MPI parallelization means we don't need to make explicit copies
     of (at least one of) the environment tensors and communication is much cheaper.
     """
+
     def __init__(self, *args, plus_hc_worker=None, **kwargs):
         super().__init__(*args, **kwargs)
         self._plus_hc_worker = plus_hc_worker
         if not self.combine:
             raise NotImplementedError("works only with combine=True")
-        self.RHeff_for_hc = self.RHeff.transpose(['(p1*.vL)', '(p1.vL*)', 'wL'])
+        self.RHeff_for_hc = self.RHeff.transpose(["(p1*.vL)", "(p1.vL*)", "wL"])
 
     def matvec(self, theta):
         assert self._plus_hc_worker is not None
@@ -38,12 +39,10 @@ class TwoSiteHThreadPlusHC(TwoSiteH):
 
     def matvec_hc(self, theta):
         theta = theta.conj()  # copy!
-        theta = npc.tensordot(theta, self.LHeff, axes=['(vL*.p0*)', '(vR*.p0)'])
-        theta = npc.tensordot(self.RHeff_for_hc,
-                              theta,
-                              axes=[['(p1.vL*)', 'wL'], ['(p1*.vR*)', 'wR']])
+        theta = npc.tensordot(theta, self.LHeff, axes=["(vL*.p0*)", "(vR*.p0)"])
+        theta = npc.tensordot(self.RHeff_for_hc, theta, axes=[["(p1.vL*)", "wL"], ["(p1*.vR*)", "wR"]])
         theta.iconj().itranspose()
-        theta.ireplace_labels(['(vR*.p0)', '(p1.vL*)'], ['(vL.p0)', '(p1.vR)'])
+        theta.ireplace_labels(["(vR*.p0)", "(p1.vL*)"], ["(vL.p0)", "(p1.vR)"])
         return theta
 
     def to_matrix(self):
@@ -57,7 +56,6 @@ class TwoSiteHThreadPlusHC(TwoSiteH):
 
 
 class DMRGThreadPlusHC(TwoSiteDMRGEngine):
-
     EffectiveH = TwoSiteHThreadPlusHC
 
     def __init__(self, psi, model, options, **kwargs):
@@ -68,11 +66,9 @@ class DMRGThreadPlusHC(TwoSiteDMRGEngine):
 
     def make_eff_H(self):
         assert self.env.H.explicit_plus_hc
-        self.eff_H = self.EffectiveH(self.env,
-                                     self.i0,
-                                     self.combine,
-                                     self.move_right,
-                                     plus_hc_worker=self._plus_hc_worker)
+        self.eff_H = self.EffectiveH(
+            self.env, self.i0, self.combine, self.move_right, plus_hc_worker=self._plus_hc_worker
+        )
         if len(self.ortho_to_envs) > 0:
             self._wrap_ortho_eff_H()
 

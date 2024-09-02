@@ -29,7 +29,7 @@ from ..tools.misc import BetaWarning
 
 logger = logging.getLogger(__name__)
 
-__all__ = ['MomentumMPS']
+__all__ = ["MomentumMPS"]
 
 
 class MomentumMPS:
@@ -61,8 +61,11 @@ class MomentumMPS:
     """
 
     def __init__(self, Xs, uMPS, p, n_sites=1):
-        warnings.warn('MomentumMPS is a new feature and not as well-tested as the '
-                      'rest of the library', BetaWarning, stacklevel=2)
+        warnings.warn(
+            "MomentumMPS is a new feature and not as well-tested as the " "rest of the library",
+            BetaWarning,
+            stacklevel=2,
+        )
         assert len(Xs) == uMPS.L, "Need as many excitations as sites in unit cell."
         self.dtype = dtype = np.find_common_type([X.dtype for X in Xs], [])
         self._X = [X.astype(dtype, copy=True) for X in Xs]
@@ -71,8 +74,7 @@ class MomentumMPS:
         self.n_sites = n_sites  # Number of sites of single excitation tensor.
 
     def copy(self):
-        """Returns a copy of `self`.
-        """
+        """Returns a copy of `self`."""
         # __init__ makes deep copies of B, S
         cp = self.__class__(self._X, self.uMPS_GS, self.p, self.n_sites)
         return cp

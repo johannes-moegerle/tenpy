@@ -11,7 +11,7 @@ import scipy.linalg
 ch = npc.ChargeInfo([2])
 
 
-def test_FlatLinearOperator(n=30, k=5, tol=1.e-14):
+def test_FlatLinearOperator(n=30, k=5, tol=1.0e-14):
     leg = gen_random_legcharge(ch, n)
     H = npc.Array.from_func_square(rmat.GUE, leg)
     H_flat = H.to_ndarray()
@@ -25,18 +25,18 @@ def test_FlatLinearOperator(n=30, k=5, tol=1.e-14):
     psi_init_flat = H_sparse.npc_to_flat(psi_init)
 
     # check diagonalization
-    E, psi = scipy.sparse.linalg.eigsh(H_sparse, k, v0=psi_init_flat, which='SA')
+    E, psi = scipy.sparse.linalg.eigsh(H_sparse, k, v0=psi_init_flat, which="SA")
     E0, psi0 = E[0], psi[:, 0]
     print("full spectrum:", E_flat)
     print("E0 = {E0:.14f} vs exact {E0_flat:.14f}".format(E0=E0, E0_flat=E0_flat))
     print("|E0-E0_flat| / |E0_flat| =", abs((E0 - E0_flat) / E0_flat))
-    assert (abs((E0 - E0_flat) / E0_flat) < tol)
+    assert abs((E0 - E0_flat) / E0_flat) < tol
     psi0_H_psi0 = np.inner(psi0.conj(), H_sparse.matvec(psi0)).item()
-    print("<psi0|H|psi0> / E0 = 1. + ", psi0_H_psi0 / E0 - 1.)
-    assert (abs(psi0_H_psi0 / E0 - 1.) < tol)
+    print("<psi0|H|psi0> / E0 = 1. + ", psi0_H_psi0 / E0 - 1.0)
+    assert abs(psi0_H_psi0 / E0 - 1.0) < tol
 
 
-def test_FlatHermitianOperator(n=30, k=5, tol=1.e-14):
+def test_FlatHermitianOperator(n=30, k=5, tol=1.0e-14):
     leg = gen_random_legcharge(ch, n // 2)
     leg2 = gen_random_legcharge(ch, 2)
     pipe = npc.LegPipe([leg, leg2], qconj=+1)
@@ -52,15 +52,15 @@ def test_FlatHermitianOperator(n=30, k=5, tol=1.e-14):
     psi_init_flat = H_sparse.npc_to_flat(psi_init)
 
     # check diagonalization
-    E, psi = scipy.sparse.linalg.eigsh(H_sparse, k, v0=psi_init_flat, which='SA')
+    E, psi = scipy.sparse.linalg.eigsh(H_sparse, k, v0=psi_init_flat, which="SA")
     E0, psi0 = E[0], psi[:, 0]
     print("full spectrum:", E_flat)
     print("E0 = {E0:.14f} vs exact {E0_flat:.14f}".format(E0=E0, E0_flat=E0_flat))
     print("|E0-E0_flat| / |E0_flat| =", abs((E0 - E0_flat) / E0_flat))
-    assert (abs((E0 - E0_flat) / E0_flat) < tol)
+    assert abs((E0 - E0_flat) / E0_flat) < tol
     psi0_H_psi0 = np.inner(psi0.conj(), H_sparse.matvec(psi0)).item()
-    print("<psi0|H|psi0> / E0 = 1. + ", psi0_H_psi0 / E0 - 1.)
-    assert (abs(psi0_H_psi0 / E0 - 1.) < tol)
+    print("<psi0|H|psi0> / E0 = 1. + ", psi0_H_psi0 / E0 - 1.0)
+    assert abs(psi0_H_psi0 / E0 - 1.0) < tol
 
     # split H to check `FlatHermitianOperator.from_guess_with_pipe`.
     print("=========")
@@ -75,15 +75,16 @@ def test_FlatHermitianOperator(n=30, k=5, tol=1.e-14):
         return vec
 
     H_sparse_split, psi_init_split_flat = sparse.FlatLinearOperator.from_guess_with_pipe(
-        H_split_matvec, psi_init_split, dtype=H_split.dtype)
+        H_split_matvec, psi_init_split, dtype=H_split.dtype
+    )
 
     # diagonalize
-    E, psi = scipy.sparse.linalg.eigsh(H_sparse_split, k, v0=psi_init_split_flat, which='SA')
+    E, psi = scipy.sparse.linalg.eigsh(H_sparse_split, k, v0=psi_init_split_flat, which="SA")
     E0, psi0 = E[0], psi[:, 0]
     print("full spectrum:", E_flat)
     print("E0 = {E0:.14f} vs exact {E0_flat:.14f}".format(E0=E0, E0_flat=E0_flat))
     print("|E0-E0_flat| / |E0_flat| =", abs((E0 - E0_flat) / E0_flat))
-    assert (abs((E0 - E0_flat) / E0_flat) < tol)
+    assert abs((E0 - E0_flat) / E0_flat) < tol
     psi0_H_psi0 = np.inner(psi0.conj(), H_sparse.matvec(psi0)).item()
-    print("<psi0|H|psi0> / E0 = 1. + ", psi0_H_psi0 / E0 - 1.)
-    assert (abs(psi0_H_psi0 / E0 - 1.) < tol)
+    print("<psi0|H|psi0> / E0 = 1. + ", psi0_H_psi0 / E0 - 1.0)
+    assert abs(psi0_H_psi0 / E0 - 1.0) < tol

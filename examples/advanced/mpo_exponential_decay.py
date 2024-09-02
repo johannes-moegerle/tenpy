@@ -50,27 +50,28 @@ class ExponentiallyDecayingHeisenberg(MPOModel):
     sort_charge : bool
         Whether to sort by charges of physical legs. `True` by default.
     """
+
     def __init__(self, model_params):
         # model parameters
         model_params = asConfig(model_params, "ExponentiallyDecayingHeisenberg")
-        L = model_params.get('L', 2)
-        xi = model_params.get('xi', 0.5)
-        Jxx = model_params.get('Jxx', 1.)
-        Jz = model_params.get('Jz', 1.5)
-        hz = model_params.get('hz', 0.)
-        conserve = model_params.get('conserve', 'Sz')
-        sort_charge = model_params.get('sort_charge', True)
-        if xi == 0.:
-            g = 0.
+        L = model_params.get("L", 2)
+        xi = model_params.get("xi", 0.5)
+        Jxx = model_params.get("Jxx", 1.0)
+        Jz = model_params.get("Jz", 1.5)
+        hz = model_params.get("hz", 0.0)
+        conserve = model_params.get("conserve", "Sz")
+        sort_charge = model_params.get("sort_charge", True)
+        if xi == 0.0:
+            g = 0.0
         elif xi == np.inf:
-            g = 1.
+            g = 1.0
         else:
             g = np.exp(-1 / (xi))
 
         # Define the sites and the lattice, which in this case is a simple uniform chain
         # of spin 1/2 sites
         site = SpinHalfSite(conserve=conserve, sort_charge=sort_charge)
-        lat = Chain(L, site, bc_MPS='infinite', bc='periodic')
+        lat = Chain(L, site, bc_MPS="infinite", bc="periodic")
 
         # The operators that appear in the Hamiltonian. Standard spin operators are
         # already defined for the spin 1/2 site, but it is also possible to add new
@@ -106,7 +107,7 @@ class ExponentiallyDecayingHeisenberg(MPOModel):
         # Generate the MPO from the grid. Note that it is not necessary to specify
         # the physical legs and their charges, since the from_grids method can extract
         # this information from the position of the operators inside the grid.
-        H = MPO.from_grids(lat.mps_sites(), grids, bc='infinite', IdL=0, IdR=-1)
+        H = MPO.from_grids(lat.mps_sites(), grids, bc="infinite", IdL=0, IdR=-1)
         MPOModel.__init__(self, lat, H)
 
 
@@ -114,22 +115,19 @@ def example_run_dmrg():
     """Use iDMRG to extract information about the ground state of the system."""
     model_params = dict(L=2, Jxx=1, Jz=1.5, xi=0.8)
     model = ExponentiallyDecayingHeisenberg(model_params)
-    psi = MPS.from_product_state(model.lat.mps_sites(), ["up", "down"], bc='infinite')
+    psi = MPS.from_product_state(model.lat.mps_sites(), ["up", "down"], bc="infinite")
     dmrg_params = {
-        'mixer': True,
-        'chi_list': {
-            0: 100
-        },
-        'trunc_params': {
-            'svd_min': 1.e-10
-        },
+        "mixer": True,
+        "chi_list": {0: 100},
+        "trunc_params": {"svd_min": 1.0e-10},
     }
     results = dmrg.run(psi, model, dmrg_params)
-    print("Energy per site: ", results['E'])
-    print("<Sz>: ", psi.expectation_value('Sz'))
+    print("Energy per site: ", results["E"])
+    print("<Sz>: ", psi.expectation_value("Sz"))
 
 
 if __name__ == "__main__":
     import logging
+
     logging.basicConfig(level=logging.INFO)
     example_run_dmrg()

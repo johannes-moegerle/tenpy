@@ -20,25 +20,30 @@ import time
 import numpy as np
 import sys
 
-fn_template = '{mod_name!s}_benchmark_s_{sectors:d}_l_{legs:d}_mod_q_{mod_q_str}.txt'
+fn_template = "{mod_name!s}_benchmark_s_{sectors:d}_l_{legs:d}_mod_q_{mod_q_str}.txt"
 
 sizes_choices = {
-    'default': [1, 2, 3, 5, 7, 10, 12] + list(range(15, 50, 5)) + list(range(50, 200, 25)) + \
-    list(range(200, 500, 100)) + list(range(500, 3001, 250)),
-    'exp' : [2**L for L in range(12)]  # up to 2048
+    "default": [1, 2, 3, 5, 7, 10, 12]
+    + list(range(15, 50, 5))
+    + list(range(50, 200, 25))
+    + list(range(200, 500, 100))
+    + list(range(500, 3001, 250)),
+    "exp": [2**L for L in range(12)],  # up to 2048
 }
 
-colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k']
-linestyles = ['-', '--', ':', '-.']
+colors = ["b", "g", "r", "c", "m", "y", "k"]
+linestyles = ["-", "--", ":", "-."]
 
 
-def perform_benchmark(mod_name,
-                      sizes=sizes_choices['default'],
-                      max_time=0.1,
-                      seeds=list(range(1)),
-                      repeat_average=1,
-                      repeat_bestof=3,
-                      **kwargs):
+def perform_benchmark(
+    mod_name,
+    sizes=sizes_choices["default"],
+    max_time=0.1,
+    seeds=list(range(1)),
+    repeat_average=1,
+    repeat_bestof=3,
+    **kwargs,
+):
     """Perform a benchmark for a given module and given arguments.
 
     Parameters
@@ -76,12 +81,12 @@ def perform_benchmark(mod_name,
     print("module ", mod_name)
     namespace = {}
     exec("import {mod_name} as benchmark_mod".format(mod_name=mod_name), namespace, namespace)
-    benchmark_mod = namespace['benchmark_mod']
+    benchmark_mod = namespace["benchmark_mod"]
     used_sizes = []
     results = []
     for size in sorted(sizes):
         kwargs_cpy = kwargs.copy()
-        kwargs_cpy['size'] = size
+        kwargs_cpy["size"] = size
         t0 = time.time()
         results_seeds = []
         for seed in seeds:
@@ -96,24 +101,25 @@ def perform_benchmark(mod_name,
         results.append(np.mean(results_seeds))
         print("size {size: 4d}: {res:.2e}".format(size=size, res=results[-1]))
         count = repeat_bestof * repeat_average * len(seeds)
-        if (results[-1] > max_time or  # benchmark time
-                time.time() - t0 >
-                count * max_time * 11):  # setup time shouldn't be too much longer
+        if (
+            results[-1] > max_time  # benchmark time
+            or time.time() - t0 > count * max_time * 11
+        ):  # setup time shouldn't be too much longer
             break
     return used_sizes, results
 
 
 def save_results(sizes, benchmark_results, filename=fn_template, **kwargs):
     """Save the results into a file with the specified filename."""
-    filename = filename.format(mod_q_str='_'.join([str(q) for q in kwargs['mod_q']]), **kwargs)
+    filename = filename.format(mod_q_str="_".join([str(q) for q in kwargs["mod_q"]]), **kwargs)
     header = []
     for kw, arg in kwargs.items():
         header.append(kw + " = " + repr(arg))
     header.append("")
     header.append("size benchmark_time")
-    header = '\n'.join(header)
+    header = "\n".join(header)
     data = np.stack([sizes, benchmark_results]).T
-    np.savetxt(filename, data, fmt=['%d', '%.4e'], header=header)
+    np.savetxt(filename, data, fmt=["%d", "%.4e"], header=header)
     print("saved to", filename)
     return filename
 
@@ -143,18 +149,19 @@ def map_plot_style(styles, style_map, key):
 def plot_result(filename, axes, color_map, linestyle_map):
     """Plot the results saved in a given file."""
     sizes, results, kwargs = load_results(filename)
-    col = map_plot_style(colors, color_map, kwargs['mod_name'])
-    ls = map_plot_style(linestyles, linestyle_map, kwargs['sectors'])
-    axes.plot(sizes, results, color=col, linestyle=ls, marker='x')
+    col = map_plot_style(colors, color_map, kwargs["mod_name"])
+    ls = map_plot_style(linestyles, linestyle_map, kwargs["sectors"])
+    axes.plot(sizes, results, color=col, linestyle=ls, marker="x")
 
 
 def plot_many_results(filenames, fn_beg_until="_", fn_end_from="_l_", save=True):
     """Plot files with similar beginning and ending filenames together."""
     import matplotlib.pyplot as plt
+
     figs = {}
     for fn in filenames:
-        fn_beg = fn[:fn.find(fn_beg_until)]
-        fn_end = fn[fn.find(fn_end_from):]
+        fn_beg = fn[: fn.find(fn_beg_until)]
+        fn_end = fn[fn.find(fn_end_from) :]
         fig_key = fn_beg, fn_end
         if fig_key not in figs:
             fig = plt.figure()
@@ -165,26 +172,28 @@ def plot_many_results(filenames, fn_beg_until="_", fn_end_from="_l_", save=True)
     for fn_key, (fig, color_map, linestyle_map) in figs.items():
         ax = fig.axes[0]
         ax.set_title(fn_key)
-        ax.set_xscale('log')
-        ax.set_yscale('log')
+        ax.set_xscale("log")
+        ax.set_yscale("log")
         ax.set_xlabel("size")
         ax.set_ylabel("wallclock time (s)")
         # add legend
         patches = []
         labels = []
         import matplotlib.patches as mpatches
+
         for key in sorted(color_map):
             patches.append(mpatches.Patch(color=color_map[key]))
             labels.append(key)
         import matplotlib.lines as mlines
+
         for key in sorted(linestyle_map):
-            patches.append(mlines.Line2D([], [], linestyle=linestyle_map[key], color='k'))
+            patches.append(mlines.Line2D([], [], linestyle=linestyle_map[key], color="k"))
             labels.append("{s:d} sectors".format(s=key))
         ax.legend(patches, labels)
     if save:
         for key, (fig, _, _) in figs.items():
             fn_beg, fn_end = key
-            fn = fn_beg + '_plot' + fn_end[:-4] + '.png'
+            fn = fn_beg + "_plot" + fn_end[:-4] + ".png"
             fig.savefig(fn)
     else:
         plt.show()
@@ -193,54 +202,38 @@ def plot_many_results(filenames, fn_beg_until="_", fn_end_from="_l_", save=True)
 if __name__ == "__main__":
     # ``python benchmark.py --help`` prints a summary of the options
     import argparse
+
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        '-q',
-        '--mod_q',
+        "-q",
+        "--mod_q",
         type=int,
-        nargs='*',
+        nargs="*",
         default=[],
-        help="Nature of the charge, ``Charges.mod``. The length determines the number of charges.")
-    parser.add_argument('-l',
-                        '--legs',
-                        type=int,
-                        default=2,
-                        help="Number of legs to be contracted.")
-    parser.add_argument('-s',
-                        '--sectors',
-                        type=int,
-                        default=5,
-                        help="(Maximal) number of sectors in each leg.")
-    parser.add_argument('-m',
-                        '--modules',
-                        nargs='*',
-                        default=None,
-                        help='Perform benchmarks for the given modules.')
-    parser.add_argument('-t',
-                        '--max_time',
-                        type=float,
-                        default=0.1,
-                        help='Maximum time after which we skip larger sizes.')
-    parser.add_argument('--sizes',
-                        default='default',
-                        choices=list(sizes_choices.keys()),
-                        help='What sizes to benchmark.')
-    parser.add_argument('--bestof',
-                        type=int,
-                        default=3,
-                        help='How often to repeat each benchmark to reduce the noice.')
-    parser.add_argument('-p',
-                        '--plot',
-                        nargs='*',
-                        default=None,
-                        help='Plot the produced benchmark results (saved in the given files).')
+        help="Nature of the charge, ``Charges.mod``. The length determines the number of charges.",
+    )
+    parser.add_argument("-l", "--legs", type=int, default=2, help="Number of legs to be contracted.")
+    parser.add_argument("-s", "--sectors", type=int, default=5, help="(Maximal) number of sectors in each leg.")
+    parser.add_argument("-m", "--modules", nargs="*", default=None, help="Perform benchmarks for the given modules.")
+    parser.add_argument(
+        "-t", "--max_time", type=float, default=0.1, help="Maximum time after which we skip larger sizes."
+    )
+    parser.add_argument(
+        "--sizes", default="default", choices=list(sizes_choices.keys()), help="What sizes to benchmark."
+    )
+    parser.add_argument("--bestof", type=int, default=3, help="How often to repeat each benchmark to reduce the noice.")
+    parser.add_argument(
+        "-p", "--plot", nargs="*", default=None, help="Plot the produced benchmark results (saved in the given files)."
+    )
     args = parser.parse_args()
-    kwargs = dict(mod_q=args.mod_q,
-                  legs=args.legs,
-                  sectors=args.sectors,
-                  max_time=args.max_time,
-                  sizes=sizes_choices[args.sizes],
-                  repeat_bestof=args.bestof)
+    kwargs = dict(
+        mod_q=args.mod_q,
+        legs=args.legs,
+        sectors=args.sectors,
+        max_time=args.max_time,
+        sizes=sizes_choices[args.sizes],
+        repeat_bestof=args.bestof,
+    )
     kwargs["python_version"] = sys.version
     files = []
     if args.modules is not None:
@@ -248,9 +241,9 @@ if __name__ == "__main__":
             if mod_name.endswith(".py"):
                 mod_name = mod_name[:-3]
             kwargs2 = kwargs.copy()
-            kwargs2['mod_name'] = mod_name
+            kwargs2["mod_name"] = mod_name
             sizes, results = perform_benchmark(**kwargs2)
-            del kwargs2['sizes']
+            del kwargs2["sizes"]
             if len(sizes) > 0:
                 fn = save_results(sizes, results, **kwargs2)
                 files.append(fn)

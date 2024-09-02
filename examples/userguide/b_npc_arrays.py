@@ -6,9 +6,9 @@ import tenpy.linalg.np_conserved as npc
 chinfo = npc.ChargeInfo([1])  # just a U(1) charge
 # charges for up, down state
 p_leg = npc.LegCharge.from_qflat(chinfo, [[1], [-1]])
-Sz = npc.Array.from_ndarray([[0.5, 0.], [0., -0.5]], [p_leg, p_leg.conj()])
-Sp = npc.Array.from_ndarray([[0., 1.], [0., 0.]], [p_leg, p_leg.conj()])
-Sm = npc.Array.from_ndarray([[0., 0.], [1., 0.]], [p_leg, p_leg.conj()])
+Sz = npc.Array.from_ndarray([[0.5, 0.0], [0.0, -0.5]], [p_leg, p_leg.conj()])
+Sp = npc.Array.from_ndarray([[0.0, 1.0], [0.0, 0.0]], [p_leg, p_leg.conj()])
+Sm = npc.Array.from_ndarray([[0.0, 0.0], [1.0, 0.0]], [p_leg, p_leg.conj()])
 
 Hxy = 0.5 * (npc.outer(Sp, Sm) + npc.outer(Sm, Sp))
 Hz = npc.outer(Sz, Sz)

@@ -4,6 +4,7 @@
 import time
 import numpy as np
 import logging
+
 logger = logging.getLogger(__name__)
 
 from .truncation import TruncationError
@@ -12,7 +13,7 @@ from ..tools.events import EventHandler
 from ..tools.params import asConfig
 from ..tools.cache import DictCache
 
-__all__ = ['Algorithm', 'TimeEvolutionAlgorithm', 'TimeDependentHAlgorithm']
+__all__ = ["Algorithm", "TimeEvolutionAlgorithm", "TimeDependentHAlgorithm"]
 
 
 class Algorithm:
@@ -73,15 +74,16 @@ class Algorithm:
     _resume_psi :
         Possibly a copy of `psi` to be used for :meth:`get_resume_data`.
     """
+
     def __init__(self, psi, model, options, *, resume_data=None, cache=None):
         self.options = asConfig(options, self.__class__.__name__)
-        self.trunc_params = self.options.subconfig('trunc_params')
+        self.trunc_params = self.options.subconfig("trunc_params")
         self.psi = psi
         self.model = model
         if resume_data is None:
             resume_data = {}
-        elif 'psi' in resume_data:
-            self.psi = resume_data['psi']
+        elif "psi" in resume_data:
+            self.psi = resume_data["psi"]
         self.resume_data = resume_data
         if cache is None:
             cache = DictCache.trivial()
@@ -92,8 +94,13 @@ class Algorithm:
             N_sites_per_ring = model.lat.N_sites_per_ring
         except AttributeError:  # for e.g. VariationalApplyMPO, model is just the MPO and has no lat
             N_sites_per_ring = 1
-        consistency_check(N_sites_per_ring, self.options, 'max_N_sites_per_ring', 18,
-                          'Maximum number of sites per ring (``max_N_sites_per_ring``) exceeded.')
+        consistency_check(
+            N_sites_per_ring,
+            self.options,
+            "max_N_sites_per_ring",
+            18,
+            "Maximum number of sites per ring (``max_N_sites_per_ring``) exceeded.",
+        )
 
     @classmethod
     def switch_engine(cls, other_engine, *, options=None, **kwargs):
@@ -127,11 +134,11 @@ class Algorithm:
         """
         # If `resume_data` is defined in the kwargs, use that.
         # This allows subclasses to overwrite instead of calling :meth:`get_resume_data`.
-        if 'resume_data' not in kwargs:
-            kwargs['resume_data'] = other_engine.get_resume_data()
+        if "resume_data" not in kwargs:
+            kwargs["resume_data"] = other_engine.get_resume_data()
         if options is None:
             options = other_engine.options
-        kwargs.setdefault('cache', other_engine.cache)
+        kwargs.setdefault("cache", other_engine.cache)
         obj = cls(other_engine.psi, other_engine.model, options, **kwargs)
         obj.checkpoint = other_engine.checkpoint  # TODO: do this?
         return obj
@@ -186,9 +193,9 @@ class Algorithm:
         """
         psi = self._resume_psi
         if psi is not None:
-            return {'psi': psi, 'sequential_simulations': sequential_simulations}
+            return {"psi": psi, "sequential_simulations": sequential_simulations}
         else:
-            return {'psi': self.psi, 'sequential_simulations': sequential_simulations}
+            return {"psi": self.psi, "sequential_simulations": sequential_simulations}
 
     def estimate_RAM(self, mem_saving_factor=None):
         """Gives an approximate prediction for the required memory usage.
@@ -222,13 +229,13 @@ class Algorithm:
         """
         # first get memory per tensor entry in bytes
         dtypes = [self.psi.dtype]
-        if hasattr(self, 'H_MPO'):
+        if hasattr(self, "H_MPO"):
             dtypes.append(self.H_MPO.dtype)
-        if hasattr(self, 'H_bond'):
+        if hasattr(self, "H_bond"):
             dtypes.append([h.dtype for h in self.H_bond if h is not None])
         if isinstance(self, TimeEvolutionAlgorithm):
             # time evolution needs complex states
-            dtypes.append(np.dtype('complex128'))
+            dtypes.append(np.dtype("complex128"))
         common_dtype = np.result_type(*dtypes)
         entry_size = common_dtype.itemsize  # likely 8 or 16 bytes for np.float64/np.complex128
 
@@ -239,17 +246,17 @@ class Algorithm:
 
         # determine all bond dimensions for arbitrary chains
         if self.psi.bc == "finite":
-            chis = np.zeros(L+1, dtype=int)
+            chis = np.zeros(L + 1, dtype=int)
             # first go from left to right
             chis[0] = self.model.lat.mps_sites()[0].dim
             for i in range(1, L):
-                chis[i] = min(chis[i-1] * self.model.lat.mps_sites()[i-1].dim, chi_max)
+                chis[i] = min(chis[i - 1] * self.model.lat.mps_sites()[i - 1].dim, chi_max)
             # now introduce cutoff from right
-            chis[L] = self.model.lat.mps_sites()[L-1].dim
-            for i in range(L-1, 0, -1):
-                chis[i] = min(chis[i], min(chis[i+1] * self.model.lat.mps_sites()[i].dim, chi_max))
+            chis[L] = self.model.lat.mps_sites()[L - 1].dim
+            for i in range(L - 1, 0, -1):
+                chis[i] = min(chis[i], min(chis[i + 1] * self.model.lat.mps_sites()[i].dim, chi_max))
         else:
-            chis = [chi_max]*(L+1)
+            chis = [chi_max] * (L + 1)
 
         # now start counting number of tensor entries
         total_entries = 0
@@ -258,7 +265,7 @@ class Algorithm:
         psi_entries = 0
         for i in range(len(self.model.lat.mps_sites())):
             site_i = self.model.lat.mps_sites()[i]
-            psi_entries += site_i.dim * chis[i] * chis[i+1]
+            psi_entries += site_i.dim * chis[i] * chis[i + 1]
 
         total_entries += psi_entries
 
@@ -280,28 +287,27 @@ class Algorithm:
                 # Size of each environment: chi_{i}**2 * D_i or chi_{i+1}**2 * D_i
                 #                           (depending on left/right environment)
                 # The shape is ordered like (wL, wR, p, p*)
-                env_entries += chis[i]**2 * max(W.shape[0], W.shape[1])
+                env_entries += chis[i] ** 2 * max(W.shape[0], W.shape[1])
                 # max: sweeps need only L, not 2L env tensors
 
             lanczos_entries = 0
             # Additional RAM, if Lanczos is performed
             # We need to construct (1) the effective Hamiltonian and (2) the two-site wave-function
             # (1) H_eff
-            W = MPO.get_W(L//2)
+            W = MPO.get_W(L // 2)
             # Left and right part from H_eff -> 2 times environment
             # The third comes from the first contraction from 2-site wave function to left H_eff
-            lanczos_entries += 3 * H_dim[L//2]**2 * (chi_max**2 * max(W.shape[0], W.shape[1]))
+            lanczos_entries += 3 * H_dim[L // 2] ** 2 * (chi_max**2 * max(W.shape[0], W.shape[1]))
             #                  |         |                          |
             #           occurrences   from W                environment RAM
             #                        contraction
 
             # (2) 2-site wave-function
 
-            lanczos_entries += 2 * chi_max**2 * H_dim[L//2]**2
+            lanczos_entries += 2 * chi_max**2 * H_dim[L // 2] ** 2
             #              |          |           |
             #         occurrences  virtual     physical
             #       (top & bottom)  legs         legs
-
 
             logger.debug("Extracted MPS environment RAM usage as %10.0f kB", env_entries)
             logger.debug("Extracted MPO RAM usage as             %10.0f kB", MPO_entries)
@@ -316,8 +322,7 @@ class Algorithm:
         logger.debug("We get a total of %.3e = %d entries for the RAM estimate", entry_size, entry_size)
         logger.debug("Each entry uses %d byte", entry_size)
         RAM = total_entries * entry_size
-        logger.debug("We have a saving factor of %.5f ~= 1/%d",
-                     mem_saving_factor, int(1./mem_saving_factor + 0.5))
+        logger.debug("We have a saving factor of %.5f ~= 1/%d", mem_saving_factor, int(1.0 / mem_saving_factor + 0.5))
         RAM *= mem_saving_factor
         RAM_MB = RAM / 1024**2
         logger.info("Total RAM estimate: %8d MB", RAM_MB)
@@ -355,19 +360,20 @@ class TimeEvolutionAlgorithm(Algorithm):
         Not that the real-part of `t` is increasing for a real-time evolution,
         while the imaginary-part of `t` is *decreasing* for a imaginary time evolution.
     """
+
     time_dependent_H = False  #: whether the algorithm supports time-dependent H
 
     def __init__(self, psi, model, options, **kwargs):
         super().__init__(psi, model, options, **kwargs)
-        self.evolved_time = self.options.get('start_time', 0., 'real')
-        self.trunc_err = self.options.get('start_trunc_err', TruncationError(), TruncationError)
+        self.evolved_time = self.options.get("start_time", 0.0, "real")
+        self.trunc_err = self.options.get("start_trunc_err", TruncationError(), TruncationError)
         self.force_prepare_evolve = False
         if self.resume_data:
-            self.evolved_time = self.resume_data['evolved_time']
+            self.evolved_time = self.resume_data["evolved_time"]
 
     def get_resume_data(self, sequential_simulations=False):
         data = super().get_resume_data(sequential_simulations)
-        data['evolved_time'] = self.evolved_time
+        data["evolved_time"] = self.evolved_time
         return data
 
     def run(self):
@@ -377,8 +383,8 @@ class TimeEvolutionAlgorithm(Algorithm):
         The recommended way to do this is via the
         :class:`~tenpy.simulations.time_evolution.RealTimeEvolution`.
         """
-        dt = self.options.get('dt', 0.1, 'real')
-        N_steps = self.options.get('N_steps', 1, int)
+        dt = self.options.get("dt", 0.1, "real")
+        N_steps = self.options.get("N_steps", 1, int)
 
         start_time = time.time()
         Sold = np.mean(self.psi.entanglement_entropy())
@@ -388,13 +394,15 @@ class TimeEvolutionAlgorithm(Algorithm):
         S = self.psi.entanglement_entropy()
         logger.info(
             "--> time=%(t)3.3f, max(chi)=%(chi)d, max(S)=%(S).5f, "
-            "avg DeltaS=%(dS).4e, since last update: %(wall_time).1fs", {
-                't': self.evolved_time.real,
-                'chi': max(self.psi.chi),
-                'S': max(S),
-                'dS': np.mean(S) - Sold,
-                'wall_time': time.time() - start_time,
-            })
+            "avg DeltaS=%(dS).4e, since last update: %(wall_time).1fs",
+            {
+                "t": self.evolved_time.real,
+                "chi": max(self.psi.chi),
+                "S": max(S),
+                "dS": np.mean(S) - Sold,
+                "wall_time": time.time() - start_time,
+            },
+        )
         return self.psi
 
     def run_evolution(self, N_steps, dt):
@@ -403,7 +411,7 @@ class TimeEvolutionAlgorithm(Algorithm):
         This is the inner part of :meth:`run` without the logging.
         For parameters see :cfg:config:`TimeEvolutionAlgorithm`.
         """
-        preserve_norm = self.options.get('preserve_norm', None, bool)
+        preserve_norm = self.options.get("preserve_norm", None, bool)
         if preserve_norm is None:  # default: preserve norm for real time evolution
             preserve_norm = not np.iscomplex(dt)
         if preserve_norm:
@@ -463,8 +471,13 @@ class TimeEvolutionAlgorithm(Algorithm):
 
         for _ in range(N_steps):
             trunc_err += self.evolve_step(dt)
-            consistency_check(trunc_err.eps, self.options, 'max_trunc_err', 0.01,
-                              'Maximum truncation error (``max_trunc_err``) exceeded.')
+            consistency_check(
+                trunc_err.eps,
+                self.options,
+                "max_trunc_err",
+                0.01,
+                "Maximum truncation error (``max_trunc_err``) exceeded.",
+            )
 
         self.evolved_time = self.evolved_time + N_steps * dt
         # (this is done to avoid problems of users storing self.trunc_err after each `update`)
@@ -496,6 +509,7 @@ class TimeDependentHAlgorithm(TimeEvolutionAlgorithm):
     .. todo ::
         This is still under development and lacks rigorous tests.
     """
+
     time_dependent_H = True
 
     def __init__(self, psi, model, options, **kwargs):
@@ -509,7 +523,7 @@ class TimeDependentHAlgorithm(TimeEvolutionAlgorithm):
         Updates the model after each time step `dt` to account for changing H(t).
         For parameters see :cfg:config:`TimeEvolutionAlgorithm`.
         """
-        preserve_norm = self.options.get('preserve_norm', None, bool)
+        preserve_norm = self.options.get("preserve_norm", None, bool)
         if preserve_norm is None:  # default: preserve norm for real time evolution
             preserve_norm = not np.iscomplex(dt)
         if preserve_norm:
@@ -523,7 +537,6 @@ class TimeDependentHAlgorithm(TimeEvolutionAlgorithm):
 
             self.reinit_model()
 
-
         if preserve_norm:
             self.psi.norm = old_norm
 
@@ -533,7 +546,7 @@ class TimeDependentHAlgorithm(TimeEvolutionAlgorithm):
         Skips re-initialization if the ``model.options['time']`` is the same as `evolved_time`.
         The model should read out the option ``'time'`` and initialize the corresponding ``H(t)``.
         """
-        model_time = self.model.options.get('time', None, 'real')
+        model_time = self.model.options.get("time", None, "real")
         if model_time is not None and model_time == self.evolved_time:
             return  # already had that time defined during model init, so no need to update
         self.model = self.model.update_time_parameter(self.evolved_time)

@@ -14,19 +14,19 @@ from ..tools.misc import inverse_permutation, find_subclass
 from ..tools.hdf5_io import Hdf5Exportable
 
 __all__ = [
-    'Site',
-    'GroupedSite',
-    'group_sites',
-    'set_common_charges',
-    'kron',
-    'SpinHalfSite',
-    'SpinSite',
-    'FermionSite',
-    'SpinHalfFermionSite',
-    'SpinHalfHoleSite',
-    'BosonSite',
-    'ClockSite',
-    'spin_half_species',
+    "Site",
+    "GroupedSite",
+    "group_sites",
+    "set_common_charges",
+    "kron",
+    "SpinHalfSite",
+    "SpinSite",
+    "FermionSite",
+    "SpinHalfFermionSite",
+    "SpinHalfHoleSite",
+    "BosonSite",
+    "ClockSite",
+    "spin_half_species",
 ]
 
 
@@ -177,17 +177,17 @@ class Site(Hdf5Exportable):
                 if v is not None:
                     self.state_labels[str(v)] = i
         self.opnames = set()
-        self.need_JW_string = set(['JW'])
+        self.need_JW_string = set(["JW"])
         self.hc_ops = {}
-        if not hasattr(self, 'perm'):  # default permutation for the local states
+        if not hasattr(self, "perm"):  # default permutation for the local states
             self.perm = np.arange(self.dim)
-        self.add_op('Id', npc.diag(1., self.leg), hc='Id')
+        self.add_op("Id", npc.diag(1.0, self.leg), hc="Id")
         for name, op in site_ops.items():
             self.add_op(name, op)
-        if 'JW' not in self.opnames:
+        if "JW" not in self.opnames:
             # include trivial `JW` to allow combinations
             # of bosonic and fermionic sites in an MPS
-            self.add_op('JW', self.Id, hc='JW')
+            self.add_op("JW", self.Id, hc="JW")
         if sort_charge:
             self.sort_charge()
         self.test_sanity()
@@ -222,7 +222,7 @@ class Site(Hdf5Exportable):
                 op = op[np.ix_(permute, permute)]
             # need_JW and hc_ops are still set
             self.add_op(opname, op, need_JW=False, hc=False, permute_dense=False)
-        if hasattr(self, 'charge_to_JW_parity'):
+        if hasattr(self, "charge_to_JW_parity"):
             # might no longer be valid (unclear!), so better delete.
             del self.charge_to_JW_parity
         # done
@@ -244,7 +244,7 @@ class Site(Hdf5Exportable):
             return np.arange(self.dim, dtype=np.intp)  # nothing to do
         perm_qind, leg_sorted = self.leg.sort(bunch)
         perm_flat = self.leg.perm_flat_from_perm_qind(perm_qind)
-        charge_to_JW_parity = getattr(self, 'charge_to_JW_parity', None)
+        charge_to_JW_parity = getattr(self, "charge_to_JW_parity", None)
         self.change_charge(leg_sorted, perm_flat)
         # change_charge updates self.state_label and self.perm
         self.used_sort_charge = True
@@ -271,18 +271,17 @@ class Site(Hdf5Exportable):
             op.test_sanity()
         for op in self.need_JW_string:
             assert op in self.opnames
-        np.testing.assert_array_almost_equal(np.diag(np.exp(1.j * np.pi * self.JW_exponent)),
-                                             self.JW.to_ndarray(), 15)
-        if hasattr(self, 'hc_ops'):
+        np.testing.assert_array_almost_equal(np.diag(np.exp(1.0j * np.pi * self.JW_exponent)), self.JW.to_ndarray(), 15)
+        if hasattr(self, "hc_ops"):
             for op1, op2 in self.hc_ops.items():
                 assert op1 in self.opnames and op2 in self.opnames
                 op1 = self.get_op(op1)
                 op2 = self.get_op(op2)
                 assert op1.conj().transpose() == op2
-        if getattr(self, 'charge_to_JW_parity', None) is not None:
-           JW_diag = np.diag(self.JW.to_ndarray())
-           JW_signs = self.charge_to_JW_signs(self.leg.to_qflat())
-           np.testing.assert_array_almost_equal(JW_diag, JW_signs, 14)
+        if getattr(self, "charge_to_JW_parity", None) is not None:
+            JW_diag = np.diag(self.JW.to_ndarray())
+            JW_signs = self.charge_to_JW_signs(self.leg.to_qflat())
+            np.testing.assert_array_almost_equal(JW_diag, JW_signs, 14)
 
     @property
     def dim(self):
@@ -345,17 +344,23 @@ class Site(Hdf5Exportable):
                 op = npc.Array.from_ndarray(op, [self.leg, self.leg.conj()])
             except ValueError as e:
                 # just add a more help-ful error message printing the operators
-                raise ValueError('\n'.join([
-                    f"Can't convert operator {name!r} to npc Array", "Flat charges:",
-                    str(self.leg.to_qflat()), "Operator:",
-                    str(op)
-                ])) from e
+                raise ValueError(
+                    "\n".join(
+                        [
+                            f"Can't convert operator {name!r} to npc Array",
+                            "Flat charges:",
+                            str(self.leg.to_qflat()),
+                            "Operator:",
+                            str(op),
+                        ]
+                    )
+                ) from e
         if op.rank != 2:
             raise ValueError("only rank-2 on-site operators allowed")
         op.legs[0].test_equal(self.leg)
         op.legs[1].test_contractible(self.leg)
         op.test_sanity()
-        op.iset_leg_labels(['p', 'p*'])
+        op.iset_leg_labels(["p", "p*"])
         setattr(self, name, op)
         self.opnames.add(name)
         if need_JW:
@@ -373,7 +378,7 @@ class Site(Hdf5Exportable):
         if hc:
             self.hc_ops[hc] = name
             self.hc_ops[name] = hc
-        if name == 'JW':
+        if name == "JW":
             self.JW_exponent = np.angle(np.real_if_close(np.diag(op.to_ndarray()))) / np.pi
 
     def rename_op(self, old_name, new_name):
@@ -399,7 +404,7 @@ class Site(Hdf5Exportable):
         self.opnames.add(new_name)
         if need_JW:
             self.need_JW_string.add(new_name)
-        if new_name == 'JW':
+        if new_name == "JW":
             self.JW_exponent = np.real_if_close(np.angle(np.diag(op.to_ndarray())) / np.pi)
         if old_hc_name is not None:
             if old_hc_name == old_name:
@@ -474,7 +479,7 @@ class Site(Hdf5Exportable):
             op2 = getattr(self, name2, None)
             if op2 is None:
                 raise ValueError("{0!r} doesn't have the operator {1!r}".format(self, name2))
-            op = npc.tensordot(op, op2, axes=['p*', 'p'])
+            op = npc.tensordot(op, op2, axes=["p*", "p"])
         return op
 
     def get_hc_op_name(self, name):
@@ -499,7 +504,7 @@ class Site(Hdf5Exportable):
             if hc_name_2 is None:
                 raise ValueError("hermitian conjugate of operator {0!s} unknown".format(name2))
             hc_names.append(hc_name_2)
-        return ' '.join(hc_names)
+        return " ".join(hc_names)
 
     def op_needs_JW(self, name):
         """Whether an (composite) onsite operator is fermionic and needs a Jordan-Wigner string.
@@ -558,8 +563,8 @@ class Site(Hdf5Exportable):
             Operator name representing the product of operators in `names`.
         """
         if len(names) == 0:
-            return 'Id'
-        return ' '.join(names)
+            return "Id"
+        return " ".join(names)
 
     def multiply_operators(self, operators):
         """Multiply local operators (possibly given by their names) together.
@@ -587,7 +592,7 @@ class Site(Hdf5Exportable):
         for next_op in operators[1:]:
             if isinstance(next_op, str):
                 next_op = self.get_op(next_op)
-            op = npc.tensordot(op, next_op, axes=['p*', 'p'])
+            op = npc.tensordot(op, next_op, axes=["p*", "p"])
         return op
 
     def __repr__(self):
@@ -617,12 +622,12 @@ class Site(Hdf5Exportable):
         JW_signs :
             Should only have values +1 or -1.
         """
-        charge_to_JW_parity = getattr(self, 'charge_to_JW_parity', None)
+        charge_to_JW_parity = getattr(self, "charge_to_JW_parity", None)
         if charge_to_JW_parity is not None:
             charges = self.leg.chinfo.make_valid(charges)
             parity = np.mod(np.sum(charges * charge_to_JW_parity, axis=-1), 2)
             # parity has values in [0, 1]
-            return 1. - 2. * parity  # values +/- 1, same as (-1)**parity
+            return 1.0 - 2.0 * parity  # values +/- 1, same as (-1)**parity
         raise ValueError("`charge_to_JW_parity` not defined!")
 
 
@@ -671,7 +676,7 @@ class GroupedSite(Site):
         The labels using which the single-site operators are added during construction.
     """
 
-    def __init__(self, sites, labels=None, charges='same'):
+    def __init__(self, sites, labels=None, charges="same"):
         self.n_sites = n_sites = len(sites)
         self.sites = sites
         self.charges = charges
@@ -679,14 +684,14 @@ class GroupedSite(Site):
         if labels is None:
             labels = [str(i) for i in range(n_sites)]
         self.labels = labels
-        if charges == 'same':
+        if charges == "same":
             pass  # nothing to do
-        elif charges == 'drop':
+        elif charges == "drop":
             legs = [npc.LegCharge.from_drop_charge(sites[0].leg)]
             chinfo = legs[0].chinfo
             for site in sites[1:]:
                 legs.append(npc.LegCharge.from_drop_charge(sites[0].leg, chargeinfo=chinfo))
-        elif charges == 'independent':
+        elif charges == "independent":
             # charges are separately conserved
             legs = []
             for i in range(n_sites):
@@ -699,8 +704,8 @@ class GroupedSite(Site):
                 legs.append(leg)
         else:
             raise ValueError("Unknown option for `charges`: " + repr(charges))
-        c2JWps = [getattr(s, 'charge_to_JW_parity', None) for s in sites]  # maybe keep it below
-        if charges != 'same':
+        c2JWps = [getattr(s, "charge_to_JW_parity", None) for s in sites]  # maybe keep it below
+        if charges != "same":
             sites = [copy.copy(s) for s in sites]  # avoid modifying the existing sites.
             # sort legs
             for i in range(n_sites):
@@ -722,7 +727,7 @@ class GroupedSite(Site):
         for states_labels in itertools.product(*[s.state_labels.items() for s in sites]):
             inds = [v for k, v in states_labels]  # values of the dictionaries
             ind_pipe = pipe.map_incoming_flat(inds)
-            label = ' '.join([st + '_' + lbl for (st, idx), lbl in zip(states_labels, labels)])
+            label = " ".join([st + "_" + lbl for (st, idx), lbl in zip(states_labels, labels)])
             self.state_labels[label] = ind_pipe
 
         # add remaining operators
@@ -731,7 +736,7 @@ class GroupedSite(Site):
         for i in range(n_sites):
             site = sites[i]
             for opname, op in site.onsite_ops.items():
-                if opname == 'Id':
+                if opname == "Id":
                     continue
                 need_JW = opname in site.need_JW_string
                 hc_opname = site.hc_ops.get(opname, None)
@@ -747,11 +752,11 @@ class GroupedSite(Site):
 
         # propagate `charge_to_JW_parity` if safe/clear what it should be
         # read it into c2JWps for each site before calling Site.change_charge() deleting it
-        if charges == 'same':
+        if charges == "same":
             # already same charges, so could/should have same `charge_to_JW_parity`
             if all(p is not None and all(p == c2JWps[0]) for p in c2JWps):
                 self.charge_to_JW_parity = c2JWps[0]
-        elif charges == 'independent':
+        elif charges == "independent":
             if all(p is not None for p in c2JWps):
                 self.charge_to_JW_parity = np.concatenate(c2JWps)
         # other cases: not immediately clear what charge_to_JW_parity should be / is still valid
@@ -772,22 +777,22 @@ class GroupedSite(Site):
             with labels ``['p', 'p*']``.
         """
         sites = self.sites
-        op = ops[0].transpose(['p', 'p*'])
+        op = ops[0].transpose(["p", "p*"])
         for op2 in ops[1:]:
-            op = npc.outer(op, op2.transpose(['p', 'p*']))
+            op = npc.outer(op, op2.transpose(["p", "p*"]))
         combine = [list(range(0, 2 * self.n_sites - 1, 2)), list(range(1, 2 * self.n_sites, 2))]
         pipe = self.leg
         op = op.combine_legs(combine, pipes=[pipe, pipe.conj()])
-        return op.iset_leg_labels(['p', 'p*'])
+        return op.iset_leg_labels(["p", "p*"])
 
     def __repr__(self):
         """Debug representation of self."""
-        return "GroupedSite({sites!r}, {labels!r}, {charges!r})".format(sites=self.sites,
-                                                                        labels=self.labels,
-                                                                        charges=self.charges)
+        return "GroupedSite({sites!r}, {labels!r}, {charges!r})".format(
+            sites=self.sites, labels=self.labels, charges=self.charges
+        )
 
 
-def group_sites(sites, n=2, labels=None, charges='same'):
+def group_sites(sites, n=2, labels=None, charges="same"):
     """Given a list of sites, group each `n` sites together.
 
     Parameters
@@ -808,13 +813,13 @@ def group_sites(sites, n=2, labels=None, charges='same'):
     if labels is None:
         labels = [str(i) for i in range(n)]
     for i in range(0, len(sites), n):
-        group = sites[i:i + n]
-        s = GroupedSite(group, labels[:len(group)], charges)
+        group = sites[i : i + n]
+        s = GroupedSite(group, labels[: len(group)], charges)
         grouped_sites.append(s)
     return grouped_sites
 
 
-def set_common_charges(sites, new_charges='same', new_names=None, new_mod=None, sort_charge=True):
+def set_common_charges(sites, new_charges="same", new_names=None, new_mod=None, sort_charge=True):
     r"""Adjust the charges of the given sites *in place* such that they can be used together.
 
     Before we can contract operators (and tensors) corresponding to different :class:`Site`
@@ -1003,30 +1008,29 @@ def set_common_charges(sites, new_charges='same', new_names=None, new_mod=None, 
         >>> assert ferm.leg.chinfo.qnumber == spin.leg.chinfo.qnumber == 0  # trivial: no charges
     """
     for s, site in enumerate(sites):
-        for site2 in sites[s + 1:]:
+        for site2 in sites[s + 1 :]:
             if site2 is site:
                 raise ValueError("`sites` contains the same object multiple times. Make copies!")
     old_chinfos = [site.leg.chinfo for site in sites]
     if isinstance(new_charges, str):
-        if new_charges == 'same':
+        if new_charges == "same":
             new_charges = []
             name_to_new_idx = {}
             for s, site in enumerate(sites):
                 chinfo = site.leg.chinfo
                 for i, n in enumerate(chinfo.names):
                     if n is None:
-                        new_charges.append([(1, s, i)])  #independent charge
+                        new_charges.append([(1, s, i)])  # independent charge
                     else:
                         if n not in name_to_new_idx:
                             name_to_new_idx[n] = len(new_charges)
                             new_charges.append([(1, s, i)])
                         else:
                             new_charges[name_to_new_idx[n]].append((1, s, i))
-        elif new_charges == 'drop':
+        elif new_charges == "drop":
             new_charges = []
-        elif new_charges == 'independent':
-            new_charges = [[(1, s, i)] for s, site in enumerate(sites)
-                           for i in range(site.leg.chinfo.qnumber)]
+        elif new_charges == "independent":
+            new_charges = [[(1, s, i)] for s, site in enumerate(sites) for i in range(site.leg.chinfo.qnumber)]
         else:
             raise ValueError("unknown option for new_charges: " + repr(new_charges))
     else:
@@ -1049,7 +1053,7 @@ def set_common_charges(sites, new_charges='same', new_names=None, new_mod=None, 
     if new_mod is None:
         new_mod = [old_chinfos[lst[0][1]].mod[lst[0][2]] for lst in new_charges]
         for i, new_charge in enumerate(new_charges):
-            for (_, s, oi) in new_charge:
+            for _, s, oi in new_charge:
                 if old_chinfos[s].mod[oi] != new_mod[i]:
                     # (this is only tested if new_mod isn't set explicitly)
                     raise ValueError("Charges which get combined have different `mod` nature!")
@@ -1072,7 +1076,7 @@ def set_common_charges(sites, new_charges='same', new_names=None, new_mod=None, 
                     if old_qflat_i.dtype != new_qflat.dtype:
                         unrounded_old_qflat_i = old_qflat_i
                         old_qflat_i = np.array(np.rint(old_qflat_i), dtype=new_qflat.dtype)
-                        if np.any(np.abs(old_qflat_i - unrounded_old_qflat_i) > 1.e-5):
+                        if np.any(np.abs(old_qflat_i - unrounded_old_qflat_i) > 1.0e-5):
                             raise ValueError("float `factor` causes non-integer charges")
                     new_qflat[:, new_i] += old_qflat_i
         # update the site with the new charges
@@ -1100,7 +1104,7 @@ def _set_common_charges_charge_to_JW_parity(sites, new_charges, new_mod):
     they should just define it by hand...
     """
     # get new `charge_to_JW_parity` if possible
-    c2JWps = [getattr(s, 'charge_to_JW_parity', None) for s in sites]
+    c2JWps = [getattr(s, "charge_to_JW_parity", None) for s in sites]
     if not all(p is not None for p in c2JWps):
         return None
 
@@ -1113,7 +1117,7 @@ def _set_common_charges_charge_to_JW_parity(sites, new_charges, new_mod):
         # no fermions at all, so trivial `charge_to_JW_parity`
         return np.array([0] * len(new_charges))
 
-    need = set(need)   # can't have duplicates anyways; convert to set to compare without order
+    need = set(need)  # can't have duplicates anyways; convert to set to compare without order
     new_charge_sets = []
     new_is = []
     for new_i, new_charge in enumerate(new_charges):
@@ -1162,10 +1166,11 @@ def kron(*ops, group=True):
     """
     if len(ops) <= 1:
         raise ValueError("need at least 2 ops")
-    product = npc.outer(ops[0].replace_labels(['p', 'p*'], ['p0', 'p0*']),
-                        ops[1].replace_labels(['p', 'p*'], ['p1', 'p1*']))
+    product = npc.outer(
+        ops[0].replace_labels(["p", "p*"], ["p0", "p0*"]), ops[1].replace_labels(["p", "p*"], ["p1", "p1*"])
+    )
     for i in range(2, len(ops)):
-        op = ops[i].replace_labels(['p', 'p*'], [f"p{i:d}", f"p{i:d}*"])
+        op = ops[i].replace_labels(["p", "p*"], [f"p{i:d}", f"p{i:d}*"])
         product = npc.outer(product, op)
     if group:
         labels = [[f"p{i:d}" for i in range(len(ops))], [f"p{i:d}*" for i in range(len(ops))]]
@@ -1217,38 +1222,38 @@ class SpinHalfSite(Site):
         Defines what is conserved, see table above.
     """
 
-    def __init__(self, conserve='Sz', sort_charge=True):
+    def __init__(self, conserve="Sz", sort_charge=True):
         if not conserve:
-            conserve = 'None'
-        if conserve not in ['Sz', 'parity', 'None']:
+            conserve = "None"
+        if conserve not in ["Sz", "parity", "None"]:
             raise ValueError("invalid `conserve`: " + repr(conserve))
-        Sx = [[0., 0.5], [0.5, 0.]]
-        Sy = [[0., -0.5j], [+0.5j, 0.]]
-        Sz = [[0.5, 0.], [0., -0.5]]
-        Sp = [[0., 1.], [0., 0.]]  # == Sx + i Sy
-        Sm = [[0., 0.], [1., 0.]]  # == Sx - i Sy
+        Sx = [[0.0, 0.5], [0.5, 0.0]]
+        Sy = [[0.0, -0.5j], [+0.5j, 0.0]]
+        Sz = [[0.5, 0.0], [0.0, -0.5]]
+        Sp = [[0.0, 1.0], [0.0, 0.0]]  # == Sx + i Sy
+        Sm = [[0.0, 0.0], [1.0, 0.0]]  # == Sx - i Sy
         ops = dict(Sp=Sp, Sm=Sm, Sz=Sz)
-        if conserve == 'Sz':
-            chinfo = npc.ChargeInfo([1], ['2*Sz'])
+        if conserve == "Sz":
+            chinfo = npc.ChargeInfo([1], ["2*Sz"])
             leg = npc.LegCharge.from_qflat(chinfo, [1, -1])
         else:
             ops.update(Sx=Sx, Sy=Sy)
-            if conserve == 'parity':
-                chinfo = npc.ChargeInfo([2], ['parity_Sz'])
+            if conserve == "parity":
+                chinfo = npc.ChargeInfo([2], ["parity_Sz"])
                 leg = npc.LegCharge.from_qflat(chinfo, [1, 0])  # ([1, -1] would need ``qmod=[4]``)
             else:
                 leg = npc.LegCharge.from_trivial(2)
         self.conserve = conserve
         # Specify Hermitian conjugates
-        Site.__init__(self, leg, ['up', 'down'], sort_charge=sort_charge, **ops)
+        Site.__init__(self, leg, ["up", "down"], sort_charge=sort_charge, **ops)
         # further alias for state labels
-        self.state_labels['-0.5'] = self.state_labels['down']
-        self.state_labels['0.5'] = self.state_labels['up']
+        self.state_labels["-0.5"] = self.state_labels["down"]
+        self.state_labels["0.5"] = self.state_labels["up"]
         # Add Pauli matrices
-        if conserve != 'Sz':
-            self.add_op('Sigmax', 2. * self.Sx)
-            self.add_op('Sigmay', 2. * self.Sy)
-        self.add_op('Sigmaz', 2. * self.Sz)
+        if conserve != "Sz":
+            self.add_op("Sigmax", 2.0 * self.Sx)
+            self.add_op("Sigmay", 2.0 * self.Sy)
+        self.add_op("Sigmaz", 2.0 * self.Sz)
         self.charge_to_JW_parity = np.array([0] * leg.chinfo.qnumber, int)  # trivial
 
     def __repr__(self):
@@ -1299,10 +1304,10 @@ class SpinSite(Site):
         Defines what is conserved, see table above.
     """
 
-    def __init__(self, S=0.5, conserve='Sz', sort_charge=True):
+    def __init__(self, S=0.5, conserve="Sz", sort_charge=True):
         if not conserve:
-            conserve = 'None'
-        if conserve not in ['Sz', 'parity', 'None']:
+            conserve = "None"
+        if conserve not in ["Sz", "parity", "None"]:
             raise ValueError("invalid `conserve`: " + repr(conserve))
         self.S = S = float(S)
         d = 2 * S + 1
@@ -1329,21 +1334,21 @@ class SpinSite(Site):
         # at the Sz entries...
         # (The commutation relations are checked explicitly in `tests/test_site.py`)
         ops = dict(Sp=Sp, Sm=Sm, Sz=Sz)
-        if conserve == 'Sz':
-            chinfo = npc.ChargeInfo([1], ['2*Sz'])
+        if conserve == "Sz":
+            chinfo = npc.ChargeInfo([1], ["2*Sz"])
             leg = npc.LegCharge.from_qflat(chinfo, np.array(2 * Sz_diag, dtype=np.int64))
         else:
             ops.update(Sx=Sx, Sy=Sy)
-            if conserve == 'parity':
-                chinfo = npc.ChargeInfo([2], ['parity_Sz'])
+            if conserve == "parity":
+                chinfo = npc.ChargeInfo([2], ["parity_Sz"])
                 leg = npc.LegCharge.from_qflat(chinfo, np.mod(np.arange(d), 2))
             else:
                 leg = npc.LegCharge.from_trivial(d)
         self.conserve = conserve
-        names = [str(i) for i in np.arange(-S, S + 1, 1.)]
+        names = [str(i) for i in np.arange(-S, S + 1, 1.0)]
         Site.__init__(self, leg, names, sort_charge=sort_charge, **ops)
-        self.state_labels['down'] = self.state_labels[names[0]]
-        self.state_labels['up'] = self.state_labels[names[-1]]
+        self.state_labels["down"] = self.state_labels[names[0]]
+        self.state_labels["up"] = self.state_labels[names[-1]]
         self.charge_to_JW_parity = np.array([0] * leg.chinfo.qnumber, int)  # trivial
 
     def __repr__(self):
@@ -1396,24 +1401,24 @@ class FermionSite(Site):
         Average filling. Used to define ``dN``.
     """
 
-    def __init__(self, conserve='N', filling=0.5):
+    def __init__(self, conserve="N", filling=0.5):
         if not conserve:
-            conserve = 'None'
-        if conserve not in ['N', 'parity', 'None']:
+            conserve = "None"
+        if conserve not in ["N", "parity", "None"]:
             raise ValueError("invalid `conserve`: " + repr(conserve))
-        JW = np.array([[1., 0.], [0., -1.]])
-        C = np.array([[0., 1.], [0., 0.]])
-        Cd = np.array([[0., 0.], [1., 0.]])
-        N = np.array([[0., 0.], [0., 1.]])
-        dN = np.array([[-filling, 0.], [0., 1. - filling]])
+        JW = np.array([[1.0, 0.0], [0.0, -1.0]])
+        C = np.array([[0.0, 1.0], [0.0, 0.0]])
+        Cd = np.array([[0.0, 0.0], [1.0, 0.0]])
+        N = np.array([[0.0, 0.0], [0.0, 1.0]])
+        dN = np.array([[-filling, 0.0], [0.0, 1.0 - filling]])
         dNdN = dN**2  # (element wise power is fine since dN is diagonal)
         ops = dict(JW=JW, C=C, Cd=Cd, N=N, dN=dN, dNdN=dNdN)
-        if conserve == 'N':
-            chinfo = npc.ChargeInfo([1], ['N'])
+        if conserve == "N":
+            chinfo = npc.ChargeInfo([1], ["N"])
             leg = npc.LegCharge.from_qflat(chinfo, [0, 1])
             self.charge_to_JW_parity = np.array([1])
-        elif conserve == 'parity':
-            chinfo = npc.ChargeInfo([2], ['parity_N'])
+        elif conserve == "parity":
+            chinfo = npc.ChargeInfo([2], ["parity_N"])
             leg = npc.LegCharge.from_qflat(chinfo, [0, 1])
             self.charge_to_JW_parity = np.array([1])
         else:
@@ -1421,9 +1426,9 @@ class FermionSite(Site):
             # no charge_to_JW_parity possible
         self.conserve = conserve
         self.filling = filling
-        Site.__init__(self, leg, ['empty', 'full'], sort_charge=True, **ops)
+        Site.__init__(self, leg, ["empty", "full"], sort_charge=True, **ops)
         # specify fermionic operators
-        self.need_JW_string |= set(['C', 'Cd', 'JW'])
+        self.need_JW_string |= set(["C", "Cd", "JW"])
 
     def __repr__(self):
         """Debug representation of self."""
@@ -1510,27 +1515,27 @@ class SpinHalfFermionSite(Site):
         Average filling. Used to define ``dN``.
     """
 
-    def __init__(self, cons_N='N', cons_Sz='Sz', filling=1.):
+    def __init__(self, cons_N="N", cons_Sz="Sz", filling=1.0):
         if not cons_N:
-            cons_N = 'None'
-        if cons_N not in ['N', 'parity', 'None']:
+            cons_N = "None"
+        if cons_N not in ["N", "parity", "None"]:
             raise ValueError("invalid `cons_N`: " + repr(cons_N))
         if not cons_Sz:
-            cons_Sz = 'None'
-        if cons_Sz not in ['Sz', 'parity', 'None']:
+            cons_Sz = "None"
+        if cons_Sz not in ["Sz", "parity", "None"]:
             raise ValueError("invalid `cons_Sz`: " + repr(cons_Sz))
         d = 4
-        states = ['empty', 'up', 'down', 'full']
+        states = ["empty", "up", "down", "full"]
         # 0) Build the operators.
-        Nu_diag = np.array([0., 1., 0., 1.], dtype=np.float64)
-        Nd_diag = np.array([0., 0., 1., 1.], dtype=np.float64)
+        Nu_diag = np.array([0.0, 1.0, 0.0, 1.0], dtype=np.float64)
+        Nd_diag = np.array([0.0, 0.0, 1.0, 1.0], dtype=np.float64)
         Nu = np.diag(Nu_diag)
         Nd = np.diag(Nd_diag)
         Ntot = np.diag(Nu_diag + Nd_diag)
         dN = np.diag(Nu_diag + Nd_diag - filling)
         NuNd = np.diag(Nu_diag * Nd_diag)
-        JWu = np.diag(1. - 2 * Nu_diag)  # (-1)^Nu
-        JWd = np.diag(1. - 2 * Nd_diag)  # (-1)^Nd
+        JWu = np.diag(1.0 - 2 * Nu_diag)  # (-1)^Nu
+        JWd = np.diag(1.0 - 2 * Nd_diag)  # (-1)^Nd
         JW = JWu * JWd  # (-1)^{Nu+Nd}
 
         Cu = np.zeros((d, d))
@@ -1561,22 +1566,22 @@ class SpinHalfFermionSite(Site):
         qmod = []
         qnames = []
         charges = []
-        if cons_N == 'N':
-            qnames.append('N')
+        if cons_N == "N":
+            qnames.append("N")
             qmod.append(1)
             charges.append([0, 1, 1, 2])
-        elif cons_N == 'parity':
-            qnames.append('parity_N')
+        elif cons_N == "parity":
+            qnames.append("parity_N")
             qmod.append(2)
             charges.append([0, 1, 1, 0])
-        if cons_Sz == 'Sz':
-            qnames.append('2*Sz')  # factor 2 s.t. Cu, Cd have well-defined charges!
+        if cons_Sz == "Sz":
+            qnames.append("2*Sz")  # factor 2 s.t. Cu, Cd have well-defined charges!
             qmod.append(1)
             charges.append([0, 1, -1, 0])
-            del ops['Sx']
-            del ops['Sy']
-        elif cons_Sz == 'parity':
-            qnames.append('parity_Sz')  # the charge is (2*Sz) mod (2*2)
+            del ops["Sx"]
+            del ops["Sy"]
+        elif cons_Sz == "parity":
+            qnames.append("parity_Sz")  # the charge is (2*Sz) mod (2*2)
             qmod.append(4)
             charges.append([0, 1, 3, 0])  # == [0, 1, -1, 0] mod 4
             # e.g. terms like `Sp_i Sp_j + hc` with Sp=Cdu Cd have charges 'N', 'parity_Sz'.
@@ -1595,16 +1600,14 @@ class SpinHalfFermionSite(Site):
         self.filling = filling
         Site.__init__(self, leg, states, sort_charge=True, **ops)
         # specify fermionic operators
-        self.need_JW_string |= set(['Cu', 'Cdu', 'Cd', 'Cdd', 'JWu', 'JWd', 'JW'])
-        if cons_N == 'N' or cons_N == 'parity':
-            self.charge_to_JW_parity = np.array([1] + [0]*(len(qnames) - 1))
+        self.need_JW_string |= set(["Cu", "Cdu", "Cd", "Cdd", "JWu", "JWd", "JW"])
+        if cons_N == "N" or cons_N == "parity":
+            self.charge_to_JW_parity = np.array([1] + [0] * (len(qnames) - 1))
         # else: can't define charge_to_JW_parity
 
     def __repr__(self):
         """Debug representation of self."""
-        return "SpinHalfFermionSite({cN!r}, {cS!r}, {f:f})".format(cN=self.cons_N,
-                                                                   cS=self.cons_Sz,
-                                                                   f=self.filling)
+        return "SpinHalfFermionSite({cN!r}, {cS!r}, {f:f})".format(cN=self.cons_N, cS=self.cons_Sz, f=self.filling)
 
 
 class SpinHalfHoleSite(Site):
@@ -1685,26 +1688,26 @@ class SpinHalfHoleSite(Site):
         Average filling. Used to define ``dN``.
     """
 
-    def __init__(self, cons_N='N', cons_Sz='Sz', filling=1.):
+    def __init__(self, cons_N="N", cons_Sz="Sz", filling=1.0):
         if not cons_N:
-            cons_N = 'None'
-        if cons_N not in ['N', 'parity', 'None']:
+            cons_N = "None"
+        if cons_N not in ["N", "parity", "None"]:
             raise ValueError("invalid `cons_N`: " + repr(cons_N))
         if not cons_Sz:
-            cons_Sz = 'None'
-        if cons_Sz not in ['Sz', 'parity', 'None']:
+            cons_Sz = "None"
+        if cons_Sz not in ["Sz", "parity", "None"]:
             raise ValueError("invalid `cons_Sz`: " + repr(cons_Sz))
         d = 3
-        states = ['empty', 'up', 'down']
+        states = ["empty", "up", "down"]
         # 0) Build the operators.
-        Nu_diag = np.array([0., 1., 0.], dtype=np.float64)
-        Nd_diag = np.array([0., 0., 1.], dtype=np.float64)
+        Nu_diag = np.array([0.0, 1.0, 0.0], dtype=np.float64)
+        Nd_diag = np.array([0.0, 0.0, 1.0], dtype=np.float64)
         Nu = np.diag(Nu_diag)
         Nd = np.diag(Nd_diag)
         Ntot = np.diag(Nu_diag + Nd_diag)
         dN = np.diag(Nu_diag + Nd_diag - filling)
-        JWu = np.diag(1. - 2 * Nu_diag)  # (-1)^Nu
-        JWd = np.diag(1. - 2 * Nd_diag)  # (-1)^Nd
+        JWu = np.diag(1.0 - 2 * Nu_diag)  # (-1)^Nu
+        JWd = np.diag(1.0 - 2 * Nd_diag)  # (-1)^Nd
         JW = JWu * JWd  # (-1)^{Nu+Nd}
 
         Cu = np.zeros((d, d))
@@ -1735,22 +1738,22 @@ class SpinHalfHoleSite(Site):
         qmod = []
         qnames = []
         charges = []
-        if cons_N == 'N':
-            qnames.append('N')
+        if cons_N == "N":
+            qnames.append("N")
             qmod.append(1)
             charges.append([0, 1, 1])
-        elif cons_N == 'parity':
-            qnames.append('parity_N')
+        elif cons_N == "parity":
+            qnames.append("parity_N")
             qmod.append(2)
             charges.append([0, 1, 1])
-        if cons_Sz == 'Sz':
-            qnames.append('2*Sz')  # factor 2 s.t. Cu, Cd have well-defined charges!
+        if cons_Sz == "Sz":
+            qnames.append("2*Sz")  # factor 2 s.t. Cu, Cd have well-defined charges!
             qmod.append(1)
             charges.append([0, 1, -1])
-            del ops['Sx']
-            del ops['Sy']
-        elif cons_Sz == 'parity':
-            qnames.append('parity_Sz')  # the charge is (2*Sz) mod (2*2)
+            del ops["Sx"]
+            del ops["Sy"]
+        elif cons_Sz == "parity":
+            qnames.append("parity_Sz")  # the charge is (2*Sz) mod (2*2)
             qmod.append(4)
             charges.append([0, 1, 3])  # == [0, 1, -1, 0] mod 4
             # e.g. terms like `Sp_i Sp_j + hc` with Sp=Cdu Cd have charges 'N', 'parity_Sz'.
@@ -1769,18 +1772,15 @@ class SpinHalfHoleSite(Site):
         self.filling = filling
         Site.__init__(self, leg, states, sort_charge=True, **ops)
         # specify fermionic operators
-        self.need_JW_string |= set(['Cu', 'Cdu', 'Cd', 'Cdd', 'JWu', 'JWd', 'JW'])
+        self.need_JW_string |= set(["Cu", "Cdu", "Cd", "Cdd", "JWu", "JWd", "JW"])
 
-        if cons_N == 'N' or cons_N == 'parity':
-            self.charge_to_JW_parity = np.array([1] + [0]*(len(qnames) - 1))
+        if cons_N == "N" or cons_N == "parity":
+            self.charge_to_JW_parity = np.array([1] + [0] * (len(qnames) - 1))
         # else: can't define charge_to_JW_parity
-
 
     def __repr__(self):
         """Debug representation of self."""
-        return "SpinHalfHoleSite({cN!r}, {cS!r}, {f:f})".format(cN=self.cons_N,
-                                                                   cS=self.cons_Sz,
-                                                                   f=self.filling)
+        return "SpinHalfHoleSite({cN!r}, {cS!r}, {f:f})".format(cN=self.cons_N, cS=self.cons_Sz, f=self.filling)
 
 
 class BosonSite(Site):
@@ -1828,10 +1828,10 @@ class BosonSite(Site):
         Average filling. Used to define ``dN``.
     """
 
-    def __init__(self, Nmax=1, conserve='N', filling=0.):
+    def __init__(self, Nmax=1, conserve="N", filling=0.0):
         if not conserve:
-            conserve = 'None'
-        if conserve not in ['N', 'parity', 'None']:
+            conserve = "None"
+        if conserve not in ["N", "parity", "None"]:
             raise ValueError("invalid `conserve`: " + repr(conserve))
         dim = Nmax + 1
         states = [str(n) for n in range(0, dim)]
@@ -1846,14 +1846,14 @@ class BosonSite(Site):
         N = np.diag(Ndiag)
         NN = np.diag(Ndiag**2)
         dN = np.diag(Ndiag - filling)
-        dNdN = np.diag((Ndiag - filling)**2)
-        P = np.diag(1. - 2. * np.mod(Ndiag, 2))
+        dNdN = np.diag((Ndiag - filling) ** 2)
+        P = np.diag(1.0 - 2.0 * np.mod(Ndiag, 2))
         ops = dict(B=B, Bd=Bd, N=N, NN=NN, dN=dN, dNdN=dNdN, P=P)
-        if conserve == 'N':
-            chinfo = npc.ChargeInfo([1], ['N'])
+        if conserve == "N":
+            chinfo = npc.ChargeInfo([1], ["N"])
             leg = npc.LegCharge.from_qflat(chinfo, range(dim))
-        elif conserve == 'parity':
-            chinfo = npc.ChargeInfo([2], ['parity_N'])
+        elif conserve == "parity":
+            chinfo = npc.ChargeInfo([2], ["parity_N"])
             leg = npc.LegCharge.from_qflat(chinfo, [i % 2 for i in range(dim)])
         else:
             leg = npc.LegCharge.from_trivial(dim)
@@ -1861,14 +1861,12 @@ class BosonSite(Site):
         self.conserve = conserve
         self.filling = filling
         Site.__init__(self, leg, states, sort_charge=True, **ops)
-        self.state_labels['vac'] = self.state_labels['0']  # alias
+        self.state_labels["vac"] = self.state_labels["0"]  # alias
         self.charge_to_JW_parity = np.array([0] * leg.chinfo.qnumber, int)  # trivial
 
     def __repr__(self):
         """Debug representation of self."""
-        return "BosonSite({N:d}, {c!r}, {f:f})".format(N=self.Nmax,
-                                                       c=self.conserve,
-                                                       f=self.filling)
+        return "BosonSite({N:d}, {c!r}, {f:f})".format(N=self.Nmax, c=self.conserve, f=self.filling)
 
 
 def spin_half_species(SpeciesSite, cons_N, cons_Sz, **kwargs):
@@ -1902,15 +1900,15 @@ def spin_half_species(SpeciesSite, cons_N, cons_Sz, **kwargs):
     """
     SpeciesSite = find_subclass(Site, SpeciesSite)
     if not cons_N:
-        cons_N = 'None'
-    if cons_N not in ['N', 'parity', 'None']:
+        cons_N = "None"
+    if cons_N not in ["N", "parity", "None"]:
         raise ValueError("invalid `cons_N`: " + repr(cons_N))
     if not cons_Sz:
-        cons_Sz = 'None'
-    if cons_Sz not in ['Sz', 'parity', 'None']:
+        cons_Sz = "None"
+    if cons_Sz not in ["Sz", "parity", "None"]:
         raise ValueError("invalid `cons_Sz`: " + repr(cons_Sz))
 
-    conserve = None if cons_N == 'None' and cons_Sz == 'None' else 'N'
+    conserve = None if cons_N == "None" and cons_Sz == "None" else "N"
 
     up_site = SpeciesSite(conserve=conserve, **kwargs)
     down_site = SpeciesSite(conserve=conserve, **kwargs)
@@ -1918,24 +1916,24 @@ def spin_half_species(SpeciesSite, cons_N, cons_Sz, **kwargs):
     new_charges = []
     new_names = []
     new_mod = []
-    if cons_N == 'N':
+    if cons_N == "N":
         new_charges.append([(1, 0, 0), (1, 1, 0)])
-        new_names.append('N')
+        new_names.append("N")
         new_mod.append(1)
-    elif cons_N == 'parity':
+    elif cons_N == "parity":
         new_charges.append([(1, 0, 0), (1, 1, 0)])
-        new_names.append('parity_N')
+        new_names.append("parity_N")
         new_mod.append(2)
-    if cons_Sz == 'Sz':
+    if cons_Sz == "Sz":
         new_charges.append([(1, 0, 0), (-1, 1, 0)])
-        new_names.append('2*Sz')  # factor 2 s.t. Cu, Cd have well-defined charges!
+        new_names.append("2*Sz")  # factor 2 s.t. Cu, Cd have well-defined charges!
         new_mod.append(1)
-    elif cons_Sz == 'parity':
+    elif cons_Sz == "parity":
         new_charges.append([(1, 0, 0), (-1, 1, 0)])
-        new_names.append('2*Sz')  # factor 2 s.t. Cu, Cd have well-defined charges!
+        new_names.append("2*Sz")  # factor 2 s.t. Cu, Cd have well-defined charges!
         new_mod.append(4)
     set_common_charges([up_site, down_site], new_charges, new_names, new_mod)
-    return [up_site, down_site], ['up', 'down']
+    return [up_site, down_site], ["up", "down"]
 
 
 class ClockSite(Site):
@@ -1980,39 +1978,40 @@ class ClockSite(Site):
     conserve : str
         Defines what is conserved, see table above.
     """
-    def __init__(self, q, conserve='Z', sort_charge=True):
+
+    def __init__(self, q, conserve="Z", sort_charge=True):
         if not (isinstance(q, int) and q > 1):
-            raise ValueError(f'invalid q: {q}')
+            raise ValueError(f"invalid q: {q}")
         self.q = q
         if not conserve:
-            conserve = 'None'
-        if conserve not in ['Z', 'None']:
+            conserve = "None"
+        if conserve not in ["Z", "None"]:
             raise ValueError("invalid `conserve`: " + repr(conserve))
-        X = np.eye(q, k=1) + np.eye(q, k=1-q)
-        Z = np.diag(np.exp(2.j * np.pi * np.arange(q, dtype=np.complex128) / q))
+        X = np.eye(q, k=1) + np.eye(q, k=1 - q)
+        Z = np.diag(np.exp(2.0j * np.pi * np.arange(q, dtype=np.complex128) / q))
         Xhc = X.conj().transpose()
         Zhc = Z.conj().transpose()
         Xphc = X + Xhc
-        Zphc = np.diag(2. * np.cos(2. * np.pi * np.arange(q, dtype=np.complex128) / q))
-        if conserve == 'Z':
+        Zphc = np.diag(2.0 * np.cos(2.0 * np.pi * np.arange(q, dtype=np.complex128) / q))
+        if conserve == "Z":
             # we store n as the charge where <Z> = exp(2.j * pi * n / q)
-            chinfo = npc.ChargeInfo([q], ['clock_phase'])
+            chinfo = npc.ChargeInfo([q], ["clock_phase"])
             leg = npc.LegCharge.from_qflat(chinfo, list(range(q)))
         else:
             leg = npc.LegCharge.from_trivial(q)
         self.conserve = conserve
         names = [str(m) for m in range(q)]
         Site.__init__(self, leg, names, sort_charge=sort_charge)
-        self.add_op('X', X, hc='Xhc')
-        self.add_op('Xhc', Xhc, hc='X')
-        self.add_op('Z', Z, hc='Zhc')
-        self.add_op('Zhc', Zhc, hc='Z')
-        if conserve != 'Z':
-            self.add_op('Xphc', Xphc, hc='Xphc')
-            self.add_op('Zphc', Zphc, hc='Zphc')
-        self.state_labels['up'] = self.state_labels['0']
+        self.add_op("X", X, hc="Xhc")
+        self.add_op("Xhc", Xhc, hc="X")
+        self.add_op("Z", Z, hc="Zhc")
+        self.add_op("Zhc", Zhc, hc="Z")
+        if conserve != "Z":
+            self.add_op("Xphc", Xphc, hc="Xphc")
+            self.add_op("Zphc", Zphc, hc="Zphc")
+        self.state_labels["up"] = self.state_labels["0"]
         if q % 2 == 0:
-            self.state_labels['down'] = self.state_labels[str(q // 2)]
+            self.state_labels["down"] = self.state_labels[str(q // 2)]
 
     def __repr__(self):
-        return f'ClockSite(q={self.q}, conserve={self.conserve})'
+        return f"ClockSite(q={self.q}, conserve={self.conserve})"

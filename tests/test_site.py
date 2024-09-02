@@ -35,27 +35,25 @@ def get_site_op_flat(site, op):
 def test_site():
     chinfo = npc.ChargeInfo([1, 3])
     leg = gen_random_legcharge(chinfo, 8)
-    op1 = npc.Array.from_func(np.random.random, [leg, leg.conj()], shape_kw='size')
-    op2 = npc.Array.from_func(np.random.random, [leg, leg.conj()], shape_kw='size')
+    op1 = npc.Array.from_func(np.random.random, [leg, leg.conj()], shape_kw="size")
+    op2 = npc.Array.from_func(np.random.random, [leg, leg.conj()], shape_kw="size")
     op3_dense = np.diag(np.arange(10, 18))
-    labels = [f'x{i:d}' for i in range(10, 18)]
+    labels = [f"x{i:d}" for i in range(10, 18)]
     s = site.Site(leg, labels, silly_op=op1, sort_charge=False)
-    assert s.state_index('x10') == 0
-    assert s.state_index('x17') == leg.ind_len - 1
-    assert s.opnames == set(['silly_op', 'Id', 'JW'])
+    assert s.state_index("x10") == 0
+    assert s.state_index("x17") == leg.ind_len - 1
+    assert s.opnames == set(["silly_op", "Id", "JW"])
     assert s.silly_op is op1
-    s.add_op('op2', op2)
-    s.add_op('op3', op3_dense)
+    s.add_op("op2", op2)
+    s.add_op("op3", op3_dense)
     assert s.op2 is op2
-    assert s.get_op('op2') is op2
-    assert s.get_op('silly_op') is op1
-    npt.assert_equal(s.get_op('op3').to_ndarray(), op3_dense)
+    assert s.get_op("op2") is op2
+    assert s.get_op("silly_op") is op1
+    npt.assert_equal(s.get_op("op3").to_ndarray(), op3_dense)
 
-    npt.assert_equal(
-        s.get_op('silly_op op2').to_ndarray(),
-        npc.tensordot(op1, op2, [1, 0]).to_ndarray())
+    npt.assert_equal(s.get_op("silly_op op2").to_ndarray(), npc.tensordot(op1, op2, [1, 0]).to_ndarray())
     leg2 = npc.LegCharge.from_drop_charge(leg, 1)
-    leg2 = npc.LegCharge.from_change_charge(leg2, 0, 2, 'changed')
+    leg2 = npc.LegCharge.from_change_charge(leg2, 0, 2, "changed")
     s2 = copy.deepcopy(s)
     s2.change_charge(leg2)
     s2s = copy.deepcopy(s2)
@@ -70,27 +68,27 @@ def test_site():
         # check that we got the permutations right in the basis vectors as well!
         for i in range(8):
             b = site_check.state_index(f"x{10 + i:d}")
-            assert site_check.get_op('op3')[b, b] == 10 + i
+            assert site_check.get_op("op3")[b, b] == 10 + i
     # did we also get permute=True option of add_op correct?
-    s2s.add_op('op3_n', op3_dense, permute_dense=True)
-    npt.assert_equal(s2s.get_op('op3_n').to_ndarray(), s2s.get_op('op3').to_ndarray())
+    s2s.add_op("op3_n", op3_dense, permute_dense=True)
+    npt.assert_equal(s2s.get_op("op3_n").to_ndarray(), s2s.get_op("op3").to_ndarray())
     # done
 
 
 def test_double_site():
-    for site0, site1 in [[site.SpinHalfSite(None)] * 2,
-                         [site.SpinHalfSite('Sz', sort_charge=False)] * 2]:
-        for charges in ['same', 'drop', 'independent']:
+    for site0, site1 in [[site.SpinHalfSite(None)] * 2, [site.SpinHalfSite("Sz", sort_charge=False)] * 2]:
+        for charges in ["same", "drop", "independent"]:
             ds = site.GroupedSite([site0, site1], charges=charges)
             ds.test_sanity()
-    fs = site.FermionSite('N')
-    ds = site.GroupedSite([fs, fs], ['a', 'b'], charges='same')
-    assert ds.need_JW_string == set([op + 'a' for op in fs.need_JW_string] +
-                                    [op + 'b' for op in fs.need_JW_string] + ['JW'])
+    fs = site.FermionSite("N")
+    ds = site.GroupedSite([fs, fs], ["a", "b"], charges="same")
+    assert ds.need_JW_string == set(
+        [op + "a" for op in fs.need_JW_string] + [op + "b" for op in fs.need_JW_string] + ["JW"]
+    )
     ss = site.GroupedSite([fs])
 
 
-def check_spin_site(S, SpSmSz=['Sp', 'Sm', 'Sz'], SxSy=['Sx', 'Sy']):
+def check_spin_site(S, SpSmSz=["Sp", "Sm", "Sz"], SxSy=["Sx", "Sy"]):
     """Test whether the spins operators behave as expected.
 
     `S` should be a :class:`site.Site`. Set `SxSy` to `None` to ignore Sx and Sy (if they don't
@@ -103,11 +101,11 @@ def check_spin_site(S, SpSmSz=['Sp', 'Sm', 'Sz'], SxSy=['Sx', 'Sy']):
     if SxSy is not None:
         Sx, Sy = SxSy
         Sx, Sy = S.get_op(Sx).to_ndarray(), S.get_op(Sy).to_ndarray()
-        npt.assert_equal(Sx + 1.j * Sy, Sp)
-        npt.assert_equal(Sx - 1.j * Sy, Sm)
+        npt.assert_equal(Sx + 1.0j * Sy, Sp)
+        npt.assert_equal(Sx - 1.0j * Sy, Sm)
         for i in range(3):
-            Sa, Sb, Sc = ([Sx, Sy, Sz] * 2)[i:i + 3]
-            npt.assert_almost_equal(commutator(Sa, Sb), 1.j * Sc, 13)
+            Sa, Sb, Sc = ([Sx, Sy, Sz] * 2)[i : i + 3]
+            npt.assert_almost_equal(commutator(Sa, Sb), 1.0j * Sc, 13)
             if S == 0.5:
                 # for pauli matrices ``sigma_a . sigma_b = 1.j * epsilon_{a,b,c} sigma_c``
                 # with ``Sa = 0.5 sigma_a``, we get ``Sa . Sb = 0.5j epsilon_{a,b,c} Sc``.
@@ -128,25 +126,18 @@ def check_same_operators(sites):
 
 
 def test_spin_half_site():
-    hcs = dict(Id='Id',
-               JW='JW',
-               Sx='Sx',
-               Sy='Sy',
-               Sz='Sz',
-               Sp='Sm',
-               Sm='Sp',
-               Sigmax='Sigmax',
-               Sigmay='Sigmay',
-               Sigmaz='Sigmaz')
+    hcs = dict(
+        Id="Id", JW="JW", Sx="Sx", Sy="Sy", Sz="Sz", Sp="Sm", Sm="Sp", Sigmax="Sigmax", Sigmay="Sigmay", Sigmaz="Sigmaz"
+    )
     sites = []
-    for conserve in [None, 'Sz', 'parity']:
+    for conserve in [None, "Sz", "parity"]:
         for sort_charge in [True, False]:
             S = site.SpinHalfSite(conserve, sort_charge=sort_charge)
             S.test_sanity()
             for op in S.onsite_ops:
                 assert S.hc_ops[op] == hcs[op]
-            if conserve != 'Sz':
-                SxSy = ['Sx', 'Sy']
+            if conserve != "Sz":
+                SxSy = ["Sx", "Sy"]
             else:
                 SxSy = None
             check_spin_site(S, SxSy=SxSy)
@@ -155,19 +146,19 @@ def test_spin_half_site():
 
 
 def test_spin_site():
-    hcs = dict(Id='Id', JW='JW', Sx='Sx', Sy='Sy', Sz='Sz', Sp='Sm', Sm='Sp')
+    hcs = dict(Id="Id", JW="JW", Sx="Sx", Sy="Sy", Sz="Sz", Sp="Sm", Sm="Sp")
     for s in [0.5, 1, 1.5, 2, 5]:
-        print('s = ', s)
+        print("s = ", s)
         sites = []
         for sort_charge in [True, False]:
-            for conserve in [None, 'Sz', 'parity']:
+            for conserve in [None, "Sz", "parity"]:
                 print("conserve = ", conserve)
                 S = site.SpinSite(s, conserve, sort_charge=sort_charge)
                 S.test_sanity()
                 for op in S.onsite_ops:
                     assert S.hc_ops[op] == hcs[op]
-                if conserve != 'Sz':
-                    SxSy = ['Sx', 'Sy']
+                if conserve != "Sz":
+                    SxSy = ["Sx", "Sy"]
                 else:
                     SxSy = None
                 check_spin_site(S, SxSy=SxSy)
@@ -176,9 +167,9 @@ def test_spin_site():
 
 
 def test_fermion_site():
-    hcs = dict(Id='Id', JW='JW', C='Cd', Cd='C', N='N', dN='dN', dNdN='dNdN')
+    hcs = dict(Id="Id", JW="JW", C="Cd", Cd="C", N="N", dN="dN", dNdN="dNdN")
     sites = []
-    for conserve in [None, 'N', 'parity']:
+    for conserve in [None, "N", "parity"]:
         S = site.FermionSite(conserve)
         S.test_sanity()
         for op in S.onsite_ops:
@@ -192,10 +183,10 @@ def test_fermion_site():
         # anti-commutate with Jordan-Wigner
         npt.assert_equal(np.dot(Cd, JW), -np.dot(JW, Cd))
         npt.assert_equal(np.dot(C, JW), -np.dot(JW, C))
-        assert S.need_JW_string == set(['Cd', 'C', 'JW'])
-        for op in ['C', 'Cd', 'C N', 'C Cd C', 'C JW Cd']:
+        assert S.need_JW_string == set(["Cd", "C", "JW"])
+        for op in ["C", "Cd", "C N", "C Cd C", "C JW Cd"]:
             assert S.op_needs_JW(op)
-        for op in ['N', 'C Cd', 'C JW', 'JW C']:
+        for op in ["N", "C Cd", "C JW", "JW C"]:
             assert not S.op_needs_JW(op)
         sites.append(S)
     check_same_operators(sites)
@@ -207,7 +198,7 @@ def test_spin_half_fermion_site():
                Nu='Nu', Nd='Nd', NuNd='NuNd', Ntot='Ntot', dN='dN',
                Sx='Sx', Sy='Sy', Sz='Sz', Sp='Sm', Sm='Sp')  # yapf: disable
     sites = []
-    for cons_N, cons_Sz in it.product(['N', 'parity', None], ['Sz', 'parity', None]):
+    for cons_N, cons_Sz in it.product(["N", "parity", None], ["Sz", "parity", None]):
         print("conserve ", repr(cons_N), repr(cons_Sz))
         S = site.SpinHalfFermionSite(cons_N, cons_Sz)
         S.test_sanity()
@@ -234,8 +225,8 @@ def test_spin_half_fermion_site():
         npt.assert_equal(np.dot(Cu, Cdd), -np.dot(Cdd, Cu))
         npt.assert_equal(np.dot(Cdu, Cd), -np.dot(Cd, Cdu))
         npt.assert_equal(np.dot(Cdu, Cdd), -np.dot(Cdd, Cdu))
-        if cons_Sz != 'Sz':
-            SxSy = ['Sx', 'Sy']
+        if cons_Sz != "Sz":
+            SxSy = ["Sx", "Sy"]
         else:
             SxSy = None
         check_spin_site(S, SxSy=SxSy)
@@ -249,7 +240,7 @@ def test_spin_half_hole_site():
                Nu='Nu', Nd='Nd', Ntot='Ntot', dN='dN',
                Sx='Sx', Sy='Sy', Sz='Sz', Sp='Sm', Sm='Sp')  # yapf: disable
     sites = []
-    for cons_N, cons_Sz in it.product(['N', 'parity', None], ['Sz', 'parity', None]):
+    for cons_N, cons_Sz in it.product(["N", "parity", None], ["Sz", "parity", None]):
         print("conserve ", repr(cons_N), repr(cons_Sz))
         S = site.SpinHalfHoleSite(cons_N, cons_Sz)
         S.test_sanity()
@@ -271,8 +262,8 @@ def test_spin_half_hole_site():
         # anti-commute Cu with Cd
         npt.assert_equal(np.dot(Cu, Cd), -np.dot(Cd, Cu))
         npt.assert_equal(np.dot(Cdu, Cdd), -np.dot(Cdd, Cdu))
-        if cons_Sz != 'Sz':
-            SxSy = ['Sx', 'Sy']
+        if cons_Sz != "Sz":
+            SxSy = ["Sx", "Sy"]
         else:
             SxSy = None
         check_spin_site(S, SxSy=SxSy)
@@ -281,32 +272,31 @@ def test_spin_half_hole_site():
 
 
 def test_boson_site():
-    hcs = dict(Id='Id', JW='JW', B='Bd', Bd='B', N='N', NN='NN', dN='dN', dNdN='dNdN', P='P')
+    hcs = dict(Id="Id", JW="JW", B="Bd", Bd="B", N="N", NN="NN", dN="dN", dNdN="dNdN", P="P")
     for Nmax in [1, 2, 5, 10]:
         sites = []
-        for conserve in ['N', 'parity', None]:
+        for conserve in ["N", "parity", None]:
             S = site.BosonSite(Nmax, conserve=conserve)
             S.test_sanity()
             for op in S.onsite_ops:
                 assert S.hc_ops[op] == hcs[op]
-            npt.assert_array_almost_equal_nulp(np.dot(S.Bd.to_ndarray(), S.B.to_ndarray()),
-                                               S.N.to_ndarray(), 2)
+            npt.assert_array_almost_equal_nulp(np.dot(S.Bd.to_ndarray(), S.B.to_ndarray()), S.N.to_ndarray(), 2)
             sites.append(S)
         check_same_operators(sites)
 
 
 def test_clock_site():
-    hcs = dict(Id='Id', JW='JW', X='Xhc', Z='Zhc', Xhc='X', Zhc='Z', Xphc='Xphc', Zphc='Zphc')
+    hcs = dict(Id="Id", JW="JW", X="Xhc", Z="Zhc", Xhc="X", Zhc="Z", Xphc="Xphc", Zphc="Zphc")
     for q in [2, 3, 5, 10]:
         sites = []
-        for conserve in ['Z', None]:
+        for conserve in ["Z", None]:
             S = site.ClockSite(q=q, conserve=conserve)
             S.test_sanity()
             for op in S.onsite_ops:
                 assert S.hc_ops[op] == hcs[op]
 
             # clock algebra
-            w = np.exp(2.j * np.pi / q)
+            w = np.exp(2.0j * np.pi / q)
             X = S.X.to_ndarray()
             Z = S.Z.to_ndarray()
             # compute q-th powers
@@ -325,10 +315,10 @@ def test_clock_site():
 
 
 def test_set_common_charges():
-    spin = site.SpinSite(0.5, 'Sz')
-    spin1 = site.SpinSite(1, 'Sz')
-    ferm = site.SpinHalfFermionSite(cons_N='N', cons_Sz='Sz')
-    boson = site.BosonSite(2, 'N')
+    spin = site.SpinSite(0.5, "Sz")
+    spin1 = site.SpinSite(1, "Sz")
+    ferm = site.SpinHalfFermionSite(cons_N="N", cons_Sz="Sz")
+    boson = site.BosonSite(2, "N")
     spin_ops = {op_name: get_site_op_flat(spin, op_name) for op_name in spin.opnames}
     spin1_ops = {op_name: get_site_op_flat(spin1, op_name) for op_name in spin1.opnames}
     ferm_ops = {op_name: get_site_op_flat(ferm, op_name) for op_name in ferm.opnames}
@@ -336,7 +326,7 @@ def test_set_common_charges():
     assert spin.charge_to_JW_parity is not None
     assert ferm.charge_to_JW_parity is not None
     site.set_common_charges([spin, ferm])
-    assert tuple(spin.leg.chinfo.names) == ('2*Sz', 'N')
+    assert tuple(spin.leg.chinfo.names) == ("2*Sz", "N")
     spin.test_sanity()
     ferm.test_sanity()
     assert spin.charge_to_JW_parity is not None
@@ -347,11 +337,11 @@ def test_set_common_charges():
         op_flat2 = get_site_op_flat(ferm, op_name)
         npt.assert_equal(op_flat, op_flat2)
 
-    spin = site.SpinSite(0.5, 'Sz')
-    ferm = site.SpinHalfFermionSite(cons_N='N', cons_Sz='Sz')
-    site.set_common_charges([ferm, spin], new_charges=[[(1, 0, '2*Sz'), (1, 1, '2*Sz')]])
-    assert tuple(ferm.leg.chinfo.names) == ('2*Sz', )
-    assert getattr(spin, 'charge_to_JW_parity', None) is None
+    spin = site.SpinSite(0.5, "Sz")
+    ferm = site.SpinHalfFermionSite(cons_N="N", cons_Sz="Sz")
+    site.set_common_charges([ferm, spin], new_charges=[[(1, 0, "2*Sz"), (1, 1, "2*Sz")]])
+    assert tuple(ferm.leg.chinfo.names) == ("2*Sz",)
+    assert getattr(spin, "charge_to_JW_parity", None) is None
     spin.test_sanity()
     ferm.test_sanity()
     for op_name, op_flat in spin_ops.items():
@@ -362,17 +352,18 @@ def test_set_common_charges():
         npt.assert_equal(op_flat, op_flat2)
 
     # and finally a few more, changing orders as well
-    ferm = site.SpinHalfFermionSite(cons_N='N', cons_Sz='Sz')
-    spin = site.SpinSite(0.5, 'Sz')
-    spin1 = site.SpinSite(1, 'Sz')
-    boson = site.BosonSite(2, 'N')
+    ferm = site.SpinHalfFermionSite(cons_N="N", cons_Sz="Sz")
+    spin = site.SpinSite(0.5, "Sz")
+    spin1 = site.SpinSite(1, "Sz")
+    boson = site.BosonSite(2, "N")
 
-    site.set_common_charges([ferm, spin1, spin, boson],
-                            new_charges=[[(1, 0, '2*Sz'), (1, 2, '2*Sz')],
-                                         [(2, 0, 'N'), (1, 3, 'N')], [(0.5, 1, '2*Sz')]],
-                            new_names=['2*(Sz_f + Sz_spin-half)', '2*N_f+N_b', 'Sz_spin-1'])
-    assert tuple(ferm.leg.chinfo.names) == ('2*(Sz_f + Sz_spin-half)', '2*N_f+N_b', 'Sz_spin-1')
-    assert getattr(ferm, 'charge_to_JW_parity', None) is None
+    site.set_common_charges(
+        [ferm, spin1, spin, boson],
+        new_charges=[[(1, 0, "2*Sz"), (1, 2, "2*Sz")], [(2, 0, "N"), (1, 3, "N")], [(0.5, 1, "2*Sz")]],
+        new_names=["2*(Sz_f + Sz_spin-half)", "2*N_f+N_b", "Sz_spin-1"],
+    )
+    assert tuple(ferm.leg.chinfo.names) == ("2*(Sz_f + Sz_spin-half)", "2*N_f+N_b", "Sz_spin-1")
+    assert getattr(ferm, "charge_to_JW_parity", None) is None
     spin.test_sanity()
     ferm.test_sanity()
     spin1.test_sanity()
@@ -390,9 +381,9 @@ def test_set_common_charges():
         op_flat2 = get_site_op_flat(boson, op_name)
         npt.assert_equal(op_flat, op_flat2)
 
-    f1 = site.FermionSite('N')
-    f2 = site.FermionSite('N')
-    site.set_common_charges([f1, f2], 'independent')
+    f1 = site.FermionSite("N")
+    f2 = site.FermionSite("N")
+    site.set_common_charges([f1, f2], "independent")
     assert f1.charge_to_JW_parity is not None
     f1.test_sanity()
     f2.test_sanity()

@@ -133,15 +133,8 @@ class MixedXKLattice(Lattice):
     orbital_values : None | array, shape (len(sites), len(orbital_names))
         Values for the orbitals, one row for each site in the *unit cell*.
     """
-    def __init__(self,
-                 N_rings,
-                 Ly,
-                 N_orb,
-                 sites,
-                 ring_order=None,
-                 orbital_names=None,
-                 orbital_values=None,
-                 **kwargs):
+
+    def __init__(self, N_rings, Ly, N_orb, sites, ring_order=None, orbital_names=None, orbital_values=None, **kwargs):
         self.N_orb = N_orb
         self.Ly = Ly
         self._init_extra_attributes(Ly)
@@ -154,35 +147,27 @@ class MixedXKLattice(Lattice):
             sites = [sites[i] for i in inv_ring_order]
             if orbital_values is not None:
                 orbital_values = orbital_values[inv_ring_order, :]
-        kwargs.setdefault('bc', 'periodic')
-        kwargs.setdefault('bc_MPS', 'infinite')
-        basis = [np.array([1., 0.])]
+        kwargs.setdefault("bc", "periodic")
+        kwargs.setdefault("bc_MPS", "infinite")
+        basis = [np.array([1.0, 0.0])]
         kwargs.setdefault("basis", basis)
-        positions = [np.array([l / (2. * N_orb), k]) for k in range(Ly) for l in range(N_orb)]
+        positions = [np.array([l / (2.0 * N_orb), k]) for k in range(Ly) for l in range(N_orb)]
         kwargs.setdefault("positions", positions)
-        if 'order' in kwargs:
+        if "order" in kwargs:
             raise NotImplementedError("Use `ring_order` to change the order!")
         # initialize Lattice
         super().__init__([N_rings], sites, **kwargs)
         # redefine define self.order
         order = np.zeros((self.N_sites, 2), np.intp)
         for x in range(N_rings):
-            order[x * N_sites_per_ring:(x + 1) * N_sites_per_ring, 0] = x
-            order[x * N_sites_per_ring:(x + 1) * N_sites_per_ring, 1] = self.ring_order
+            order[x * N_sites_per_ring : (x + 1) * N_sites_per_ring, 0] = x
+            order[x * N_sites_per_ring : (x + 1) * N_sites_per_ring, 1] = self.ring_order
         self.order = order  # uses property setter
         self.orbital_names = orbital_names
         self.orbital_values = orbital_values
 
     @classmethod
-    def from_charges_of_orbitals(cls,
-                                 N_rings,
-                                 Ly,
-                                 N_orb,
-                                 chinfo,
-                                 charges,
-                                 conserve_k=True,
-                                 ring_order=None,
-                                 **kwargs):
+    def from_charges_of_orbitals(cls, N_rings, Ly, N_orb, chinfo, charges, conserve_k=True, ring_order=None, **kwargs):
         """Initialize from charges, defining default Sites.
 
         Parameters
@@ -319,11 +304,10 @@ class MixedXKLattice(Lattice):
         changed_axes = sorted([(ax + A.ndim if ax < 0 else ax) for ax in axes])
         A_res_u_axes = []
         for ax in changed_axes:
-            A_res_u_axes.append(ax + (len(self.shape) - 1) * len(A_res_u_axes) + len(self.shape) -
-                                1)
+            A_res_u_axes.append(ax + (len(self.shape) - 1) * len(A_res_u_axes) + len(self.shape) - 1)
         A_res_reshape = list(A_res.shape)
         for ax in A_res_u_axes[::-1]:
-            A_res_reshape[ax:ax + 1] = [self.Ly, self.N_orb]
+            A_res_reshape[ax : ax + 1] = [self.Ly, self.N_orb]
         return A_res.reshape(A_res_reshape)
 
     def mps2lat_values_masked_k(self, A, axes=-1, mps_inds=None, include_u=None):
@@ -333,16 +317,15 @@ class MixedXKLattice(Lattice):
         changed_axes = sorted([(ax + A.ndim if ax < 0 else ax) for ax in axes])
         A_res_u_axes = []
         for ax in changed_axes:
-            A_res_u_axes.append(ax + (len(self.shape) - 1) * len(A_res_u_axes) + len(self.shape) -
-                                1)
+            A_res_u_axes.append(ax + (len(self.shape) - 1) * len(A_res_u_axes) + len(self.shape) - 1)
         A_res_reshape = list(A_res.shape)
         for ax in A_res_u_axes[::-1]:
-            A_res_reshape[ax:ax + 1] = [self.Ly, self.N_orb]
+            A_res_reshape[ax : ax + 1] = [self.Ly, self.N_orb]
         return A_res.reshape(A_res_reshape)
 
     def _init_extra_attributes(self, Ly):
         """Set a few useful extra attributes defined by Ly only."""
-        self._exp_2pi_Ly = np.exp(2.j * np.pi / Ly * np.arange(Ly))
+        self._exp_2pi_Ly = np.exp(2.0j * np.pi / Ly * np.arange(Ly))
         self.delta_q = np.zeros((Ly, Ly, Ly))
         for q, delta_q in enumerate(self.delta_q):
             for k in range(Ly):
@@ -366,6 +349,7 @@ class MixedXKModel(CouplingMPOModel):
     real_space_lattice : TODO ???
         Real-space lattice geometry.
     """
+
     def init_lattice(self, model_params, N_orb, chinfo, charges):
         """Initialize a MixedXKLattice for the given model parameters.
 
@@ -381,25 +365,19 @@ class MixedXKModel(CouplingMPOModel):
             For each of the orbitals the value of each charges (except ``"ky"``),
             when the orbital is occupied.
         """
-        xy_lattice = model_params.get('xy_lattice', "Square")
+        xy_lattice = model_params.get("xy_lattice", "Square")
         if xy_lattice != "Square":
             raise NotImplementedError("Can't choose other than Square for now")
         self.real_space_lattice = xy_lattice
-        N_rings = model_params.get('Lx', 1, int)
-        Ly = model_params.get('Ly', 2, int)
-        ring_order = model_params.get('ring_order', None)
-        conserve_k = model_params.get('conserve_k', True, bool)
-        bc_MPS = model_params.get('bc_MPS', 'infinite', str)
-        bc = 'periodic' if bc_MPS == 'infinite' else 'open'
-        lat = MixedXKLattice.from_charges_of_orbitals(N_rings,
-                                                      Ly,
-                                                      N_orb,
-                                                      chinfo,
-                                                      charges,
-                                                      conserve_k,
-                                                      ring_order=ring_order,
-                                                      bc=bc,
-                                                      bc_MPS=bc_MPS)
+        N_rings = model_params.get("Lx", 1, int)
+        Ly = model_params.get("Ly", 2, int)
+        ring_order = model_params.get("ring_order", None)
+        conserve_k = model_params.get("conserve_k", True, bool)
+        bc_MPS = model_params.get("bc_MPS", "infinite", str)
+        bc = "periodic" if bc_MPS == "infinite" else "open"
+        lat = MixedXKLattice.from_charges_of_orbitals(
+            N_rings, Ly, N_orb, chinfo, charges, conserve_k, ring_order=ring_order, bc=bc, bc_MPS=bc_MPS
+        )
         return lat
 
     def add_intra_ring_hopping(self, couplings):
@@ -421,13 +399,13 @@ class MixedXKModel(CouplingMPOModel):
         if np.asarray(couplings).ndim == 4:
             couplings = np.asarray(couplings)[np.newaxis, ...]
         couplings = to_array(couplings, (Lx, Ly, N_orb, Ly, N_orb))
-        couplings = np.reshape(couplings, (Lx, N_r, N_r), order='C')
+        couplings = np.reshape(couplings, (Lx, N_r, N_r), order="C")
         for u1, u2 in zip(*(np.linalg.norm(couplings, axis=0).nonzero())):
             strength = couplings[:, u1, u2]  # only x dependence remaining
             if u1 == u2:
-                self.add_onsite(strength, u1, 'N')  # Cd C
+                self.add_onsite(strength, u1, "N")  # Cd C
             else:
-                self.add_coupling(strength, u1, 'Cd', u2, 'C', 0, op_string='JW')
+                self.add_coupling(strength, u1, "Cd", u2, "C", 0, op_string="JW")
 
     def add_inter_ring_hopping(self, couplings, dx=+1):
         r"""Add hopping terms between different rings.
@@ -451,12 +429,12 @@ class MixedXKModel(CouplingMPOModel):
         if np.asarray(couplings).ndim == 4:
             couplings = np.asarray(couplings)[np.newaxis, ...]
         couplings = to_array(couplings, (Nx, Ly, N_orb, Ly, N_orb))
-        couplings = np.reshape(couplings, (Nx, N_r, N_r), order='C')
+        couplings = np.reshape(couplings, (Nx, N_r, N_r), order="C")
         for u1, u2 in zip(*(np.linalg.norm(couplings, axis=0).nonzero())):
             strength = couplings[:, u1, u2]
-            self.add_coupling(strength, u1, 'Cd', u2, 'C', dx, op_string='JW', plus_hc=True)
+            self.add_coupling(strength, u1, "Cd", u2, "C", dx, op_string="JW", plus_hc=True)
 
-    def add_intra_ring_interaction(self, couplings, operators=('Cd', 'C', 'Cd', 'C')):
+    def add_intra_ring_interaction(self, couplings, operators=("Cd", "C", "Cd", "C")):
         r"""Add intra-ring interaction terms.
 
         Parameters
@@ -480,16 +458,16 @@ class MixedXKModel(CouplingMPOModel):
         if np.asarray(couplings).ndim == 8:
             couplings = np.asarray(couplings)[np.newaxis, ...]
         couplings = to_array(couplings, (Lx, Ly, N_orb, Ly, N_orb, Ly, N_orb, Ly, N_orb))
-        couplings = np.reshape(couplings, (Lx, N_r, N_r, N_r, N_r), order='C')
+        couplings = np.reshape(couplings, (Lx, N_r, N_r, N_r, N_r), order="C")
         A, B, C, D = operators
         for u1, u2, u3, u4 in zip(*(np.linalg.norm(couplings, axis=0).nonzero())):
             strength = couplings[:, u1, u2, u3, u4]
             if u1 == u2 == u3 == u4:
-                self.add_onsite(strength, u1, ' '.join([A, B, C, D]))  # Cd C Cd C
+                self.add_onsite(strength, u1, " ".join([A, B, C, D]))  # Cd C Cd C
             else:
                 self.add_multi_coupling(strength, [(A, 0, u1), (B, 0, u2), (C, 0, u3), (D, 0, u4)])
 
-    def add_inter_ring_interaction(self, couplings, dx, operators=('Cd', 'C', 'Cd', 'C')):
+    def add_inter_ring_interaction(self, couplings, dx, operators=("Cd", "C", "Cd", "C")):
         r"""Add inter-ring interaction terms.
 
         Parameters
@@ -521,15 +499,15 @@ class MixedXKModel(CouplingMPOModel):
         if np.asarray(couplings).ndim == 8:
             couplings = np.asarray(couplings)[np.newaxis, ...]
         couplings = to_array(couplings, (Nx, Ly, N_orb, Ly, N_orb, Ly, N_orb, Ly, N_orb))
-        couplings = np.reshape(couplings, (Nx, N_r, N_r, N_r, N_r), order='C')
+        couplings = np.reshape(couplings, (Nx, N_r, N_r, N_r, N_r), order="C")
         A, B, C, D = operators
         for u1, u2, u3, u4 in zip(*(np.linalg.norm(couplings, axis=0).nonzero())):
             strength = couplings[:, u1, u2, u3, u4]
             self.add_multi_coupling(strength, [(A, 0, u1), (B, 0, u2), (C, dx, u3), (D, dx, u4)])
 
-    #==========================#
+    # ==========================#
     # Correlation calculations #
-    #==========================#
+    # ==========================#
 
     # convenience functions for expectation values/correlations
     def real_to_mixed_onsite(self, A, A_coord):
@@ -556,7 +534,7 @@ class MixedXKModel(CouplingMPOModel):
         xk_lat = self.lat
         N_orb = xk_lat.N_orb
         Ly = xk_lat.Ly
-        conserve_k = 'ky' in xk_lat.site(0).leg.chinfo.names
+        conserve_k = "ky" in xk_lat.site(0).leg.chinfo.names
         x, y = A_coord
         A = np.asarray(A)
         if A.shape != (N_orb, N_orb):
@@ -573,10 +551,10 @@ class MixedXKModel(CouplingMPOModel):
                     i2 = xk_lat.lat2mps_idx((x, u2))
                     fourier_coeff = xk_lat.get_exp_ik((k1 - k2) * y) / Ly
                     if conserve_k and (k1 - k2) % Ly != 0:
-                        #only keep terms with momentum conservation
+                        # only keep terms with momentum conservation
                         continue
                     strengths.append(coeff * fourier_coeff)
-                    terms.append([('Cd', i1), ('C', i2)])
+                    terms.append([("Cd", i1), ("C", i2)])
         return TermList(terms, strengths)
 
     def real_to_mixed_two_site(self, A, A_coord, B, B_coord):
@@ -636,12 +614,12 @@ class MixedXKModel(CouplingMPOModel):
         xk_lat = self.lat
         N_orb = xk_lat.N_orb
         Ly = xk_lat.Ly
-        conserve_k = 'ky' in xk_lat.site(0).leg.chinfo.names
+        conserve_k = "ky" in xk_lat.site(0).leg.chinfo.names
         terms = []
         strengths = []
         xx_ind = np.repeat([x for x, y in rs_coords], 2)
         y_ind = [y for x, y in rs_coords]
-        ops = ['Cd', 'C'] * num_ops
+        ops = ["Cd", "C"] * num_ops
 
         for l_ind in it.product(*[zip(*op_i.nonzero()) for op_i in orbital_coeffs]):
             # l_ind = [(l1, l2) for each operator]  where orb_coeff is non-zero
@@ -649,14 +627,13 @@ class MixedXKModel(CouplingMPOModel):
             for k_ind in it.product(range(Ly), repeat=num_c_cd):
                 # k_ind = [k1, k2, k3, k4, ...]
                 if conserve_k and (sum(k_ind[::2]) - sum(k_ind[1::2])) % Ly != 0:
-                    #only keep terms with momentum conservation
+                    # only keep terms with momentum conservation
                     continue
                 kdiff_y = sum([(k1 - k2) * y for k1, k2, y in zip(k_ind[::2], k_ind[1::2], y_ind)])
                 fourier_coeff = xk_lat.get_exp_ik(kdiff_y) / Ly**num_ops
                 strengths.append(coeff * fourier_coeff)
                 u_ind = xk_lat.get_u(np.array(k_ind), np.array(l_ind).flatten())
-                i_ind = xk_lat.lat2mps_idx(np.hstack([xx_ind[:, np.newaxis],
-                                                      u_ind[:, np.newaxis]]))
+                i_ind = xk_lat.lat2mps_idx(np.hstack([xx_ind[:, np.newaxis], u_ind[:, np.newaxis]]))
                 # i_ind = MPS index for combination (x,k,l) of each operator
                 terms.append(list(zip(ops, i_ind)))  # [('Cd', i1), ('C', i2), ...]
         return TermList(terms, strengths)
@@ -692,26 +669,26 @@ class MixedXKModel(CouplingMPOModel):
         num_ops = len(ops)
         assert num_ops == len(rs_coords)
         assert all([num_ops == len(orbs) for _, orbs in coeff_orbitals])
-        #TODO: add support for 'N' and '1-N' by splitting them
+        # TODO: add support for 'N' and '1-N' by splitting them
         # Currently supported by use of orbital_coeffs
         xk_lat = self.lat
         N_orb = xk_lat.N_orb
         Ly = xk_lat.Ly
-        conserve_k = 'ky' in xk_lat.site(0).leg.chinfo.names
+        conserve_k = "ky" in xk_lat.site(0).leg.chinfo.names
         terms = []
         strengths = []
         x_ind = np.array([x for x, y in rs_coords])
         y_ind = np.array([y for x, y in rs_coords])
-        k_sign = np.array([(+1 if op == 'Cd' else -1) for op in ops])
+        k_sign = np.array([(+1 if op == "Cd" else -1) for op in ops])
         coeff_orbitals = [(c, np.asarray(l_ind)) for c, l_ind in coeff_orbitals]
         for k_ind in it.product(range(Ly), repeat=num_ops):
             # k_ind = [k1, k2, k3, k4, ...]
             k_ind = np.array(k_ind)
             if conserve_k and (np.sum(k_ind * k_sign)) % Ly != 0:
-                #only keep terms with momentum conservation
+                # only keep terms with momentum conservation
                 continue
             k_y = np.sum(k_ind * k_sign * y_ind)
-            fourier_coeff = xk_lat.get_exp_ik(k_y) / Ly**(num_ops / 2.)
+            fourier_coeff = xk_lat.get_exp_ik(k_y) / Ly ** (num_ops / 2.0)
             for coeff, l_ind in coeff_orbitals:
                 strengths.append(coeff * fourier_coeff)
                 u_ind = xk_lat.get_u(k_ind, l_ind)
@@ -727,6 +704,7 @@ class SpinlessMixedXKSquare(MixedXKModel):
     Spinless Fermions with a single orbital (`N_orb` = 1) on a square lattice,
     nearest neighbor hopping (`t`) and nearest-neighbor interaction (`V`).
     """
+
     def init_lattice(self, model_params):
         N_orb = 1  # simplest case possible
         chinfo = npc.ChargeInfo([1], ["Charge"])
@@ -735,8 +713,8 @@ class SpinlessMixedXKSquare(MixedXKModel):
 
     def init_terms(self, model_params):
         # Read out parameters
-        t = model_params.get('t', 1., 'real_or_array')
-        V = model_params.get('V', 1., 'real_or_array')
+        t = model_params.get("t", 1.0, "real_or_array")
+        V = model_params.get("V", 1.0, "real_or_array")
         xk_lat = self.lat
         Ly = xk_lat.Ly
         N_orb = xk_lat.N_orb
@@ -748,7 +726,7 @@ class SpinlessMixedXKSquare(MixedXKModel):
         inter_hopping = np.zeros((Ly, N_orb, Ly, N_orb))
         cos_k = np.real(xk_lat.get_exp_ik(np.arange(Ly)))
         for k in range(Ly):
-            intra_hopping[k, l, k, l] = -t * 2. * cos_k[k]
+            intra_hopping[k, l, k, l] = -t * 2.0 * cos_k[k]
             inter_hopping[k, l, k, l] = -t
         self.add_intra_ring_hopping(intra_hopping)
         self.add_inter_ring_hopping(inter_hopping, dx=1)
@@ -758,12 +736,12 @@ class SpinlessMixedXKSquare(MixedXKModel):
         intra_interaction = np.zeros((Ly, N_orb, Ly, N_orb, Ly, N_orb, Ly, N_orb))
         inter_interaction = np.zeros((Ly, N_orb, Ly, N_orb, Ly, N_orb, Ly, N_orb))
         for q in range(Ly):
-            intra_interaction[:, 0, :, 0, :, 0, :, 0] += \
-                V / Ly * cos_k[q] * (n_q[q][:, :, np.newaxis, np.newaxis] *
-                                     n_q[-q][np.newaxis, np.newaxis, :, :])
-            inter_interaction[:, 0, :, 0, :, 0, :, 0] += \
-                V / Ly * (n_q[q][:, :, np.newaxis, np.newaxis] *
-                          n_q[-q][np.newaxis, np.newaxis, :, :])
+            intra_interaction[:, 0, :, 0, :, 0, :, 0] += (
+                V / Ly * cos_k[q] * (n_q[q][:, :, np.newaxis, np.newaxis] * n_q[-q][np.newaxis, np.newaxis, :, :])
+            )
+            inter_interaction[:, 0, :, 0, :, 0, :, 0] += (
+                V / Ly * (n_q[q][:, :, np.newaxis, np.newaxis] * n_q[-q][np.newaxis, np.newaxis, :, :])
+            )
         self.add_intra_ring_interaction(intra_interaction)
         self.add_inter_ring_interaction(inter_interaction, 1)
 
@@ -774,6 +752,7 @@ class HubbardMixedXKSquare(MixedXKModel):
     Spinful fermions, no extra orbitals (`N_orb` = 2 for up and down), on a square lattice,
     nearest-neighbor hopping (`t`) + onsite interactions (`U`)
     """
+
     def init_lattice(self, model_params):
         N_orb = 2  # for spin up (l=0) and down (l=1)
         chinfo = npc.ChargeInfo([1, 1], ["Charge", "Spin"])
@@ -782,8 +761,8 @@ class HubbardMixedXKSquare(MixedXKModel):
 
     def init_terms(self, model_params):
         # Read out parameters
-        t = model_params.get('t', 1., 'real_or_array')
-        U = model_params.get('U', 1., 'real_or_array')
+        t = model_params.get("t", 1.0, "real_or_array")
+        U = model_params.get("U", 1.0, "real_or_array")
         xk_lat = self.lat
         Ly = xk_lat.Ly
         N_orb = xk_lat.N_orb
@@ -794,7 +773,7 @@ class HubbardMixedXKSquare(MixedXKModel):
         cos_k = np.real(xk_lat.get_exp_ik(np.arange(Ly)))
         for k in range(Ly):
             for l in range(N_orb):  # diagonal in spin
-                intra_hopping[k, l, k, l] = -2. * t * cos_k[k]
+                intra_hopping[k, l, k, l] = -2.0 * t * cos_k[k]
                 inter_hopping[k, l, k, l] = -t
         self.add_intra_ring_hopping(intra_hopping)
         self.add_inter_ring_hopping(inter_hopping, dx=1)
@@ -803,6 +782,7 @@ class HubbardMixedXKSquare(MixedXKModel):
         n_q = xk_lat.delta_q
         intra_interaction = np.zeros((Ly, N_orb, Ly, N_orb, Ly, N_orb, Ly, N_orb))
         for q in range(Ly):
-            intra_interaction[:,0, :, 0, :, 1, :, 1] += U / Ly * \
-                n_q[q][:, :, np.newaxis, np.newaxis] * n_q[-q][np.newaxis, np.newaxis, :, :]
+            intra_interaction[:, 0, :, 0, :, 1, :, 1] += (
+                U / Ly * n_q[q][:, :, np.newaxis, np.newaxis] * n_q[-q][np.newaxis, np.newaxis, :, :]
+            )
         self.add_intra_ring_interaction(intra_interaction)

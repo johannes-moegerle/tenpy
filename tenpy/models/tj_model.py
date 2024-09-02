@@ -5,7 +5,7 @@ from .model import CouplingMPOModel, NearestNeighborModel
 from .lattice import Chain
 from ..networks.site import SpinHalfHoleSite
 
-__all__ = ['tJModel', 'tJChain']
+__all__ = ["tJModel", "tJChain"]
 
 
 class tJModel(CouplingMPOModel):
@@ -49,23 +49,23 @@ class tJModel(CouplingMPOModel):
     """
 
     def init_sites(self, model_params):
-        cons_N = model_params.get('cons_N', 'N', str)
-        cons_Sz = model_params.get('cons_Sz', 'Sz', str)
+        cons_N = model_params.get("cons_N", "N", str)
+        cons_Sz = model_params.get("cons_Sz", "Sz", str)
         site = SpinHalfHoleSite(cons_N=cons_N, cons_Sz=cons_Sz)
         return site
 
     def init_terms(self, model_params):
         # 0) Read out/set default parameters.
-        t = model_params.get('t', 1., 'real_or_array')
-        J = model_params.get('J', 1., 'real_or_array')
+        t = model_params.get("t", 1.0, "real_or_array")
+        J = model_params.get("J", 1.0, "real_or_array")
 
-        for u1, u2, dx in self.lat.pairs['nearest_neighbors']:
-            self.add_coupling(-t, u1, 'Cdu', u2, 'Cu', dx, plus_hc=True)
-            self.add_coupling(-t, u1, 'Cdd', u2, 'Cd', dx, plus_hc=True)
-            self.add_coupling(J / 2., u1, 'Sp', u2, 'Sm', dx, plus_hc=True)
+        for u1, u2, dx in self.lat.pairs["nearest_neighbors"]:
+            self.add_coupling(-t, u1, "Cdu", u2, "Cu", dx, plus_hc=True)
+            self.add_coupling(-t, u1, "Cdd", u2, "Cd", dx, plus_hc=True)
+            self.add_coupling(J / 2.0, u1, "Sp", u2, "Sm", dx, plus_hc=True)
 
-            self.add_coupling(J, u1, 'Sz', u2, 'Sz', dx)
-            self.add_coupling(-J / 4, u1, 'Ntot', u2, 'Ntot', dx)
+            self.add_coupling(J, u1, "Sz", u2, "Sz", dx)
+            self.add_coupling(-J / 4, u1, "Ntot", u2, "Ntot", dx)
 
 
 class tJChain(tJModel, NearestNeighborModel):
@@ -73,5 +73,6 @@ class tJChain(tJModel, NearestNeighborModel):
 
     See the :class:`tJModel` for the documentation of parameters.
     """
+
     default_lattice = Chain
     force_default_lattice = True

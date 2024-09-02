@@ -12,7 +12,7 @@ from .lattice import Square
 from ..networks.site import BosonSite, FermionSite
 from .model import CouplingMPOModel
 
-__all__ = ['HofstadterBosons', 'HofstadterFermions', 'gauge_hopping']
+__all__ = ["HofstadterBosons", "HofstadterFermions", "gauge_hopping"]
 
 
 def gauge_hopping(model_params):
@@ -69,37 +69,37 @@ def gauge_hopping(model_params):
     # If the array is smaller than the actual number of couplings,
     # it is 'tiled', i.e. repeated periodically, see also tenpy.tools.to_array().
     # If no magnetic unit cell size is defined, minimal size will be used.
-    gauge = model_params.get('gauge', 'landau_x', str)
-    mx = model_params.get('mx', None, int)
-    my = model_params.get('my', None, int)
-    Jx = model_params.get('Jx', 1., 'real')
-    Jy = model_params.get('Jy', 1., 'real')
-    phi_p, phi_q = model_params.get('phi', (1, 3))
+    gauge = model_params.get("gauge", "landau_x", str)
+    mx = model_params.get("mx", None, int)
+    my = model_params.get("my", None, int)
+    Jx = model_params.get("Jx", 1.0, "real")
+    Jy = model_params.get("Jy", 1.0, "real")
+    phi_p, phi_q = model_params.get("phi", (1, 3))
     phi = 2 * np.pi * phi_p / phi_q
 
-    if gauge == 'landau_x':
+    if gauge == "landau_x":
         # hopping in x-direction: uniform
         # hopping in y-direction: depends on x, shape (mx, 1)
         # can be tiled to (Lx,Ly-1) for 'ladder' and (Lx, Ly) for 'cylinder' bc.
         if mx is None:
             mx = phi_q
         hop_x = -Jx
-        hop_y = -Jy * np.exp(1.j * phi * np.arange(mx)[:, np.newaxis])  # has shape (mx, 1)
-    elif gauge == 'landau_y':
+        hop_y = -Jy * np.exp(1.0j * phi * np.arange(mx)[:, np.newaxis])  # has shape (mx, 1)
+    elif gauge == "landau_y":
         # hopping in x-direction: depends on y, shape (1, my)
         # hopping in y-direction: uniform
         # can be tiled to (Lx,Ly-1) for 'ladder' and (Lx, Ly) for 'cylinder' bc.
         if my is None:
             my = phi_q
         hop_y = -Jy
-        hop_x = -Jx * np.exp(-1.j * phi * np.arange(my)[np.newaxis, :])  # has shape (1, my)
-    elif gauge == 'symmetric':
+        hop_x = -Jx * np.exp(-1.0j * phi * np.arange(my)[np.newaxis, :])  # has shape (1, my)
+    elif gauge == "symmetric":
         # hopping in x-direction: depends on y, shape (mx, my)
         # hopping in y-direction: depends on x, shape (mx, my)
         if mx is None or my is None:
             mx = my = phi_q
-        hop_x = -Jx * np.exp(-1.j * (phi / 2) * np.arange(my)[np.newaxis, :])  # shape (1, my)
-        hop_y = -Jy * np.exp(1.j * (phi / 2) * np.arange(mx)[:, np.newaxis])  # shape (mx, 1)
+        hop_x = -Jx * np.exp(-1.0j * (phi / 2) * np.arange(my)[np.newaxis, :])  # shape (1, my)
+        hop_y = -Jy * np.exp(1.0j * (phi / 2) * np.arange(mx)[:, np.newaxis])  # shape (mx, 1)
     else:
         raise ValueError("Undefined gauge " + repr(gauge))
     return hop_x, hop_y
@@ -152,12 +152,13 @@ class HofstadterFermions(CouplingMPOModel):
             magnetic unit cell. See :func:`gauge_hopping` for details.
 
     """
+
     default_lattice = Square
     force_default_lattice = True
 
     def init_sites(self, model_params):
-        conserve = model_params.get('conserve', 'N', str)
-        filling = model_params.get('filling', (1, 8))
+        conserve = model_params.get("conserve", "N", str)
+        filling = model_params.get("filling", (1, 8))
         filling = filling[0] / filling[1]
         site = FermionSite(conserve=conserve, filling=filling)
         return site
@@ -165,22 +166,22 @@ class HofstadterFermions(CouplingMPOModel):
     def init_terms(self, model_params):
         Lx = self.lat.shape[0]
         Ly = self.lat.shape[1]
-        phi_ext = model_params.get('phi_ext', 0., 'real')
-        mu = np.asarray(model_params.get('mu', 0., 'real_or_array'))
-        v = np.asarray(model_params.get('v', 0, 'real_or_array'))
+        phi_ext = model_params.get("phi_ext", 0.0, "real")
+        mu = np.asarray(model_params.get("mu", 0.0, "real_or_array"))
+        v = np.asarray(model_params.get("v", 0, "real_or_array"))
         hop_x, hop_y = gauge_hopping(model_params)
 
         # 6) add terms of the Hamiltonian
-        self.add_onsite(-mu, 0, 'N')
+        self.add_onsite(-mu, 0, "N")
         dx = np.array([1, 0])
-        self.add_coupling(hop_x, 0, 'Cd', 0, 'C', dx)
-        self.add_coupling(np.conj(hop_x), 0, 'Cd', 0, 'C', -dx)  # h.c.
+        self.add_coupling(hop_x, 0, "Cd", 0, "C", dx)
+        self.add_coupling(np.conj(hop_x), 0, "Cd", 0, "C", -dx)  # h.c.
         dy = np.array([0, 1])
-        hop_y = self.coupling_strength_add_ext_flux(hop_y, dy, [0, 2. * np.pi * phi_ext])
-        self.add_coupling(hop_y, 0, 'Cd', 0, 'C', dy)
-        self.add_coupling(np.conj(hop_y), 0, 'Cd', 0, 'C', -dy)  # h.c.
-        self.add_coupling(v, 0, 'N', 0, 'N', dx)
-        self.add_coupling(v, 0, 'N', 0, 'N', dy)
+        hop_y = self.coupling_strength_add_ext_flux(hop_y, dy, [0, 2.0 * np.pi * phi_ext])
+        self.add_coupling(hop_y, 0, "Cd", 0, "C", dy)
+        self.add_coupling(np.conj(hop_y), 0, "Cd", 0, "C", -dy)  # h.c.
+        self.add_coupling(v, 0, "N", 0, "N", dx)
+        self.add_coupling(v, 0, "N", 0, "N", dy)
 
 
 class HofstadterBosons(CouplingMPOModel):
@@ -231,13 +232,14 @@ class HofstadterBosons(CouplingMPOModel):
             Choice of the gauge used for the magnetic field. This changes the
             magnetic unit cell.
     """
+
     default_lattice = Square
     force_default_lattice = True
 
     def init_sites(self, model_params):
-        Nmax = model_params.get('Nmax', 3, int)
-        conserve = model_params.get('conserve', 'N', str)
-        filling = model_params.get('filling', (1, 8))
+        Nmax = model_params.get("Nmax", 3, int)
+        conserve = model_params.get("conserve", "N", str)
+        filling = model_params.get("filling", (1, 8))
         filling = filling[0] / filling[1]
         site = BosonSite(Nmax=Nmax, conserve=conserve, filling=filling)
         return site
@@ -245,18 +247,18 @@ class HofstadterBosons(CouplingMPOModel):
     def init_terms(self, model_params):
         Lx = self.lat.shape[0]
         Ly = self.lat.shape[1]
-        phi_ext = model_params.get('phi_ext', 0., 'real')
-        mu = np.asarray(model_params.get('mu', 0., 'real_or_array'))
-        U = np.asarray(model_params.get('U', 0, 'real_or_array'))
+        phi_ext = model_params.get("phi_ext", 0.0, "real")
+        mu = np.asarray(model_params.get("mu", 0.0, "real_or_array"))
+        U = np.asarray(model_params.get("U", 0, "real_or_array"))
         hop_x, hop_y = gauge_hopping(model_params)
 
         # 6) add terms of the Hamiltonian
-        self.add_onsite(U / 2, 0, 'NN')
-        self.add_onsite(-U / 2 - mu, 0, 'N')
+        self.add_onsite(U / 2, 0, "NN")
+        self.add_onsite(-U / 2 - mu, 0, "N")
         dx = np.array([1, 0])
-        self.add_coupling(hop_x, 0, 'Bd', 0, 'B', dx)
-        self.add_coupling(np.conj(hop_x), 0, 'Bd', 0, 'B', -dx)  # h.c.
+        self.add_coupling(hop_x, 0, "Bd", 0, "B", dx)
+        self.add_coupling(np.conj(hop_x), 0, "Bd", 0, "B", -dx)  # h.c.
         dy = np.array([0, 1])
         hop_y = self.coupling_strength_add_ext_flux(hop_y, dy, [0, 2 * np.pi * phi_ext])
-        self.add_coupling(hop_y, 0, 'Bd', 0, 'B', dy)
-        self.add_coupling(np.conj(hop_y), 0, 'Bd', 0, 'B', -dy)  # h.c.
+        self.add_coupling(hop_y, 0, "Bd", 0, "B", dy)
+        self.add_coupling(np.conj(hop_y), 0, "Bd", 0, "B", -dy)  # h.c.

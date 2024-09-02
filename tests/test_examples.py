@@ -11,12 +11,12 @@ import os
 import pytest
 
 # get directory where the examples can be found
-examples_dir = os.path.join(os.path.dirname(__file__), '..', 'examples')
+examples_dir = os.path.join(os.path.dirname(__file__), "..", "examples")
 
 exclude = ["__pycache__"]
 
 try:
-    examples = [fn for fn in os.listdir(examples_dir) if fn[-3:] == '.py' and fn not in exclude]
+    examples = [fn for fn in os.listdir(examples_dir) if fn[-3:] == ".py" and fn not in exclude]
 except FileNotFoundError:
     # examples are not contained in source distro, so they may not be accessible,
     # e.g. when conda tests its build
@@ -25,10 +25,10 @@ except FileNotFoundError:
 
 @pytest.mark.example  # allow to skip the examples with ``$> pytest -m "not example"``
 @pytest.mark.slow
-@pytest.mark.parametrize('filename', examples)
-@pytest.mark.filterwarnings('ignore')
+@pytest.mark.parametrize("filename", examples)
+@pytest.mark.filterwarnings("ignore")
 def test_examples_import(filename):
-    assert filename[-3:] == '.py'
+    assert filename[-3:] == ".py"
     old_sys_path = sys.path[:]
     if examples_dir not in sys.path:
         sys.path[:0] = [examples_dir]  # add the directory to sys.path

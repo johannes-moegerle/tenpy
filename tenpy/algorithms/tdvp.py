@@ -41,8 +41,13 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-__all__ = ['TDVPEngine', 'SingleSiteTDVPEngine', 'TwoSiteTDVPEngine',
-           'TimeDependentSingleSiteTDVP', 'TimeDependentTwoSiteTDVP']
+__all__ = [
+    "TDVPEngine",
+    "SingleSiteTDVPEngine",
+    "TwoSiteTDVPEngine",
+    "TimeDependentSingleSiteTDVP",
+    "TimeDependentTwoSiteTDVP",
+]
 
 
 class TDVPEngine(TimeEvolutionAlgorithm, Sweep):
@@ -86,21 +91,23 @@ class TDVPEngine(TimeEvolutionAlgorithm, Sweep):
     lanczos_options : :class:`~tenpy.tools.params.Config`
         Options passed on to :class:`~tenpy.linalg.lanczos.LanczosEvolution`.
     """
+
     EffectiveH = None
 
     def __init__(self, psi, model, options, **kwargs):
-        if self.__class__.__name__ == 'TDVPEngine':
-            msg = ("TDVP interface changed. \n"
-                   "The new TDVPEngine has subclasses SingleSiteTDVPEngine"
-                   " and TwoSiteTDVPEngine that you can use.\n"
-                   "For now, the previous version is still available as OldTDVPEngine."
-                   )
+        if self.__class__.__name__ == "TDVPEngine":
+            msg = (
+                "TDVP interface changed. \n"
+                "The new TDVPEngine has subclasses SingleSiteTDVPEngine"
+                " and TwoSiteTDVPEngine that you can use.\n"
+                "For now, the previous version is still available as OldTDVPEngine."
+            )
             raise NameError(msg)
-        if psi.bc != 'finite':
+        if psi.bc != "finite":
             raise NotImplementedError("Only finite TDVP is implemented")
         assert psi.bc == model.lat.bc_MPS
         super().__init__(psi, model, options, **kwargs)
-        self.lanczos_options = self.options.subconfig('lanczos_options')
+        self.lanczos_options = self.options.subconfig("lanczos_options")
 
     # run() from TimeEvolutionAlgorithm
 
@@ -116,8 +123,7 @@ class TDVPEngine(TimeEvolutionAlgorithm, Sweep):
         N_steps : int
             The number of steps to evolve.
         """
-        consistency_check(dt, self.options, 'max_dt', 1.,
-                          'dt > ``max_dt`` is unreasonably large for TDVP.')
+        consistency_check(dt, self.options, "max_dt", 1.0, "dt > ``max_dt`` is unreasonably large for TDVP.")
         self.dt = dt
         trunc_err = TruncationError()
         for _ in range(N_steps):
@@ -159,6 +165,7 @@ class TwoSiteTDVPEngine(TDVPEngine):
     lanczos_options : :class:`~tenpy.tools.params.Config`
         Options passed on to :class:`~tenpy.linalg.lanczos.LanczosEvolution`.
     """
+
     EffectiveH = TwoSiteH
 
     def __init__(self, psi, model, options, **kwargs):
@@ -182,33 +189,29 @@ class TwoSiteTDVPEngine(TDVPEngine):
 
         dt = self.dt
         if i0 == L - 2:
-            dt = 2. * dt  # instead of updating the last pair of sites twice, we double the time
+            dt = 2.0 * dt  # instead of updating the last pair of sites twice, we double the time
         # update two-site wavefunction
         theta, N = LanczosEvolution(self.eff_H, theta, self.lanczos_options).run(-0.5j * dt)
         if self.combine:
-            theta.itranspose(['(vL.p0)', '(p1.vR)'])  # shouldn't do anything
+            theta.itranspose(["(vL.p0)", "(p1.vR)"])  # shouldn't do anything
         else:
-            theta = theta.combine_legs([['vL', 'p0'], ['p1', 'vR']], new_axes=[0, 1],
-                                       qconj=[+1, -1])
+            theta = theta.combine_legs([["vL", "p0"], ["p1", "vR"]], new_axes=[0, 1], qconj=[+1, -1])
         qtotal_i0 = self.psi.get_B(i0, form=None).qtotal
-        U, S, VH, err, _ = svd_theta(theta,
-                                     self.trunc_params,
-                                     qtotal_LR=[qtotal_i0, None],
-                                     inner_labels=['vR', 'vL'])
-        B0 = U.split_legs(['(vL.p0)']).replace_label('p0', 'p')
-        B1 = VH.split_legs(['(p1.vR)']).replace_label('p1', 'p')
+        U, S, VH, err, _ = svd_theta(theta, self.trunc_params, qtotal_LR=[qtotal_i0, None], inner_labels=["vR", "vL"])
+        B0 = U.split_legs(["(vL.p0)"]).replace_label("p0", "p")
+        B1 = VH.split_legs(["(p1.vR)"]).replace_label("p1", "p")
 
-        self.psi.set_B(i0, B0, form='A')  # left-canonical
-        self.psi.set_B(i0 + 1, B1, form='B')  # right-canonical
+        self.psi.set_B(i0, B0, form="A")  # left-canonical
+        self.psi.set_B(i0 + 1, B1, form="B")  # right-canonical
         self.psi.set_SR(i0, S)
-        update_data = {'err': err, 'N': N, 'U': U, 'VH': VH}
+        update_data = {"err": err, "N": N, "U": U, "VH": VH}
         # earlier update of environments, since they are needed for the one_site_update()
         super().update_env(**update_data)  # new environments, e.g. LP[i0+1] on right move.
 
         if self.move_right:
             # note that i0 == L-2 is left-moving
             self.one_site_update(i0 + 1, 0.5j * self.dt)
-        elif (self.move_right is False):
+        elif self.move_right is False:
             self.one_site_update(i0, 0.5j * self.dt)
         # for the last update of the sweep, where move_right is None, there is no one_site_update
 
@@ -223,7 +226,7 @@ class TwoSiteTDVPEngine(TDVPEngine):
         theta = self.psi.get_theta(i, n=1, cutoff=self.S_inv_cutoff)
         theta = H1.combine_theta(theta)
         theta, _ = LanczosEvolution(H1, theta, self.lanczos_options).run(dt)
-        self.psi.set_B(i, theta.replace_label('p0', 'p'), form='Th')
+        self.psi.set_B(i, theta.replace_label("p0", "p"), form="Th")
 
 
 class SingleSiteTDVPEngine(TDVPEngine):
@@ -257,6 +260,7 @@ class SingleSiteTDVPEngine(TDVPEngine):
     lanczos_options : :class:`~tenpy.tools.params.Config`
         Options passed on to :class:`~tenpy.linalg.lanczos.LanczosEvolution`.
     """
+
     EffectiveH = OneSiteH
 
     def get_sweep_schedule(self):
@@ -276,7 +280,7 @@ class SingleSiteTDVPEngine(TDVPEngine):
 
         dt = self.dt
         if i0 == L - 1:
-            dt = 2. * dt  # instead of updating the last site twice, we double the time
+            dt = 2.0 * dt  # instead of updating the last site twice, we double the time
 
         # update one-site wavefunction
         theta, N = LanczosEvolution(self.eff_H, theta, self.lanczos_options).run(-0.5j * dt)
@@ -290,43 +294,43 @@ class SingleSiteTDVPEngine(TDVPEngine):
 
     def right_moving_update(self, i0, theta):
         if self.combine:
-            theta.itranspose(['(vL.p0)', 'vR'])
+            theta.itranspose(["(vL.p0)", "vR"])
         else:
-            theta = theta.combine_legs(['vL', 'p0'], qconj=+1, new_axes=0)
-        U, S, VH = npc.svd(theta, qtotal_LR=[theta.qtotal, None], inner_labels=['vR', 'vL'])
+            theta = theta.combine_legs(["vL", "p0"], qconj=+1, new_axes=0)
+        U, S, VH = npc.svd(theta, qtotal_LR=[theta.qtotal, None], inner_labels=["vR", "vL"])
         # no truncation
-        A0 = U.split_legs(['(vL.p0)']).replace_label('p0', 'p')
-        self.psi.set_B(i0, A0, form='A')  # left-canonical
+        A0 = U.split_legs(["(vL.p0)"]).replace_label("p0", "p")
+        self.psi.set_B(i0, A0, form="A")  # left-canonical
         self.psi.set_SR(i0, S)
 
         if True:  # note that i0 == L - 1 is left moving, so we always do a zero-site update
             super().update_env(U=U)
-            theta = VH.scale_axis(S, 'vL')
+            theta = VH.scale_axis(S, "vL")
             theta, H0 = self.zero_site_update(i0 + 1, theta, 0.5j * self.dt)
-            next_B = self.psi.get_B(i0 + 1, form='B')
-            next_th = npc.tensordot(theta, next_B, axes=['vR', 'vL'])
-            self.psi.set_B(i0 + 1, next_th, form='Th')  # used and updated for next i0
+            next_B = self.psi.get_B(i0 + 1, form="B")
+            next_th = npc.tensordot(theta, next_B, axes=["vR", "vL"])
+            self.psi.set_B(i0 + 1, next_th, form="Th")  # used and updated for next i0
 
     def left_moving_update(self, i0, theta):
         if self.combine:
-            theta.itranspose(['vL', '(p0.vR)'])
+            theta.itranspose(["vL", "(p0.vR)"])
         else:
-            theta = theta.combine_legs(['p0', 'vR'], qconj=-1, new_axes=1)
-        U, S, VH = npc.svd(theta, qtotal_LR=[None, theta.qtotal], inner_labels=['vR', 'vL'])
+            theta = theta.combine_legs(["p0", "vR"], qconj=-1, new_axes=1)
+        U, S, VH = npc.svd(theta, qtotal_LR=[None, theta.qtotal], inner_labels=["vR", "vL"])
         if i0 == 0:
             assert U.shape == (1, 1)
             VH *= U[0, 0]  # just a global phase, but better keep it!
-        B1 = VH.split_legs(['(p0.vR)']).replace_label('p0', 'p')
-        self.psi.set_B(i0, B1, form='B')  # right-canonical
+        B1 = VH.split_legs(["(p0.vR)"]).replace_label("p0", "p")
+        self.psi.set_B(i0, B1, form="B")  # right-canonical
         self.psi.set_SL(i0, S)
 
         if i0 != 0:  # left-moving, but not the last site of the update
             super().update_env(VH=VH)  # note: no update needed if i0=0!
-            theta = U.iscale_axis(S, 'vR')
+            theta = U.iscale_axis(S, "vR")
             theta, H0 = self.zero_site_update(i0, theta, 0.5j * self.dt)
-            next_A = self.psi.get_B(i0 - 1, form='A')
-            next_th = npc.tensordot(next_A, theta, axes=['vR', 'vL'])
-            self.psi.set_B(i0 - 1, next_th, form='Th')  # used and updated for next i0
+            next_A = self.psi.get_B(i0 - 1, form="A")
+            next_th = npc.tensordot(next_A, theta, axes=["vR", "vL"])
+            self.psi.set_B(i0 - 1, next_th, form="Th")  # used and updated for next i0
             # note: this zero-site update can change the singular values on the bond left of i0.
             # however, we *don't* save them in psi: it turns out that the right singular
             # values for correct expectation values/entropies are the ones set before the if above.
@@ -343,14 +347,15 @@ class SingleSiteTDVPEngine(TDVPEngine):
         return theta, H0
 
     def post_update_local(self, **update_data):
-        self.trunc_err_list.append(0.)  # avoid error in return of sweep()
+        self.trunc_err_list.append(0.0)  # avoid error in return of sweep()
 
 
-class TimeDependentSingleSiteTDVP(TimeDependentHAlgorithm,SingleSiteTDVPEngine):
+class TimeDependentSingleSiteTDVP(TimeDependentHAlgorithm, SingleSiteTDVPEngine):
     """Variant of :class:`SingleSiteTDVPEngine` that can handle time-dependent Hamiltonians.
 
     See details in :class:`~tenpy.algorithms.algorithm.TimeDependentHAlgorithm` as well.
     """
+
     def reinit_model(self):
         # recreate model
         TimeDependentHAlgorithm.reinit_model(self)
@@ -358,7 +363,7 @@ class TimeDependentSingleSiteTDVP(TimeDependentHAlgorithm,SingleSiteTDVPEngine):
         self.init_env(self.model)
 
 
-class TimeDependentTwoSiteTDVP(TimeDependentHAlgorithm,TwoSiteTDVPEngine):
+class TimeDependentTwoSiteTDVP(TimeDependentHAlgorithm, TwoSiteTDVPEngine):
     """Variant of :class:`TwoSiteTDVPEngine` that can handle time-dependent Hamiltonians.
 
     See details in :class:`~tenpy.algorithms.algorithm.TimeDependentHAlgorithm` as well.

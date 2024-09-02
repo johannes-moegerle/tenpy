@@ -23,6 +23,7 @@ from scipy.spatial import ConvexHull, Voronoi
 import itertools
 import copy
 import logging
+
 logger = logging.getLogger(__name__)
 
 from ..networks.site import Site
@@ -30,14 +31,28 @@ from ..tools.misc import to_iterable, to_array, inverse_permutation, get_close, 
 from ..networks.mps import MPS  # only to check boundary conditions
 
 __all__ = [
-    'Lattice', 'TrivialLattice', 'SimpleLattice', 'MultiSpeciesLattice', 'IrregularLattice',
-    'HelicalLattice', 'Chain', 'Ladder', 'NLegLadder', 'Square', 'Triangular', 'Honeycomb',
-    'Kagome', 'SimpleBZ', 'get_lattice', 'get_order', 'get_order_grouped'
+    "Lattice",
+    "TrivialLattice",
+    "SimpleLattice",
+    "MultiSpeciesLattice",
+    "IrregularLattice",
+    "HelicalLattice",
+    "Chain",
+    "Ladder",
+    "NLegLadder",
+    "Square",
+    "Triangular",
+    "Honeycomb",
+    "Kagome",
+    "SimpleBZ",
+    "get_lattice",
+    "get_order",
+    "get_order_grouped",
 ]
 
 # (update module doc string if you add further lattices)
 
-bc_choices = {'open': True, 'periodic': False}
+bc_choices = {"open": True, "periodic": False}
 """dict: maps possible choices of boundary conditions in a lattice to bool/int."""
 
 
@@ -152,18 +167,13 @@ class Lattice:
     _mps2lat_vals_idx_fix_u : tuple of ndarray of shape `Ls`
         similar as `_mps2lat_vals_idx`, but for a fixed `u` picking a site from the unit cell.
     """
+
     Lu = None  #: the (expected) number of sites in the unit cell, ``len(unit_cell)``.
     dim = None  #: the dimension of the lattice
 
-    def __init__(self,
-                 Ls,
-                 unit_cell,
-                 order='default',
-                 bc='open',
-                 bc_MPS='finite',
-                 basis=None,
-                 positions=None,
-                 pairs=None):
+    def __init__(
+        self, Ls, unit_cell, order="default", bc="open", bc_MPS="finite", basis=None, positions=None, pairs=None
+    ):
         self.unit_cell = list(unit_cell)
         self._set_Ls(Ls)  # after setting unit_cell
         if positions is None:
@@ -189,10 +199,10 @@ class Lattice:
         Raises ValueErrors, if something is wrong.
         """
         assert self.dim == len(self.Ls)
-        assert self.shape == self.Ls + (len(self.unit_cell), )
+        assert self.shape == self.Ls + (len(self.unit_cell),)
         if not isinstance(self, HelicalLattice):
             assert self.N_cells == np.prod(self.Ls)
-        if self.bc.shape != (self.dim, ):
+        if self.bc.shape != (self.dim,):
             raise ValueError("Wrong len of bc")
         assert self.bc.dtype == bool
         chinfo = None
@@ -202,9 +212,11 @@ class Lattice:
             if chinfo is None:
                 chinfo = site.leg.chinfo
             if site.leg.chinfo != chinfo:
-                raise ValueError("All sites in the lattice must have the same ChargeInfo!"
-                                 " Call tenpy.networks.site.set_common_charges() before "
-                                 "giving them to the lattice!")
+                raise ValueError(
+                    "All sites in the lattice must have the same ChargeInfo!"
+                    " Call tenpy.networks.site.set_common_charges() before "
+                    "giving them to the lattice!"
+                )
         if self.basis.shape[0] != self.dim:
             raise ValueError("Need one basis vector for each direction!")
         if self.unit_cell_positions.shape[0] != len(self.unit_cell):
@@ -213,19 +225,19 @@ class Lattice:
             raise ValueError("Different space dimensions of `basis` and `unit_cell_positions`")
         if self.bc_MPS not in MPS._valid_bc:
             raise ValueError("invalid MPS boundary conditions")
-        if self.bc[0] and self.bc_MPS != 'finite':
-            raise ValueError("Need periodic boundary conditions along the x-direction "
-                             "for 'infinite' and 'segment' `bc_MPS`")
+        if self.bc[0] and self.bc_MPS != "finite":
+            raise ValueError(
+                "Need periodic boundary conditions along the x-direction " "for 'infinite' and 'segment' `bc_MPS`"
+            )
         if not isinstance(self, (IrregularLattice, HelicalLattice)):
             assert self.N_sites == np.prod(self.shape)
             # if one of the following assert fails,
             # the `ordering` function might have returned an invalid array
             assert np.all(self._order >= 0) and np.all(self._order <= self.shape)
             # rows of `order` unique and _perm correct?
-            assert np.all(
-                np.sum(self._order * self._strides, axis=1)[self._perm] == np.arange(self.N_sites))
+            assert np.all(np.sum(self._order * self._strides, axis=1)[self._perm] == np.arange(self.N_sites))
         if self.position_disorder is not None:
-            assert self.position_disorder.shape == self.shape + (self.basis.shape[-1], )
+            assert self.position_disorder.shape == self.shape + (self.basis.shape[-1],)
 
     def copy(self):
         """Shallow copy of `self`."""
@@ -263,11 +275,11 @@ class Lattice:
         # not necessary for loading, but still useful
         h5gr.attrs["dim"] = self.dim
         h5gr.attrs["N_sites"] = self.N_sites
-        if hasattr(self, 'segment_first_last'):
+        if hasattr(self, "segment_first_last"):
             first, last = self.segment_first_last
-            h5gr.attrs['segment_first'] = first
-            h5gr.attrs['segment_last'] = last
-        position_disorder = getattr(self, 'position_disorder', None)
+            h5gr.attrs["segment_first"] = first
+            h5gr.attrs["segment_last"] = last
+        position_disorder = getattr(self, "position_disorder", None)
         if position_disorder is not None:
             hdf5_saver.save(self.position_disorder, subpath + "position_disorder")
 
@@ -303,9 +315,9 @@ class Lattice:
         obj.bc_MPS = hdf5_loader.load(subpath + "boundary_condition_MPS")
         obj.order = hdf5_loader.load(subpath + "order_for_MPS")  # property setter!
         obj.pairs = hdf5_loader.load(subpath + "pairs")
-        if 'segment_first' in h5gr.attrs:
-            first = h5gr.attrs['segment_first']
-            last = h5gr.attrs['segment_last']
+        if "segment_first" in h5gr.attrs:
+            first = h5gr.attrs["segment_first"]
+            last = h5gr.attrs["segment_last"]
             obj.segment_first_last = first, last
         if "position_disorder" in h5gr:
             obj.position_disorder = hdf5_loader.load(subpath + "position_disorder")
@@ -430,25 +442,25 @@ class Lattice:
         if isinstance(order, str):
             if order in ["default", "Cstyle"]:
                 priority = None
-                snake_winding = (False, ) * (self.dim + 1)
+                snake_winding = (False,) * (self.dim + 1)
             elif order == "Fstyle":
                 priority = range(self.dim, -1, -1)
-                snake_winding = (False, ) * (self.dim + 1)
+                snake_winding = (False,) * (self.dim + 1)
             elif order in ["snake", "snakeCstyle"]:
                 priority = None
-                snake_winding = (True, ) * (self.dim + 1)
+                snake_winding = (True,) * (self.dim + 1)
             elif order == "snakeFstyle":
                 priority = range(self.dim, -1, -1)
-                snake_winding = (True, ) * (self.dim + 1)
+                snake_winding = (True,) * (self.dim + 1)
             else:
                 # in a derived lattice use ``return super().ordering(order)`` as last option
                 # such that the derived lattice also has the orderings defined in this function.
                 raise ValueError("unknown ordering " + repr(order))
         else:
             descr = order[0]
-            if descr == 'standard':
+            if descr == "standard":
                 snake_winding, priority = order[1:]
-            elif descr == 'grouped':
+            elif descr == "grouped":
                 return get_order_grouped(self.shape, *order[1:])
             else:
                 raise ValueError("unknown ordering " + repr(order))
@@ -487,7 +499,7 @@ class Lattice:
                     if i == 0:
                         raise ValueError("Invalid bc: first entry can't be a shift")
                     self.bc_shift[i - 1] = bc_i
-                    bc[i] = bc_choices['periodic']
+                    bc[i] = bc_choices["periodic"]
                 else:
                     bc[i] = bc_choices[bc_i]
             if not np.any(self.bc_shift != 0):
@@ -503,7 +515,7 @@ class Lattice:
         :attr:`basis`, as a normalized vector.
         For a 1D lattice or for open boundary conditions along y, it's just along ``basis[0]``.
         """
-        if self.dim == 1 or self.boundary_conditions[1] == 'open':
+        if self.dim == 1 or self.boundary_conditions[1] == "open":
             return self.basis[0] / np.linalg.norm(self.basis[0])
         if self.dim != 2:
             raise NotImplementedError("Might not even have cylinder axis...")
@@ -512,7 +524,7 @@ class Lattice:
             periodicity += self.bc_shift[0] * self.basis[0]
         if len(periodicity) != 2:
             raise ValueError("non-2D basis, can't define cylinder axis")
-        cylinder_axis = np.array([periodicity[1], - periodicity[0]])
+        cylinder_axis = np.array([periodicity[1], -periodicity[0]])
         return cylinder_axis / np.linalg.norm(cylinder_axis)
 
     def extract_segment(self, first=0, last=None, enlarge=None):
@@ -533,10 +545,10 @@ class Lattice:
             A copy of `self` with "segment" :attr:`bc_MPS` and :attr:`segment_first_last` set.
         """
         cp = self.copy()
-        L = cp.N_sites # Size of finite MPS or unit cell
-        #assert first >= 0
+        L = cp.N_sites  # Size of finite MPS or unit cell
+        # assert first >= 0
         if enlarge is not None:
-            if cp.bc_MPS != 'infinite':
+            if cp.bc_MPS != "infinite":
                 raise ValueError("enlarge only possible for infinite MPS")
             if last is not None or first != 0:
                 raise ValueError("specify either `first`+`last` or `enlarge`!")
@@ -556,11 +568,11 @@ class Lattice:
             remove = list(range(0, first)) + list(range(last + 1, cp.N_sites))
             remove = cp.mps2lat_idx(remove)
             cp = IrregularLattice(cp, remove=remove)
-        cp.bc_MPS = 'segment'
-        if self.bc_MPS == 'finite':
+        cp.bc_MPS = "segment"
+        if self.bc_MPS == "finite":
             # need to switch to periodic along infinite direction
             bc = self.boundary_conditions
-            bc[0] = 'periodic'
+            bc[0] = "periodic"
             cp.boundary_conditions = bc
         cp.segment_first_last = first, last
         return cp
@@ -614,10 +626,11 @@ class Lattice:
             res += idx[..., i, np.newaxis] * self.basis[i]
         if self.position_disorder is not None:
             if self.bc_shift is not None:
-                raise NotImplementedError("we don't handle non-trivial bc_shift"
-                                          "in combination with positional disorder")
+                raise NotImplementedError(
+                    "we don't handle non-trivial bc_shift" "in combination with positional disorder"
+                )
             idx = np.mod(idx, self.shape)
-            idx_pos = tuple(idx[..., i] for i in range(idx.shape[-1])) + (slice(None, None), )
+            idx_pos = tuple(idx[..., i] for i in range(idx.shape[-1])) + (slice(None, None),)
             res += self.position_disorder[idx_pos]
         return res
 
@@ -650,7 +663,7 @@ class Lattice:
             For `i` across the MPS unit cell and "infinite" or "segment" `bc_MPS`,
             we shift `x_0` accordingly.
         """
-        if self.bc_MPS != 'finite':
+        if self.bc_MPS != "finite":
             # allow `i` outside of MPS unit cell for bc_MPS infinite
             i0 = i
             i = np.mod(i, self.N_sites)
@@ -679,13 +692,13 @@ class Lattice:
             Has the same shape as `lat_idx` without the last dimension.
         """
         idx = self._asvalid_latidx(lat_idx)
-        if self.bc_MPS != 'finite':
+        if self.bc_MPS != "finite":
             idx = idx.copy()
             i_shift = idx[..., 0] - np.mod(idx[..., 0], self.N_rings)
             idx[..., 0] -= i_shift
         i = np.sum(np.mod(idx, self.shape) * self._strides, axis=-1)  # before permutation
         i = np.take(self._perm, i)  # after permutation
-        if self.bc_MPS != 'finite':
+        if self.bc_MPS != "finite":
             i += i_shift * self.N_sites // self.N_rings
             # N_sites_per_ring might not be set for IrregularLattice
         return i
@@ -865,7 +878,7 @@ class Lattice:
             if mps_inds_ax is None:  # default
                 mps_inds_ax = np.arange(A.shape[ax])
             if include_u_ax is None:  # default
-                include_u_ax = (len(self.unit_cell) > 1)
+                include_u_ax = len(self.unit_cell) > 1
             if mps_inds_ax.ndim != 1:
                 raise ValueError("got non-1D array in `mps_inds` " + str(mps_inds_ax.shape))
             lat_inds_ax = self.mps2lat_idx(mps_inds_ax)
@@ -912,7 +925,7 @@ class Lattice:
         res_A[tuple(res_A_inds)] = A  # copy data, automatically unmasks entries
         return res_A
 
-    def count_neighbors(self, u=0, key='nearest_neighbors'):
+    def count_neighbors(self, u=0, key="nearest_neighbors"):
         """Count e.g. the number of nearest neighbors for a site in the bulk.
 
         Parameters
@@ -979,22 +992,23 @@ class Lattice:
             vec_dist = vec_dist + dx[..., ax, np.newaxis] * self.basis[ax]
         if self.position_disorder is not None:
             if self.bc_shift is not None:
-                raise NotImplementedError("we don't handle non-trivial bc_shift"
-                                          "in combination with positional disorder")
+                raise NotImplementedError(
+                    "we don't handle non-trivial bc_shift" "in combination with positional disorder"
+                )
             shape, shift = self.coupling_shape(dx)
             slices_i = []
             slices_j = []
             for L, Lc, s, d in zip(self.Ls, shape, shift, dx):
                 slices_i.append(np.arange(-s, -s + Lc) % L)
                 slices_j.append(np.arange(-s + d, -s + d + Lc) % L)
-            lat_i = tuple(np.meshgrid(*slices_i, indexing='ij', sparse=True))
-            lat_j = tuple(np.meshgrid(*slices_j, indexing='ij', sparse=True))
-            disorder_i = self.position_disorder[lat_i + (u1, )]
-            disorder_j = self.position_disorder[lat_j + (u2, )]
+            lat_i = tuple(np.meshgrid(*slices_i, indexing="ij", sparse=True))
+            lat_j = tuple(np.meshgrid(*slices_j, indexing="ij", sparse=True))
+            disorder_i = self.position_disorder[lat_i + (u1,)]
+            disorder_j = self.position_disorder[lat_j + (u2,)]
             vec_dist = disorder_j - disorder_i + vec_dist
         return np.linalg.norm(vec_dist, axis=-1)
 
-    def find_coupling_pairs(self, max_dx=3, cutoff=None, eps=1.e-10):
+    def find_coupling_pairs(self, max_dx=3, cutoff=None, eps=1.0e-10):
         """Automatically find coupling pairs grouped by distances.
 
         Given the :attr:`unit_cell_positions` and :attr:`basis`, the coupling :attr:`pairs` of
@@ -1131,7 +1145,7 @@ class Lattice:
         lat_j = lat_j[keep]
         lat_j_shifted = lat_j_shifted[keep]
         mps_j = self.lat2mps_idx(np.concatenate([lat_j, [[u2]] * len(lat_j)], axis=1))
-        if self.bc_MPS != 'finite':
+        if self.bc_MPS != "finite":
             # shift j by whole MPS unit cells for couplings along the infinite direction
             # N_sites_per_ring might not be set for IrregularLattice
             mps_j_shift = (lat_j_shifted[:, 0] - lat_j[:, 0]) * self.N_sites // self.N_rings
@@ -1146,7 +1160,7 @@ class Lattice:
         else:
             strength = to_array(strength, coupling_shape)  # tile to correct shape
             strength_vals = strength[tuple(lat_indices.T)]
-            keep_nonzero = (strength_vals != 0.)  # filter out couplings with strength 0
+            keep_nonzero = strength_vals != 0.0  # filter out couplings with strength 0
             return mps_i[keep_nonzero], mps_j[keep_nonzero], strength_vals[keep_nonzero]
 
     def _keep_possible_couplings(self, lat_j, lat_j_shifted, u2):
@@ -1154,8 +1168,10 @@ class Lattice:
         return np.all(
             np.logical_or(
                 lat_j_shifted == lat_j,  # not across the boundary
-                np.logical_not(self.bc)),  # direction has PBC
-            axis=1)
+                np.logical_not(self.bc),
+            ),  # direction has PBC
+            axis=1,
+        )
 
     def multi_coupling_shape(self, dx):
         """Calculate correct shape of the `strengths` for a multi_coupling.
@@ -1241,13 +1257,12 @@ class Lattice:
         keep = self._keep_possible_multi_couplings(lat_ijkl, lat_ijkl_shifted, u)
         lat_indices = lat_indices[keep, 0, :]  # make 2D as to be returned
         lat_ijkl = lat_ijkl[keep, :, :]
-        u = np.broadcast_to(u, lat_ijkl.shape[:2] + (1, ))
+        u = np.broadcast_to(u, lat_ijkl.shape[:2] + (1,))
         mps_ijkl = self.lat2mps_idx(np.concatenate([lat_ijkl, u], axis=2))
-        if self.bc_MPS != 'finite':
+        if self.bc_MPS != "finite":
             # shift by whole MPS unit cells for couplings along the infinite direction
             # N_sites_per_ring might not be set for IrregularLattice
-            mps_ijkl += ((lat_ijkl_shifted[keep, :, 0] - lat_ijkl[:, :, 0]) * self.N_sites //
-                         self.N_rings)
+            mps_ijkl += (lat_ijkl_shifted[keep, :, 0] - lat_ijkl[:, :, 0]) * self.N_sites // self.N_rings
             # but ensure that  0 <= min(i,j,...) < N_sites
             min_ijkl = np.min(mps_ijkl, axis=1)
             mps_ijkl += (np.mod(min_ijkl, self.N_sites) - min_ijkl)[:, np.newaxis]
@@ -1256,7 +1271,7 @@ class Lattice:
         else:
             strength = to_array(strength, coupling_shape)  # tile to correct shape
             strength_vals = strength[tuple(lat_indices.T)]  # extract correct entries
-            keep_nonzero = (strength_vals != 0.)  # filter out couplings with strength 0
+            keep_nonzero = strength_vals != 0.0  # filter out couplings with strength 0
             return mps_ijkl[keep_nonzero], strength_vals[keep_nonzero]
 
     def _keep_possible_multi_couplings(self, lat_ijkl, lat_ijkl_shifted, u_ijkl):
@@ -1264,10 +1279,12 @@ class Lattice:
         return np.all(
             np.logical_or(
                 lat_ijkl_shifted == lat_ijkl,  # not across the boundary
-                np.logical_not(self.bc)),  # direction has PBC
-            axis=(1, 2))
+                np.logical_not(self.bc),
+            ),  # direction has PBC
+            axis=(1, 2),
+        )
 
-    def plot_sites(self, ax, markers=['o', '^', 's', 'p', 'h', 'D'], labels=None, **kwargs):
+    def plot_sites(self, ax, markers=["o", "^", "s", "p", "h", "D"], labels=None, **kwargs):
         """Plot the sites of the lattice with markers.
 
         Parameters
@@ -1283,18 +1300,18 @@ class Lattice:
         **kwargs :
             Further keyword arguments given to ``ax.plot()``.
         """
-        kwargs.setdefault("linestyle", 'None')
-        use_marker = ('marker' not in kwargs)
+        kwargs.setdefault("linestyle", "None")
+        use_marker = "marker" not in kwargs
         for u in range(len(self.unit_cell)):
             pos = self.position(self.order[self.mps_idx_fix_u(u), :])
             if pos.shape[1] == 1:
-                pos = pos * np.array([[1., 0]])  # use broadcasting to add a column with zeros
+                pos = pos * np.array([[1.0, 0]])  # use broadcasting to add a column with zeros
             if pos.shape[1] != 2:
                 raise ValueError("can only plot in 2 dimensions.")
             if use_marker:
-                kwargs['marker'] = markers[u % len(markers)]
+                kwargs["marker"] = markers[u % len(markers)]
             if labels is not None:
-                kwargs['label'] = labels[u % len(labels)]
+                kwargs["label"] = labels[u % len(labels)]
             ax.plot(pos[:, 0], pos[:, 1], **kwargs)
 
     def plot_order(self, ax, order=None, textkwargs={}, **kwargs):
@@ -1315,14 +1332,14 @@ class Lattice:
         if order is None:
             order = self.order
         pos = self.position(order)
-        kwargs.setdefault('color', 'r')
+        kwargs.setdefault("color", "r")
         if pos.shape[1] == 1:
-            pos = pos * np.array([[1., 0]])  # use broadcasting to add a column with zeros
+            pos = pos * np.array([[1.0, 0]])  # use broadcasting to add a column with zeros
         if pos.shape[1] != 2:
             raise ValueError("can only plot in 2 dimensions.")
         ax.plot(pos[:, 0], pos[:, 1], **kwargs)
         if textkwargs is not None:
-            textkwargs.setdefault('color', kwargs['color'])
+            textkwargs.setdefault("color", kwargs["color"])
             for i, p in enumerate(pos):
                 ax.text(p[0], p[1], str(i), **textkwargs)
 
@@ -1347,8 +1364,8 @@ class Lattice:
             Further keyword arguments given to ``ax.plot()``.
         """
         if coupling is None:
-            coupling = self.pairs['nearest_neighbors']
-        kwargs.setdefault('color', 'k')
+            coupling = self.pairs["nearest_neighbors"]
+        kwargs.setdefault("color", "k")
         Ls = np.array(self.Ls)
         for u1, u2, dx in coupling:
             if wrap:
@@ -1367,17 +1384,17 @@ class Lattice:
             pos = np.stack((pos1, pos2), axis=0)
             # ax.plot connects columns of 2D array by lines
             if pos.shape[2] == 1:
-                pos = pos * np.array([[[1., 0]]])  # use broadcasting to add a column with zeros
+                pos = pos * np.array([[[1.0, 0]]])  # use broadcasting to add a column with zeros
             if pos.shape[2] != 2:
                 raise ValueError("can only plot in 2 dimensions.")
-            if 'label' in kwargs:
+            if "label" in kwargs:
                 # only include label on the first line (since they're all the same style!)
-                kwargs['label'] = [kwargs['label']] + [None] * (pos.shape[1] - 1)
+                kwargs["label"] = [kwargs["label"]] + [None] * (pos.shape[1] - 1)
             ax.plot(pos[:, :, 0], pos[:, :, 1], **kwargs)
-            if 'label' in kwargs:
-                del kwargs['label']
+            if "label" in kwargs:
+                del kwargs["label"]
 
-    def plot_basis(self, ax, origin=(0., 0.), shade=None, **kwargs):
+    def plot_basis(self, ax, origin=(0.0, 0.0), shade=None, **kwargs):
         """Plot arrows indicating the basis vectors of the lattice.
 
         Parameters
@@ -1389,24 +1406,25 @@ class Lattice:
         """
         kwargs.setdefault("length_includes_head", True)
         kwargs.setdefault("width", 0.03)
-        kwargs.setdefault("color", 'g')
+        kwargs.setdefault("color", "g")
         origin = np.array(origin)
         basis = np.array([self.basis[i] for i in range(self.dim)])
         if basis.shape[1] == 1:
-            basis = basis * np.array([[1., 0]])
+            basis = basis * np.array([[1.0, 0]])
             if basis.shape[1] != 2:
                 raise ValueError("can only plot in 2 dimensions.")
         if shade is None:
             shade = True if self.dim == 2 else False
         if shade:
             from matplotlib.patches import Polygon
+
             xy = [origin, origin + basis[0], origin + basis[0] + basis[1], origin + basis[1]]
-            ax.add_patch(Polygon(xy, fill=True, color='palegreen'))
+            ax.add_patch(Polygon(xy, fill=True, color="palegreen"))
         for i in range(self.dim):
             vec = basis[i]
             ax.arrow(origin[0], origin[1], vec[0], vec[1], **kwargs)
 
-    def plot_reciprocal_basis(self, ax, origin=(0., 0.), plot_symmetric=True, **kwargs):
+    def plot_reciprocal_basis(self, ax, origin=(0.0, 0.0), plot_symmetric=True, **kwargs):
         """Plot arrows indicating the basis vectors of the reciprocal lattice.
 
         (Same as :meth:`plot_basis`, but without shading, since Brillouin zone is drawn separately)
@@ -1424,13 +1442,13 @@ class Lattice:
         """
         kwargs.setdefault("length_includes_head", True)
         kwargs.setdefault("width", 0.05)
-        kwargs.setdefault("color", 'k')
+        kwargs.setdefault("color", "k")
         origin = np.array(origin)
         reciprocal_basis = self.reciprocal_basis
         if reciprocal_basis.shape[1] == 1:
-            reciprocal_basis = reciprocal_basis * np.array([[1., 0]])
+            reciprocal_basis = reciprocal_basis * np.array([[1.0, 0]])
             # change scaling in 1D
-            kwargs.setdefault("head_length", 20*kwargs.get("width"))
+            kwargs.setdefault("head_length", 20 * kwargs.get("width"))
             if reciprocal_basis.shape[1] != 2:
                 raise ValueError("can only plot in 2 dimensions.")
         for i in range(self.dim):
@@ -1492,8 +1510,8 @@ class Lattice:
             diff = x_y[1, :] - x_y[0]
             perp = np.array([diff[1], -diff[0]])
             x_y_cyl = np.array([center - perp, center + perp])
-            kwargs.setdefault('linestyle', '--')
-            kwargs['marker'] = None
+            kwargs.setdefault("linestyle", "--")
+            kwargs["marker"] = None
             ax.plot(x_y_cyl[:, 0], x_y_cyl[:, 1], **kwargs)
 
     def plot_brillouin_zone(self, ax, *args, **kwargs):
@@ -1519,9 +1537,9 @@ class Lattice:
         """
         if self._reciprocal_basis is None:
             if self.dim == 1:
-                self._reciprocal_basis = (2*np.pi/np.linalg.norm(self.basis)).reshape(1, 1)
+                self._reciprocal_basis = (2 * np.pi / np.linalg.norm(self.basis)).reshape(1, 1)
             else:
-                self._reciprocal_basis = (np.linalg.inv(self.basis)*2*np.pi).T
+                self._reciprocal_basis = (np.linalg.inv(self.basis) * 2 * np.pi).T
         return self._reciprocal_basis
 
     @property
@@ -1544,7 +1562,7 @@ class Lattice:
     def _set_Ls(self, Ls):
         self.Ls = tuple([int(L) for L in Ls])
         self.N_cells = int(np.prod(self.Ls))
-        self.shape = self.Ls + (len(self.unit_cell), )
+        self.shape = self.Ls + (len(self.unit_cell),)
         self.N_sites = int(np.prod(self.shape))
         self.N_rings = self.Ls[0]
         self.N_sites_per_ring = int(self.N_sites // self.N_rings)
@@ -1568,6 +1586,7 @@ class TrivialLattice(Lattice):
     **kwargs :
         Further keyword arguments given to :class:`Lattice`.
     """
+
     def __init__(self, mps_sites, **kwargs):
         Lattice.__init__(self, [1], mps_sites, **kwargs)
 
@@ -1597,18 +1616,19 @@ class SimpleLattice(Lattice):
         the `snake_winding` and `priority` should only be specified for the spatial directions.
         Similarly, `positions` can be specified as a single vector.
     """
+
     Lu = 1  #: the (expected) number of sites in the unit cell, ``len(unit_cell)``.
 
     def __init__(self, Ls, site, **kwargs):
-        if 'positions' in kwargs:
-            Dim = len(kwargs['basis'][0]) if 'basis' in kwargs else len(Ls)
-            kwargs['positions'] = np.reshape(kwargs['positions'], (1, Dim))
-        if 'order' in kwargs and not isinstance(kwargs['order'], str):
-            descr, snake_winding, priority = kwargs['order']
-            assert descr == 'standard'
-            snake_winding = tuple(snake_winding) + (False, )
-            priority = tuple(priority) + (max(priority) + 1., )
-            kwargs['order'] = descr, snake_winding, priority
+        if "positions" in kwargs:
+            Dim = len(kwargs["basis"][0]) if "basis" in kwargs else len(Ls)
+            kwargs["positions"] = np.reshape(kwargs["positions"], (1, Dim))
+        if "order" in kwargs and not isinstance(kwargs["order"], str):
+            descr, snake_winding, priority = kwargs["order"]
+            assert descr == "standard"
+            snake_winding = tuple(snake_winding) + (False,)
+            priority = tuple(priority) + (max(priority) + 1.0,)
+            kwargs["order"] = descr, snake_winding, priority
         Lattice.__init__(self, Ls, [site], **kwargs)
 
     def mps2lat_values(self, A, axes=0, u=None):
@@ -1714,6 +1734,7 @@ class MultiSpeciesLattice(Lattice):
 
     In this case, you could also call :func:`tenpy.networks.site.spin_half_species`.
     """
+
     Lu = None  #: unknown number of sites in the unit cell
 
     def __init__(self, simple_lattice, species_sites, species_names=None):
@@ -1725,8 +1746,9 @@ class MultiSpeciesLattice(Lattice):
         if species_names is None:
             species_names = [str(i) for i in range(N_species)]
         if len(species_names) != N_species:
-            raise ValueError("need exactly one name for each species,"
-                             f"but got {species_names!r} for {species_sites!r}")
+            raise ValueError(
+                "need exactly one name for each species," f"but got {species_names!r} for {species_sites!r}"
+            )
         unit_cell_positions = np.repeat(simple_lattice.unit_cell_positions, N_species, axis=0)
 
         self.N_species = N_species
@@ -1743,7 +1765,8 @@ class MultiSpeciesLattice(Lattice):
             bc_MPS=simple_lattice.bc_MPS,
             basis=simple_lattice.basis,
             positions=unit_cell_positions,
-            pairs=new_pairs)
+            pairs=new_pairs,
+        )
 
     def _generate_new_pairs(self):
         N_sp = self.N_species
@@ -1760,13 +1783,13 @@ class MultiSpeciesLattice(Lattice):
                     if pair_key_sp in new_pairs:
                         raise ValueError(errmsg % pair_key_sp)
                     pair_val_sp = []
-                    for (u1, u2, dx) in pair_val:
+                    for u1, u2, dx in pair_val:
                         pair_val_sp.append((u1 * N_sp + sp_idx1, u2 * N_sp + sp_idx2, dx))
                     new_pairs[pair_key_sp] = pair_val_sp
                     pair_val_all.extend(pair_val_sp)
                     if sp_idx1 == sp_idx2:
                         pair_val_diag.extend(pair_val_sp)
-            for key_sum, pair_val_sum in [('all-all', pair_val_all), ('diag', pair_val_diag)]:
+            for key_sum, pair_val_sum in [("all-all", pair_val_all), ("diag", pair_val_diag)]:
                 pair_key_sum = f"{pair_key}_{key_sum}"
                 if pair_key_sum in new_pairs:
                     if pair_key_sp in new_pairs:
@@ -1776,10 +1799,9 @@ class MultiSpeciesLattice(Lattice):
         for sp_idx1, sp_name1 in enumerate(names):
             for sp_idx2, sp_name2 in enumerate(names):
                 if sp_idx2 <= sp_idx1:
-                    continue # fully onsite!
+                    continue  # fully onsite!
                 onsite_pair_key = f"onsite_{sp_name1}-{sp_name2}"
-                onsite_pair_val = [(u * N_sp + sp_idx1, u * N_sp + sp_idx2, dx)
-                                   for u in range(self.simple_Lu)]
+                onsite_pair_val = [(u * N_sp + sp_idx1, u * N_sp + sp_idx2, dx) for u in range(self.simple_Lu)]
                 if onsite_pair_key in new_pairs:
                     raise ValueError(errmsg % onsite_pair_key)
                 new_pairs[onsite_pair_key] = onsite_pair_val
@@ -1803,7 +1825,6 @@ class MultiSpeciesLattice(Lattice):
         species_idx = np.tile(np.arange(self.N_species, dtype=np.intp), len(simple_order))
         order[:, -1] = self.simple_u_to_species_u(order[:, -1], species_idx)
         return order
-
 
     def self_u_to_simple_u(self, self_u):
         """Get index `u` of the `simple_lattice` from index `u` in `self`.
@@ -1940,14 +1961,10 @@ class IrregularLattice(Lattice):
         >>> irr_lat.mps_sites()
         ['F', 'F', 'S', 'F', 'F']
     """
+
     _REMOVED = -123456  # value in self._perm indicating removed sites.
 
-    def __init__(self,
-                 regular_lattice,
-                 remove=None,
-                 add=None,
-                 add_unit_cell=[],
-                 add_positions=None):
+    def __init__(self, regular_lattice, remove=None, add=None, add_unit_cell=[], add_positions=None):
         if add_positions is None:
             add_positions = np.zeros((len(add_unit_cell), regular_lattice.dim))
         elif len(add_unit_cell) != len(add_positions):
@@ -1973,8 +1990,10 @@ class IrregularLattice(Lattice):
         self.position_disorder = regular_lattice.position_disorder
         if self.position_disorder is not None:
             if len(add_unit_cell) > 0:
-                raise ValueError("Don't know how to extend `position_disorder`. "
-                                 "Add disorder explicitly only to the IrregularLattice.")
+                raise ValueError(
+                    "Don't know how to extend `position_disorder`. "
+                    "Add disorder explicitly only to the IrregularLattice."
+                )
         # done
 
     def save_hdf5(self, hdf5_saver, h5gr, subpath):
@@ -1983,8 +2002,8 @@ class IrregularLattice(Lattice):
         hdf5_saver.save(self.remove, subpath + "remove")
         hdf5_saver.save(self.add[0], subpath + "add_lat_idx")
         hdf5_saver.save(self.add[1], subpath + "add_mps_idx")
-        add_unit_cell = self.unit_cell[len(self.regular_lattice.unit_cell):]
-        add_positions = self.unit_cell_positions[len(self.regular_lattice.unit_cell_positions):]
+        add_unit_cell = self.unit_cell[len(self.regular_lattice.unit_cell) :]
+        add_positions = self.unit_cell_positions[len(self.regular_lattice.unit_cell_positions) :]
         hdf5_saver.save(add_unit_cell, subpath + "add_unit_cell")
         hdf5_saver.save(add_positions, subpath + "add_positions")
 
@@ -2086,7 +2105,7 @@ class IrregularLattice(Lattice):
     def _keep_possible_multi_couplings(self, lat_ijkl, lat_ijkl_shifted, u_ijkl):
         """filter possible j sites of a coupling from :meth:`possible_couplings`"""
         keep = super()._keep_possible_multi_couplings(lat_ijkl, lat_ijkl_shifted, u_ijkl)
-        u_ijkl = np.broadcast_to(u_ijkl, lat_ijkl.shape[:2] + (1, ))
+        u_ijkl = np.broadcast_to(u_ijkl, lat_ijkl.shape[:2] + (1,))
         i = np.sum(np.concatenate([lat_ijkl, u_ijkl], axis=2) * self._strides, axis=-1)
         i = np.take(self._perm, i, 0)
         return np.logical_and(keep, np.all(i != self._REMOVED, axis=1))
@@ -2141,6 +2160,7 @@ class HelicalLattice(Lattice):
         Number of *lattice* unit cells to include into the MPS unit cell.
         The total number of sites will be ``N_unit_cells * len(regular_lattice.unit_cell)``.
     """
+
     _REMOVED = IrregularLattice._REMOVED
 
     def __init__(self, regular_lattice, N_unit_cells):
@@ -2150,25 +2170,29 @@ class HelicalLattice(Lattice):
         self.regular_lattice = regular_lattice
         if regular_lattice.dim != 2:
             raise ValueError("Works only for 2D lattices")
-        if regular_lattice.bc_shift is None or tuple(regular_lattice.bc_shift) != (-1, ):
-            raise ValueError("To keep the coding simpler, we require that you initialize the "
-                             "regular lattice with the shifted `bc=['periodic', -1]`")
-        if regular_lattice.bc_MPS != 'infinite':
-            raise ValueError("Require `bc_MPS='infinite'` for the regular lattice. "
-                             "For finite systems, just take a regular lattice!")
-        assert regular_lattice.bc[1] == bc_choices['periodic']  # require cylinder
+        if regular_lattice.bc_shift is None or tuple(regular_lattice.bc_shift) != (-1,):
+            raise ValueError(
+                "To keep the coding simpler, we require that you initialize the "
+                "regular lattice with the shifted `bc=['periodic', -1]`"
+            )
+        if regular_lattice.bc_MPS != "infinite":
+            raise ValueError(
+                "Require `bc_MPS='infinite'` for the regular lattice. "
+                "For finite systems, just take a regular lattice!"
+            )
+        assert regular_lattice.bc[1] == bc_choices["periodic"]  # require cylinder
         if N_unit_cells > regular_lattice.N_cells:
-            raise ValueError("N_unit_cells larger than regular_lattice.N_cells: "
-                             "increase Lx of regular_lattice!")
+            raise ValueError("N_unit_cells larger than regular_lattice.N_cells: " "increase Lx of regular_lattice!")
         if regular_lattice.N_cells % N_unit_cells != 0:
-            raise ValueError("N_unit_cells incommensurate with regular_lattice.N_cells: "
-                             "increase Lx of regular_lattice!")
+            raise ValueError(
+                "N_unit_cells incommensurate with regular_lattice.N_cells: " "increase Lx of regular_lattice!"
+            )
         self._N_cells = N_unit_cells
         Lattice.__init__(
             self,
             regular_lattice.Ls,
             regular_lattice.unit_cell,
-            order='Cstyle',  # temporary
+            order="Cstyle",  # temporary
             bc=regular_lattice.boundary_conditions,
             bc_MPS=regular_lattice.bc_MPS,
             basis=regular_lattice.basis,
@@ -2212,8 +2236,10 @@ class HelicalLattice(Lattice):
         """extract relevant sites from the `order` of the full 2D lattice."""
         Lx, Ly, Lu = self.regular_lattice.shape
         N_sites = self._N_cells * Lu
-        errmsg = ("order of regular lattice incompatible with tilting. "
-                  "Must be C-style up to an overall permutation inside the unit cell.")
+        errmsg = (
+            "order of regular lattice incompatible with tilting. "
+            "Must be C-style up to an overall permutation inside the unit cell."
+        )
         assert np.all(order[:Lu, :-1] == 0), errmsg
         order_within_unit_cell = order[:Lu, -1]
         assert np.all(order[:, -1] == np.tile(order_within_unit_cell, [Lx * Ly])), errmsg
@@ -2270,8 +2296,10 @@ class HelicalLattice(Lattice):
             We only enlarge the shape (and the underlying :attr:`regular_lattice`)
             if the new number of sites wouldn't fit into it any more.
         """
-        if (self._N_cells * factor > self.regular_lattice.N_cells
-                or self.regular_lattice.N_cells % (self._N_cells * factor) != 0):
+        if (
+            self._N_cells * factor > self.regular_lattice.N_cells
+            or self.regular_lattice.N_cells % (self._N_cells * factor) != 0
+        ):
             self.regular_lattice.enlarge_mps_unit_cell(factor)
         self._N_cells = factor * self._N_cells
 
@@ -2291,13 +2319,13 @@ class HelicalLattice(Lattice):
         reg = self.regular_lattice
         if strength is None:
             mps_i, mps_j, lat_ind, coupl_sh = reg.possible_couplings(u1, u2, dx)
-            keep = (np.min([mps_i, mps_j], axis=0) < self.N_sites)
+            keep = np.min([mps_i, mps_j], axis=0) < self.N_sites
             return mps_i[keep], mps_j[keep], lat_ind[keep], coupl_sh
         else:
             mps_i, mps_j, strength_vals = reg.possible_couplings(u1, u2, dx, strength)
             # we can actually check that everything is translation invariant!
             self._check_transl_invar_strength(np.stack([mps_i, mps_j]).T, strength_vals)
-            keep = (np.min([mps_i, mps_j], axis=0) < self.N_sites)
+            keep = np.min([mps_i, mps_j], axis=0) < self.N_sites
             return mps_i[keep], mps_j[keep], strength_vals[keep]
 
     def possible_multi_couplings(self, ops, strength=None):
@@ -2310,7 +2338,7 @@ class HelicalLattice(Lattice):
             mps_ijkl, strength_vals = reg.possible_multi_couplings(ops, strength)
             # we can actually check that everything is translation invariant!
             self._check_transl_invar_strength(mps_ijkl, strength_vals)
-            keep = (np.min(mps_ijkl, axis=1) < self.N_sites)
+            keep = np.min(mps_ijkl, axis=1) < self.N_sites
             return mps_ijkl[keep, :], strength_vals[keep]
 
     def _check_transl_invar_strength(self, mps_ijkl, strength_vals):
@@ -2319,8 +2347,7 @@ class HelicalLattice(Lattice):
         strength_vals = strength_vals[sort]
         min_ijkl = np.min(mps_ijkl, axis=1)
         for cell_start in range(0, self.regular_lattice.N_sites, self.N_sites):
-            keep_cell = np.logical_and(cell_start <= min_ijkl,
-                                       min_ijkl < cell_start + self.N_sites)
+            keep_cell = np.logical_and(cell_start <= min_ijkl, min_ijkl < cell_start + self.N_sites)
             if cell_start == 0:
                 ijkl_compare = mps_ijkl[keep_cell]
                 strength_compare = strength_vals[keep_cell]
@@ -2395,13 +2422,14 @@ class Chain(SimpleLattice):
         Additional keyword arguments given to the :class:`Lattice`.
         `pairs` are set accordingly.
     """
+
     dim = 1  #: the dimension of the lattice
 
     def __init__(self, L, site, **kwargs):
-        kwargs.setdefault('pairs', {})
-        kwargs['pairs'].setdefault('nearest_neighbors', [(0, 0, np.array([1]))])
-        kwargs['pairs'].setdefault('next_nearest_neighbors', [(0, 0, np.array([2]))])
-        kwargs['pairs'].setdefault('next_next_nearest_neighbors', [(0, 0, np.array([3]))])
+        kwargs.setdefault("pairs", {})
+        kwargs["pairs"].setdefault("nearest_neighbors", [(0, 0, np.array([1]))])
+        kwargs["pairs"].setdefault("next_nearest_neighbors", [(0, 0, np.array([2]))])
+        kwargs["pairs"].setdefault("next_next_nearest_neighbors", [(0, 0, np.array([3]))])
         # and otherwise default values.
         SimpleLattice.__init__(self, [L], site, **kwargs)
 
@@ -2433,13 +2461,13 @@ class Chain(SimpleLattice):
 
 
         """
-        if isinstance(order, str) and order == 'default' or order == 'folded':
+        if isinstance(order, str) and order == "default" or order == "folded":
             (L, u) = self.shape
             assert u == 1
             ordering = np.zeros([L, 2], dtype=np.intp)
-            if order == 'default':
+            if order == "default":
                 ordering[:, 0] = np.arange(L, dtype=np.intp)
-            elif order == 'folded':
+            elif order == "folded":
                 order = []
                 for i in range(L // 2):
                     order.append(i)
@@ -2449,7 +2477,7 @@ class Chain(SimpleLattice):
                 assert len(order) == L
                 ordering[:, 0] = np.array(order, dtype=np.intp)
             else:
-                assert (False)  # should not be possible
+                assert False  # should not be possible
             return ordering
         return super().ordering(order)
 
@@ -2508,29 +2536,30 @@ class Ladder(Lattice):
         Additional keyword arguments given to the :class:`Lattice`.
         `basis`, `pos` and `pairs` are set accordingly.
     """
+
     Lu = 2  #: the (expected) number of sites in the unit cell, ``len(unit_cell)``.
     dim = 1  #: the dimension of the lattice
 
     def __init__(self, L, sites, **kwargs):
         sites = _parse_sites(sites, 2)
-        basis = np.array([[1., 0.]])
-        pos = np.array([[0., 0.], [0., 1.]])
-        kwargs.setdefault('basis', basis)
-        kwargs.setdefault('positions', pos)
+        basis = np.array([[1.0, 0.0]])
+        pos = np.array([[0.0, 0.0], [0.0, 1.0]])
+        kwargs.setdefault("basis", basis)
+        kwargs.setdefault("positions", pos)
         NN = [(0, 0, np.array([1])), (1, 1, np.array([1])), (0, 1, np.array([0]))]
         nNN = [(0, 1, np.array([1])), (1, 0, np.array([1]))]
         nnNN = [(0, 0, np.array([2])), (1, 1, np.array([2]))]
-        kwargs.setdefault('pairs', {})
-        kwargs['pairs'].setdefault('nearest_neighbors', NN)
-        kwargs['pairs'].setdefault('next_nearest_neighbors', nNN)
-        kwargs['pairs'].setdefault('next_next_nearest_neighbors', nnNN)
-        kwargs['pairs'].setdefault('rung_NN', [(0, 1, np.array([0]))])
-        kwargs['pairs'].setdefault('leg_NN', [(0, 0, np.array([1])), (1, 1, np.array([1]))])
-        kwargs['pairs'].setdefault('diagonal', nNN)
+        kwargs.setdefault("pairs", {})
+        kwargs["pairs"].setdefault("nearest_neighbors", NN)
+        kwargs["pairs"].setdefault("next_nearest_neighbors", nNN)
+        kwargs["pairs"].setdefault("next_next_nearest_neighbors", nnNN)
+        kwargs["pairs"].setdefault("rung_NN", [(0, 1, np.array([0]))])
+        kwargs["pairs"].setdefault("leg_NN", [(0, 0, np.array([1])), (1, 1, np.array([1]))])
+        kwargs["pairs"].setdefault("diagonal", nNN)
         Lattice.__init__(self, [L], sites, **kwargs)
         # set reciprocal basis and BZ explicitly, since the basis vector is 2D for plotting
-        self._reciprocal_basis = np.array([[2*np.pi, 0]])
-        self._BZ = SimpleBZ.from_recip_basis_vectors(np.array([[2*np.pi]]), self.dim)
+        self._reciprocal_basis = np.array([[2 * np.pi, 0]])
+        self._BZ = SimpleBZ.from_recip_basis_vectors(np.array([[2 * np.pi]]), self.dim)
 
     def ordering(self, order):
         """Provide possible orderings of the `N` lattice sites.
@@ -2543,14 +2572,14 @@ class Ladder(Lattice):
             Similar as the `folded` of a chain explained in :meth:`Chain.ordering`,
             but with the two-site unit cell.
         """
-        if isinstance(order, str) and (order == 'default' or order == 'folded' or order == 'folded2'):
+        if isinstance(order, str) and (order == "default" or order == "folded" or order == "folded2"):
             (L, u) = self.shape
             assert u == 2
             ordering = np.zeros([2 * L, 2], dtype=np.intp)
-            if order == 'default':
+            if order == "default":
                 ordering[:, 0] = np.repeat(np.arange(L, dtype=np.intp), 2)
                 ordering[:, 1] = np.tile(np.array([0, 1], dtype=np.intp), L)
-            elif order == 'folded':
+            elif order == "folded":
                 order = []
                 for i in range(L // 2):
                     order.append((i, 0))
@@ -2563,7 +2592,7 @@ class Ladder(Lattice):
                 assert len(order) == 2 * L
                 ordering = np.array(order, dtype=np.intp)
             else:
-                assert (False)  # should not be possible
+                assert False  # should not be possible
             return ordering
         return super().ordering(order)
 
@@ -2624,23 +2653,23 @@ class NLegLadder(Lattice):
         `basis`, `pos` and `pairs` are set accordingly.
         Defined pairs are ``'rung_NN', 'leg_NN', 'diagonal', 'nearest_neighbors'``.
     """
+
     dim = 1  #: the dimension of the lattice
 
     def __init__(self, L, N, sites, **kwargs):
         sites = _parse_sites(sites, N)
-        basis = np.array([[1., 0.]])
+        basis = np.array([[1.0, 0.0]])
         pos = np.vstack((np.zeros(N), np.linspace(0, 1, N))).T
-        kwargs.setdefault('basis', basis)
-        kwargs.setdefault('positions', pos)
+        kwargs.setdefault("basis", basis)
+        kwargs.setdefault("positions", pos)
         rung_NN = [(n, n + 1, np.array([0])) for n in range(N - 1)]
         leg_NN = [(n, n, np.array([1])) for n in range(N)]
-        diag = [(n, n+1, np.array([1])) for n in range(N-1)] + \
-            [(n+1, n, np.array([1])) for n in range(N-1)]
-        kwargs.setdefault('pairs', {})
-        kwargs['pairs'].setdefault('rung_NN', rung_NN)
-        kwargs['pairs'].setdefault('leg_NN', leg_NN)
-        kwargs['pairs'].setdefault('nearest_neighbors', rung_NN + leg_NN)
-        kwargs['pairs'].setdefault('diagonal', diag)
+        diag = [(n, n + 1, np.array([1])) for n in range(N - 1)] + [(n + 1, n, np.array([1])) for n in range(N - 1)]
+        kwargs.setdefault("pairs", {})
+        kwargs["pairs"].setdefault("rung_NN", rung_NN)
+        kwargs["pairs"].setdefault("leg_NN", leg_NN)
+        kwargs["pairs"].setdefault("nearest_neighbors", rung_NN + leg_NN)
+        kwargs["pairs"].setdefault("diagonal", diag)
         Lattice.__init__(self, [L], sites, **kwargs)
 
     def ordering(self, order):
@@ -2654,13 +2683,13 @@ class NLegLadder(Lattice):
             Similar as the `folded` of a chain explained in :meth:`Chain.ordering`,
             but with the N-site unit cell.
         """
-        if isinstance(order, str) and (order == 'default' or order == 'folded'):
+        if isinstance(order, str) and (order == "default" or order == "folded"):
             (L, Lu) = self.shape
             ordering = np.zeros([Lu * L, 2], dtype=np.intp)
-            if order == 'default':
+            if order == "default":
                 ordering[:, 0] = np.repeat(np.arange(L, dtype=np.intp), Lu)
                 ordering[:, 1] = np.tile(np.arange(Lu, dtype=np.intp), L)
-            elif order == 'folded':
+            elif order == "folded":
                 order = []
                 for i in range(L // 2):
                     for u in range(Lu):
@@ -2673,7 +2702,7 @@ class NLegLadder(Lattice):
                 assert len(order) == Lu * L
                 ordering = np.array(order, dtype=np.intp)
             else:
-                assert (False)  # should not be possible
+                assert False  # should not be possible
             return ordering
         return super().ordering(order)
 
@@ -2734,16 +2763,17 @@ class Square(SimpleLattice):
         the `snake_winding` and `priority` should only be specified for the spatial directions.
         Similarly, `positions` can be specified as a single vector.
     """
+
     dim = 2  #: the dimension of the lattice
 
     def __init__(self, Lx, Ly, site, **kwargs):
         NN = [(0, 0, np.array([1, 0])), (0, 0, np.array([0, 1]))]
         nNN = [(0, 0, np.array([1, 1])), (0, 0, np.array([1, -1]))]
         nnNN = [(0, 0, np.array([2, 0])), (0, 0, np.array([0, 2]))]
-        kwargs.setdefault('pairs', {})
-        kwargs['pairs'].setdefault('nearest_neighbors', NN)
-        kwargs['pairs'].setdefault('next_nearest_neighbors', nNN)
-        kwargs['pairs'].setdefault('next_next_nearest_neighbors', nnNN)
+        kwargs.setdefault("pairs", {})
+        kwargs["pairs"].setdefault("nearest_neighbors", NN)
+        kwargs["pairs"].setdefault("next_nearest_neighbors", nNN)
+        kwargs["pairs"].setdefault("next_next_nearest_neighbors", nnNN)
         SimpleLattice.__init__(self, [Lx, Ly], site, **kwargs)
 
 
@@ -2805,19 +2835,20 @@ class Triangular(SimpleLattice):
         the `snake_winding` and `priority` should only be specified for the spatial directions.
         Similarly, `positions` can be specified as a single vector.
     """
+
     dim = 2  #: the dimension of the lattice
 
     def __init__(self, Lx, Ly, site, **kwargs):
         sqrt3_half = 0.5 * np.sqrt(3)  # = cos(pi/6)
-        basis = np.array([[sqrt3_half, 0.5], [0., 1.]])
+        basis = np.array([[sqrt3_half, 0.5], [0.0, 1.0]])
         NN = [(0, 0, np.array([1, 0])), (0, 0, np.array([-1, 1])), (0, 0, np.array([0, -1]))]
         nNN = [(0, 0, np.array([2, -1])), (0, 0, np.array([1, 1])), (0, 0, np.array([-1, 2]))]
         nnNN = [(0, 0, np.array([2, 0])), (0, 0, np.array([0, 2])), (0, 0, np.array([-2, 2]))]
-        kwargs.setdefault('basis', basis)
-        kwargs.setdefault('pairs', {})
-        kwargs['pairs'].setdefault('nearest_neighbors', NN)
-        kwargs['pairs'].setdefault('next_nearest_neighbors', nNN)
-        kwargs['pairs'].setdefault('next_next_nearest_neighbors', nnNN)
+        kwargs.setdefault("basis", basis)
+        kwargs.setdefault("pairs", {})
+        kwargs["pairs"].setdefault("nearest_neighbors", NN)
+        kwargs["pairs"].setdefault("next_nearest_neighbors", nNN)
+        kwargs["pairs"].setdefault("next_next_nearest_neighbors", nnNN)
         SimpleLattice.__init__(self, [Lx, Ly], site, **kwargs)
 
 
@@ -2880,30 +2911,49 @@ class Honeycomb(Lattice):
         For the Honeycomb lattice ``'fourth_nearest_neighbors', 'fifth_nearest_neighbors'``
         are set in :attr:`pairs`.
     """
+
     dim = 2  #: the dimension of the lattice
     Lu = 2  #: the (expected) number of sites in the unit cell, ``len(unit_cell)``.
 
     def __init__(self, Lx, Ly, sites, **kwargs):
         sites = _parse_sites(sites, 2)
-        basis = np.array(([0.5 * np.sqrt(3), 0.5], [0., 1]))
-        delta = np.array([1 / (2. * np.sqrt(3.)), 0.5])
-        pos = (-delta / 2., delta / 2)
-        kwargs.setdefault('basis', basis)
-        kwargs.setdefault('positions', pos)
+        basis = np.array(([0.5 * np.sqrt(3), 0.5], [0.0, 1]))
+        delta = np.array([1 / (2.0 * np.sqrt(3.0)), 0.5])
+        pos = (-delta / 2.0, delta / 2)
+        kwargs.setdefault("basis", basis)
+        kwargs.setdefault("positions", pos)
         NN = [(0, 1, np.array([0, 0])), (1, 0, np.array([1, 0])), (1, 0, np.array([0, 1]))]
-        nNN = [(0, 0, np.array([1, 0])), (0, 0, np.array([0, 1])), (0, 0, np.array([1, -1])),
-               (1, 1, np.array([1, 0])), (1, 1, np.array([0, 1])), (1, 1, np.array([1, -1]))]
+        nNN = [
+            (0, 0, np.array([1, 0])),
+            (0, 0, np.array([0, 1])),
+            (0, 0, np.array([1, -1])),
+            (1, 1, np.array([1, 0])),
+            (1, 1, np.array([0, 1])),
+            (1, 1, np.array([1, -1])),
+        ]
         nnNN = [(1, 0, np.array([1, 1])), (0, 1, np.array([-1, 1])), (0, 1, np.array([1, -1]))]
-        NN4 = [(0, 1, np.array([0, 1])), (0, 1, np.array([1, 0])), (0, 1, np.array([1, -2])),
-               (0, 1, np.array([0, -2])), (0, 1, np.array([-2, 0])), (0, 1, np.array([-2, 1]))]
-        NN5 = [(0, 0, np.array([1, 1])), (0, 0, np.array([2, -1])), (0, 0, np.array([-1, 2])),
-               (1, 1, np.array([1, 1])), (1, 1, np.array([2, -1])), (1, 1, np.array([-1, 2]))]
-        kwargs.setdefault('pairs', {})
-        kwargs['pairs'].setdefault('nearest_neighbors', NN)
-        kwargs['pairs'].setdefault('next_nearest_neighbors', nNN)
-        kwargs['pairs'].setdefault('next_next_nearest_neighbors', nnNN)
-        kwargs['pairs'].setdefault('fourth_nearest_neighbors', NN4)
-        kwargs['pairs'].setdefault('fifth_nearest_neighbors', NN5)
+        NN4 = [
+            (0, 1, np.array([0, 1])),
+            (0, 1, np.array([1, 0])),
+            (0, 1, np.array([1, -2])),
+            (0, 1, np.array([0, -2])),
+            (0, 1, np.array([-2, 0])),
+            (0, 1, np.array([-2, 1])),
+        ]
+        NN5 = [
+            (0, 0, np.array([1, 1])),
+            (0, 0, np.array([2, -1])),
+            (0, 0, np.array([-1, 2])),
+            (1, 1, np.array([1, 1])),
+            (1, 1, np.array([2, -1])),
+            (1, 1, np.array([-1, 2])),
+        ]
+        kwargs.setdefault("pairs", {})
+        kwargs["pairs"].setdefault("nearest_neighbors", NN)
+        kwargs["pairs"].setdefault("next_nearest_neighbors", nNN)
+        kwargs["pairs"].setdefault("next_next_nearest_neighbors", nnNN)
+        kwargs["pairs"].setdefault("fourth_nearest_neighbors", NN4)
+        kwargs["pairs"].setdefault("fifth_nearest_neighbors", NN5)
         Lattice.__init__(self, [Lx, Ly], sites, **kwargs)
 
     def ordering(self, order):
@@ -2917,7 +2967,7 @@ class Honeycomb(Lattice):
             Snake-winding along the rings: going up the A lattice, going down B.
         """
         if isinstance(order, str):
-            if order == "default" or order == 'rings':
+            if order == "default" or order == "rings":
                 # equivalent to get_grouped_order(self.shape, [(0, 2), (1,)])
                 priority = (0, 2, 1)
                 snake_winding = (False, False, False)
@@ -2977,6 +3027,7 @@ class Kagome(Lattice):
         Additional keyword arguments given to the :class:`Lattice`.
         `basis`, `pos` and `pairs` are set accordingly.
     """
+
     dim = 2  #: the dimension of the lattice
     Lu = 3  #: the (expected) number of sites in the unit cell, ``len(unit_cell)``.
 
@@ -2990,19 +3041,39 @@ class Kagome(Lattice):
         #  0-----1-----
         pos = np.array([[0, 0], [1, 0], [0.5, 0.5 * 3**0.5]])
         basis = [2 * pos[1], 2 * pos[2]]
-        kwargs.setdefault('basis', basis)
-        kwargs.setdefault('positions', pos)
-        NN = [(0, 1, np.array([0, 0])), (0, 2, np.array([0, 0])), (1, 2, np.array([0, 0])),
-              (1, 0, np.array([1, 0])), (2, 0, np.array([0, 1])), (2, 1, np.array([-1, 1]))]
-        nNN = [(0, 1, np.array([0, -1])), (0, 2, np.array([1, -1])), (1, 0, np.array([1, -1])),
-               (1, 2, np.array([1, 0])), (2, 0, np.array([1, 0])), (2, 1, np.array([0, 1]))]
-        nnNN = [(0, 0, np.array([1, -1])), (0, 0, np.array([0, 1])), (0, 0, np.array([1, 0])),
-                (1, 1, np.array([1, -1])), (1, 1, np.array([0, 1])), (1, 1, np.array([1, 0])),
-                (2, 2, np.array([1, -1])), (2, 2, np.array([0, 1])), (2, 2, np.array([1, 0]))]
-        kwargs.setdefault('pairs', {})
-        kwargs['pairs'].setdefault('nearest_neighbors', NN)
-        kwargs['pairs'].setdefault('next_nearest_neighbors', nNN)
-        kwargs['pairs'].setdefault('next_next_nearest_neighbors', nnNN)
+        kwargs.setdefault("basis", basis)
+        kwargs.setdefault("positions", pos)
+        NN = [
+            (0, 1, np.array([0, 0])),
+            (0, 2, np.array([0, 0])),
+            (1, 2, np.array([0, 0])),
+            (1, 0, np.array([1, 0])),
+            (2, 0, np.array([0, 1])),
+            (2, 1, np.array([-1, 1])),
+        ]
+        nNN = [
+            (0, 1, np.array([0, -1])),
+            (0, 2, np.array([1, -1])),
+            (1, 0, np.array([1, -1])),
+            (1, 2, np.array([1, 0])),
+            (2, 0, np.array([1, 0])),
+            (2, 1, np.array([0, 1])),
+        ]
+        nnNN = [
+            (0, 0, np.array([1, -1])),
+            (0, 0, np.array([0, 1])),
+            (0, 0, np.array([1, 0])),
+            (1, 1, np.array([1, -1])),
+            (1, 1, np.array([0, 1])),
+            (1, 1, np.array([1, 0])),
+            (2, 2, np.array([1, -1])),
+            (2, 2, np.array([0, 1])),
+            (2, 2, np.array([1, 0])),
+        ]
+        kwargs.setdefault("pairs", {})
+        kwargs["pairs"].setdefault("nearest_neighbors", NN)
+        kwargs["pairs"].setdefault("next_nearest_neighbors", nNN)
+        kwargs["pairs"].setdefault("next_next_nearest_neighbors", nnNN)
         Lattice.__init__(self, [Lx, Ly], sites, **kwargs)
 
     def ordering(self, order):
@@ -3040,8 +3111,9 @@ class SimpleBZ:
     dim : int
         dimension of the Brillouin Zone
     """
+
     def __init__(self, vertices, basis, dim: int):
-        assert dim == 1 or dim == 2, 'SimpleBZ is only defined for dimensions 1 and 2'
+        assert dim == 1 or dim == 2, "SimpleBZ is only defined for dimensions 1 and 2"
         self.dim = dim
         self.basis = basis
         self.vertices = self.order_vertices(vertices)
@@ -3076,7 +3148,7 @@ class SimpleBZ:
         basis_vector = np.array(basis_vector).flatten()
         if len(basis_vector) != 1:
             raise ValueError("For Brillouin Zones in 1D, the basis vector must have dim 1")
-        vertices = np.array([-1, 1]) * basis_vector/2
+        vertices = np.array([-1, 1]) * basis_vector / 2
         return cls(vertices, basis_vector, dim=1)
 
     @classmethod
@@ -3161,7 +3233,7 @@ class SimpleBZ:
             # a point x = (x1, x2) is per definition
             # (see qhull documentation: http://www.qhull.org/html/index.htm#definition)
             # inside the hull, iff: A x + b <= [0, ...]
-            eps = 2*np.finfo(points.dtype).eps  # account for precision errors
+            eps = 2 * np.finfo(points.dtype).eps  # account for precision errors
             return np.all((np.tensordot(points, A, (-1, -1)) + b) < eps, axis=-1)
 
     def reduce_points(self, points):
@@ -3185,9 +3257,9 @@ class SimpleBZ:
         points = all_points[not_in_BZ]
 
         if self.dim == 1:
-            red_to_basis_vec = (points/self.basis) % 1
+            red_to_basis_vec = (points / self.basis) % 1
             red_to_basis_vec[red_to_basis_vec > 0.5] -= 1
-            points = red_to_basis_vec*self.basis + self.vertices.mean()
+            points = red_to_basis_vec * self.basis + self.vertices.mean()
         else:
             if points.ndim == 1:
                 points = points.reshape(1, -1)
@@ -3256,7 +3328,7 @@ class SimpleBZ:
         kwargs.setdefault("ls", "--")
         kwargs.setdefault("color", "black")
         if draw_points is True:
-            ax.plot(self.vertices, [0, 0], 'o')
+            ax.plot(self.vertices, [0, 0], "o")
         ax.vlines(self.vertices, -0.5, 0.5, **kwargs)
 
     def _plot_brillouin_zone_2d(self, ax, draw_points=True, autoscale=True, **kwargs):
@@ -3274,6 +3346,7 @@ class SimpleBZ:
             Keyword arguments for ``matplotlib.patches.Polygon``.
         """
         from matplotlib.patches import Polygon
+
         kwargs.setdefault("edgecolor", "black")
         kwargs.setdefault("fill", False)
         kwargs.setdefault("ls", "--")
@@ -3281,7 +3354,7 @@ class SimpleBZ:
         p = Polygon(self.vertices, **kwargs)
         ax.add_patch(p)
         if draw_points is True:
-            ax.plot(*self.vertices.T, 'o')
+            ax.plot(*self.vertices.T, "o")
         if autoscale is True:
             ax.autoscale_view()
 
@@ -3387,7 +3460,7 @@ def get_order(shape, snake_winding, priority=None):
         res = np.mgrid[tuple([slice(0, L) for L in shape])]
         return res.reshape((len(shape), np.prod(shape))).T
     # some snake: generate direction by direction, each time adding a new column to `order`
-    snake_winding = tuple(snake_winding) + (False, )
+    snake_winding = tuple(snake_winding) + (False,)
     dim = len(shape)
     order = np.empty((1, 0), dtype=np.intp)
     for i in range(dim):
@@ -3409,7 +3482,7 @@ def get_order(shape, snake_winding, priority=None):
                 # repeat (ascending, descending) up to length L
                 rep = L // 2 - 1
                 if rep > 0:
-                    new_order[L0_2:(rep + 1) * L0_2, 1:] = np.tile(new_order[:L0_2, 1:], (rep, 1))
+                    new_order[L0_2 : (rep + 1) * L0_2, 1:] = np.tile(new_order[:L0_2, 1:], (rep, 1))
                 if L % 2 == 1:
                     new_order[-L0:, 1:] = order
         order = new_order
@@ -3520,6 +3593,7 @@ def _parse_sites(sites, expected_number):
     except TypeError:
         return [sites] * expected_number
     if len(sites) != expected_number:
-        raise ValueError("need to specify a single site or exactly {0:d}, got {1:d}".format(
-            expected_number, len(sites)))
+        raise ValueError(
+            "need to specify a single site or exactly {0:d}, got {1:d}".format(expected_number, len(sites))
+        )
     return sites

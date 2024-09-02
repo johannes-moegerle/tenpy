@@ -11,9 +11,9 @@ import warnings
 from datetime import datetime
 
 # ensure parent folder is in sys.path to allow import of tenpy
-REPO_PREFIX = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+REPO_PREFIX = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, REPO_PREFIX)
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'sphinx_ext')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "sphinx_ext")))
 GITHUBBASE = "https://github.com/tenpy/tenpy"
 GITHUBTOYCODES = "https://github.com/tenpy/tenpy_toycodes"
 
@@ -33,58 +33,56 @@ except:
 
 # If your documentation needs a minimal Sphinx version, state it here.
 #
-needs_sphinx = '3.2'
+needs_sphinx = "3.2"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.doctest',
-    'sphinx.ext.extlinks',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.linkcode',
-    'sphinx.ext.githubpages',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.graphviz',
-    'sphinx.ext.inheritance_diagram',
-    'sphinx_rtd_theme',
-    'nbsphinx',
-    'sphinx_copybutton',
-    'sphinxcontrib.bibtex',
-    'sphinx_cfg_options',
-    'matplotlib.sphinxext.plot_directive',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.doctest",
+    "sphinx.ext.extlinks",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.todo",
+    "sphinx.ext.mathjax",
+    "sphinx.ext.linkcode",
+    "sphinx.ext.githubpages",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.graphviz",
+    "sphinx.ext.inheritance_diagram",
+    "sphinx_rtd_theme",
+    "nbsphinx",
+    "sphinx_copybutton",
+    "sphinxcontrib.bibtex",
+    "sphinx_cfg_options",
+    "matplotlib.sphinxext.plot_directive",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['sphinx_templates']
+templates_path = ["sphinx_templates"]
 
-source_suffix = '.rst'  # could add markdown, but that makes it only more complicated
-master_doc = 'index'  # The master toctree document.
+source_suffix = ".rst"  # could add markdown, but that makes it only more complicated
+master_doc = "index"  # The master toctree document.
 language = None  # no translations
-pygments_style = 'sphinx'  # syntax highlighting style
+pygments_style = "sphinx"  # syntax highlighting style
 
 # If true, keep warnings as "system message" paragraphs in the built documents.
-#keep_warnings = False
+# keep_warnings = False
 
 # General information about the project.
-project = 'TeNPy'
+project = "TeNPy"
 copyright = f'2016-{datetime.today().strftime("%Y")}, TeNPy Developers'
-author = 'TeNPy Developers'
+author = "TeNPy Developers"
 version = tenpy.__version__  # The short X.Y version.
 release = tenpy.__full_version__  # The full version, including alpha/beta/rc tags.
 
-language = 'en'
+language = "en"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = [
-    'sphinx_build', 'Thumbs.db', '.DS_Store', 'notebooks/README.rst', 'notebooks/_template.ipynb'
-]
+exclude_patterns = ["sphinx_build", "Thumbs.db", ".DS_Store", "notebooks/README.rst", "notebooks/_template.ipynb"]
 
 # -- example stubs  -=-----------------------------------------------------
 
@@ -92,11 +90,11 @@ exclude_patterns = [
 def create_example_stubs():
     """create stub files for examples to include them in the documentation."""
     folders = [
-        (['examples'], '.py', []),
-        (['examples'], '.yml', []),
-        (['examples', 'advanced'], '.py', []),
-        (['examples', 'chern_insulators'], '.py', []),
-        (['examples', 'yaml'], '.yml', []),
+        (["examples"], ".py", []),
+        (["examples"], ".yml", []),
+        (["examples", "advanced"], ".py", []),
+        (["examples", "chern_insulators"], ".py", []),
+        (["examples", "yaml"], ".yml", []),
     ]
     for subfolders, extension, excludes in folders:
         outdir = os.path.join(os.path.dirname(__file__), *subfolders)
@@ -105,43 +103,49 @@ def create_example_stubs():
         files = os.listdir(os.path.join(REPO_PREFIX, *subfolders))
         files = sorted([fn for fn in files if fn.endswith(extension) and fn not in excludes])
         for fn in files:
-            outfile = os.path.join(outdir, os.path.splitext(fn)[0] + '.rst')
+            outfile = os.path.join(outdir, os.path.splitext(fn)[0] + ".rst")
             if os.path.exists(outfile):
                 continue
-            dirs = '/'.join(subfolders)
-            sentence = ("`on github <{base}/blob/main/{dirs!s}/{fn!s}>`_ "
-                        "(`download <{base}/raw/main/{dirs!s}/{fn!s}>`_).")
+            dirs = "/".join(subfolders)
+            sentence = (
+                "`on github <{base}/blob/main/{dirs!s}/{fn!s}>`_ " "(`download <{base}/raw/main/{dirs!s}/{fn!s}>`_)."
+            )
             sentence = sentence.format(dirs=dirs, fn=fn, base=GITHUBBASE)
-            include = '.. literalinclude:: /../{dirs!s}/{fn!s}'.format(dirs=dirs, fn=fn)
-            text = '\n'.join([fn, '=' * len(fn), '', sentence, '', include, ''])
-            with open(outfile, 'w') as f:
+            include = ".. literalinclude:: /../{dirs!s}/{fn!s}".format(dirs=dirs, fn=fn)
+            text = "\n".join([fn, "=" * len(fn), "", sentence, "", include, ""])
+            with open(outfile, "w") as f:
                 f.write(text)
     # done
 
+
 def create_toycode_stubs():
     """create stub files for examples to include them in the documentation."""
-    outdir = os.path.join(os.path.dirname(__file__), 'toycode_stubs')
+    outdir = os.path.join(os.path.dirname(__file__), "toycode_stubs")
     if not os.path.isdir(outdir):
         os.mkdir(outdir)
-    folder = os.path.join(os.path.dirname(__file__), 'toycodes', 'tenpy_toycodes')
+    folder = os.path.join(os.path.dirname(__file__), "toycodes", "tenpy_toycodes")
     if not os.path.isdir(folder):
-        warnings.warn(f"didn't clone git submodule doc/toycodes from {GITHUBTOYCODES} \n"
-                      "Use `git clone --recursive` or after cloning "
-                      "`git submodule init && git submodule update`.")
+        warnings.warn(
+            f"didn't clone git submodule doc/toycodes from {GITHUBTOYCODES} \n"
+            "Use `git clone --recursive` or after cloning "
+            "`git submodule init && git submodule update`."
+        )
         return
     files = os.listdir(folder)
-    excludes = ['__init__.py']
-    files = sorted([fn for fn in files if fn.endswith('.py') if fn not in excludes])
+    excludes = ["__init__.py"]
+    files = sorted([fn for fn in files if fn.endswith(".py") if fn not in excludes])
     for fn in files:
-        outfile = os.path.join(outdir, os.path.splitext(fn)[0] + '.rst')
+        outfile = os.path.join(outdir, os.path.splitext(fn)[0] + ".rst")
         if os.path.exists(outfile):
             continue
-        sentence = ("`on github <{base}/blob/main/tenpy_toycodes/{fn!s}>`_ "
-                    "(`download <{base}/raw/main/tenpy_toycodes/{fn!s}>`_).")
+        sentence = (
+            "`on github <{base}/blob/main/tenpy_toycodes/{fn!s}>`_ "
+            "(`download <{base}/raw/main/tenpy_toycodes/{fn!s}>`_)."
+        )
         sentence = sentence.format(fn=fn, base=GITHUBTOYCODES)
-        include = '.. literalinclude:: /toycodes/tenpy_toycodes/{fn!s}'.format(fn=fn)
-        text = '\n'.join([fn, '=' * len(fn), '', sentence, '', include, ''])
-        with open(outfile, 'w') as f:
+        include = ".. literalinclude:: /toycodes/tenpy_toycodes/{fn!s}".format(fn=fn)
+        text = "\n".join([fn, "=" * len(fn), "", sentence, "", include, ""])
+        with open(outfile, "w") as f:
             f.write(text)
     # done
 
@@ -154,13 +158,13 @@ create_toycode_stubs()
 
 def include_command_line_help():
     parser = tenpy._setup_arg_parser(width=98)
-    parser.prog = 'tenpy-run'
+    parser.prog = "tenpy-run"
     help_text = parser.format_help()
     # help_text = '\n'.join(['    ' + l for l in help_text.splitlines()])
-    fn = 'commandline-help.txt'
-    with open(fn, 'w') as f:
+    fn = "commandline-help.txt"
+    with open(fn, "w") as f:
         f.write(help_text)
-    tenpy.console_main.__doc__ = tenpy.console_main.__doc__ + '\n' '.. literalinclude:: /' + fn
+    tenpy.console_main.__doc__ = tenpy.console_main.__doc__ + "\n" ".. literalinclude:: /" + fn
 
 
 include_command_line_help()
@@ -172,36 +176,35 @@ def stitch_changelog_latest():
     # Append the contents of all files in ``doc/changelog/latest/`` with ``.txt`` suffix
     # to ``doc/changelog/_latest.rst`` verbatim.
     # Intended use: contains only rst bullet points?
-    folder = os.path.join(os.path.dirname(__file__), 'changelog', 'latest')
-    outfile = os.path.join(os.path.dirname(__file__), 'changelog', '_latest.rst')
+    folder = os.path.join(os.path.dirname(__file__), "changelog", "latest")
+    outfile = os.path.join(os.path.dirname(__file__), "changelog", "_latest.rst")
     if not os.path.exists(outfile):
         # repo should be set up such that this exists.
         print(outfile)
-        raise ValueError('`doc/changelog/_latest.rst` not found.')
+        raise ValueError("`doc/changelog/_latest.rst` not found.")
     contents = [
-        '[latest]\n',
-        '========\n',
-        'The following changes are in the github repository, but not yet released.\n',
-        'The contents are auto-generated from multiple files.\n',
-        '\n',
-        '.. only :: comment\n',
-        '\n',
-        '    Contents are modified by ``stitch_changelog_latest`` in ``doc/conf.py``\n',
-        '    Any ``.txt`` file in ``doc/changelog/latest/`` is included verbatim.\n'
-        '\n',
-        '\n',
+        "[latest]\n",
+        "========\n",
+        "The following changes are in the github repository, but not yet released.\n",
+        "The contents are auto-generated from multiple files.\n",
+        "\n",
+        ".. only :: comment\n",
+        "\n",
+        "    Contents are modified by ``stitch_changelog_latest`` in ``doc/conf.py``\n",
+        "    Any ``.txt`` file in ``doc/changelog/latest/`` is included verbatim.\n" "\n",
+        "\n",
     ]
 
     for fn in os.listdir(folder):
         fn = os.path.join(folder, fn)
-        if not fn.endswith('.txt'):
+        if not fn.endswith(".txt"):
             continue
-        with open(fn, 'r') as f:
+        with open(fn, "r") as f:
             lines = f.readlines()
         contents.extend(lines)
-        contents.append('\n\n')  # at least one empty line between (even if no \n at file end)
+        contents.append("\n\n")  # at least one empty line between (even if no \n at file end)
 
-    with open(outfile, 'w') as f:
+    with open(outfile, "w") as f:
         f.writelines(contents)
     # done
 
@@ -210,12 +213,12 @@ stitch_changelog_latest()
 
 # -- Options for HTML output ----------------------------------------------
 
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 html_logo = "images/logo.png"
 html_favicon = "images/logo.ico"
-html_static_path = ['_static']
-html_last_updated_fmt = '%b %d, %Y'
+html_static_path = ["_static"]
+html_last_updated_fmt = "%b %d, %Y"
 
 html_css_files = [
     "custom.css",  # to highlight targets
@@ -230,8 +233,8 @@ html_context = {
 }
 
 html_theme_options = {
-    'collapse_navigation': False,
-    'style_external_links': True,
+    "collapse_navigation": False,
+    "style_external_links": True,
 }
 
 
@@ -239,7 +242,7 @@ html_theme_options = {
 
 # -- nbsphinx -------------------------------------------------------------
 
-nbsphinx_execute = 'never'
+nbsphinx_execute = "never"
 
 # This is processed by Jinja2 and inserted before each notebook
 nbsphinx_prolog = r"""
@@ -268,7 +271,7 @@ nbsphinx_prolog = r"""
 # -- sphinx.ext.autodoc ---------------------------------------------------
 
 autodoc_default_options = {}
-autodoc_member_order = 'bysource'
+autodoc_member_order = "bysource"
 # some options are included in the templates under
 # sphinx_templates/autosummary/class.rst
 # for example :inherited-members: and :show-inheritance:
@@ -296,36 +299,35 @@ trim_doctest_flag = True
 
 napoleon_use_admonition_for_examples = True
 napoleon_use_ivar = False  # otherwise :attr:`...` doesn't work anymore
-napoleon_custom_sections = ['Options']
+napoleon_custom_sections = ["Options"]
 
 # -- sphinx.ext.inheritance_diagram ---------------------------------------
 
 inheritance_graph_attrs = {
-    'rankdir': "TB",  # top-to-bottom
-    'fontsize': 14,
-    'ratio': 'compress',
+    "rankdir": "TB",  # top-to-bottom
+    "fontsize": 14,
+    "ratio": "compress",
 }
 
 # -- sphinx.ext.intersphinx -----------------------------------------------
 # cross links to other sphinx documentations
 # this makes  e.g. :class:`numpy.ndarray` work
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'numpy': ('https://numpy.org/doc/stable', None),
-    'scipy': ('https://docs.scipy.org/doc/scipy/reference/', None),
-    'matplotlib': ('https://matplotlib.org', None),
-    'h5py': ('https://docs.h5py.org/en/stable/', None),
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
+    "matplotlib": ("https://matplotlib.org", None),
+    "h5py": ("https://docs.h5py.org/en/stable/", None),
 }
 
 # -- sphinx.ext.extlinks --------------------------------------------------
 # allows to use, e.g., :arxiv:`1805.00055`
 extlinks = {
-    'arxiv': ('https://arxiv.org/abs/%s', 'arXiv:%s'),
-    'doi': ('https://dx.doi.org/%s', 'doi:%s'),
-    'issue': (GITHUBBASE + '/issues/%s', 'issue #%s'),
-    'pull': (GITHUBBASE + '/pulls/%s', 'PR #%s'),
-    'forum': ('https://tenpy.johannes-hauschild.de/viewtopic.php?t=%s',
-              'community forum (topic %s)')
+    "arxiv": ("https://arxiv.org/abs/%s", "arXiv:%s"),
+    "doi": ("https://dx.doi.org/%s", "doi:%s"),
+    "issue": (GITHUBBASE + "/issues/%s", "issue #%s"),
+    "pull": (GITHUBBASE + "/pulls/%s", "PR #%s"),
+    "forum": ("https://tenpy.johannes-hauschild.de/viewtopic.php?t=%s", "community forum (topic %s)"),
 }
 
 
@@ -334,17 +336,17 @@ extlinks = {
 def linkcode_resolve(domain, info):
     """Determine the URL corresponding to Python object."""
     # based on the corresponding linkcode_resolve in the `conf.py` of the numpy repository.
-    if domain != 'py':
+    if domain != "py":
         return None
-    modname = info['module']
-    fullname = info['fullname']
+    modname = info["module"]
+    fullname = info["fullname"]
 
     submod = sys.modules.get(modname)
     if submod is None:
         return None
 
     obj = submod
-    for part in fullname.split('.'):
+    for part in fullname.split("."):
         try:
             obj = getattr(obj, part)
         except Exception:
@@ -369,7 +371,7 @@ def linkcode_resolve(domain, info):
     else:
         linespec = ""
     fn = os.path.relpath(fn, start=os.path.dirname(tenpy.__file__))
-    if fn.startswith('..'):
+    if fn.startswith(".."):
         return None
 
     if tenpy.version.released:
@@ -386,7 +388,7 @@ cfg_options_always_include = ["Config"]
 
 # -- sphinxcontrib.bibtex -------------------------------------------------
 
-bibtex_bibfiles = ['literature.bib', 'papers_using_tenpy.bib']
+bibtex_bibfiles = ["literature.bib", "papers_using_tenpy.bib"]
 
 from pybtex.style.formatting.unsrt import Style as UnsrtStyle
 from pybtex.style.labels import BaseLabelStyle
@@ -395,13 +397,13 @@ from pybtex.plugin import register_plugin
 
 
 class CustomBibtexStyle1(UnsrtStyle):
-    default_sorting_style = 'key'
-    default_label_style = 'key'
+    default_sorting_style = "key"
+    default_label_style = "key"
 
 
 class CustomBibtexStyle2(UnsrtStyle):
-    default_sorting_style = 'year_author_title'
-    default_label_style = 'key'
+    default_sorting_style = "year_author_title"
+    default_label_style = "key"
 
 
 class KeyLabelStyle(BaseLabelStyle):
@@ -420,8 +422,8 @@ class KeySort(SortingStyle):
         return entry.key
 
 
-register_plugin('pybtex.style.formatting', 'custom1', CustomBibtexStyle1)
-register_plugin('pybtex.style.formatting', 'custom2', CustomBibtexStyle2)
-register_plugin('pybtex.style.labels', 'key', KeyLabelStyle)
-register_plugin('pybtex.style.sorting', 'key', KeySort)
-register_plugin('pybtex.style.sorting', 'year_author_title', YearAuthorTitleSort)
+register_plugin("pybtex.style.formatting", "custom1", CustomBibtexStyle1)
+register_plugin("pybtex.style.formatting", "custom2", CustomBibtexStyle2)
+register_plugin("pybtex.style.labels", "key", KeyLabelStyle)
+register_plugin("pybtex.style.sorting", "key", KeySort)
+register_plugin("pybtex.style.sorting", "year_author_title", YearAuthorTitleSort)

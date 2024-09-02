@@ -6,7 +6,7 @@ from tenpy.models.model import CouplingModel, NearestNeighborModel, MPOModel
 
 
 class XXZChain(CouplingModel, NearestNeighborModel, MPOModel):
-    def __init__(self, L=2, S=0.5, J=1., Delta=1., hz=0.):
+    def __init__(self, L=2, S=0.5, J=1.0, Delta=1.0, hz=0.0):
         spin = SpinSite(S=S, conserve="Sz")
         # the lattice defines the geometry
         lattice = Chain(L, spin, bc="open", bc_MPS="finite")

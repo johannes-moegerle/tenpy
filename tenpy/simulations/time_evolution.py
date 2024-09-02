@@ -12,8 +12,11 @@ from ..tools.misc import to_iterable, consistency_check
 from ..tools import hdf5_io
 
 __all__ = simulation.__all__ + [
-    'RealTimeEvolution', 'SpectralSimulation', 'TimeDependentCorrelation',
-    'TimeDependentCorrelationEvolveBraKet', 'SpectralSimulationEvolveBraKet'
+    "RealTimeEvolution",
+    "SpectralSimulation",
+    "TimeDependentCorrelation",
+    "TimeDependentCorrelationEvolveBraKet",
+    "SpectralSimulationEvolveBraKet",
 ]
 
 
@@ -36,16 +39,17 @@ class RealTimeEvolution(Simulation):
             Note that we can go (slightly) beyond this time if it is not a multiple of
             the individual time steps.
     """
-    default_algorithm = 'TEBDEngine'
+
+    default_algorithm = "TEBDEngine"
     default_measurements = Simulation.default_measurements + [
-        ('tenpy.simulations.measurement', 'm_evolved_time'),
-        ('simulation_method', 'wrap eps_error'),
-        ('simulation_method', 'wrap ov_error')
+        ("tenpy.simulations.measurement", "m_evolved_time"),
+        ("simulation_method", "wrap eps_error"),
+        ("simulation_method", "wrap ov_error"),
     ]
 
     def __init__(self, options, **kwargs):
         super().__init__(options, **kwargs)
-        self.final_time = self.options['final_time'] - 1.e-10  # subtract eps: roundoff errors
+        self.final_time = self.options["final_time"] - 1.0e-10  # subtract eps: roundoff errors
 
     def run_algorithm(self):
         """Run the algorithm.
@@ -67,7 +71,7 @@ class RealTimeEvolution(Simulation):
             self.engine.checkpoint.emit(self.engine)  # TODO: is this a good idea?
 
     def perform_measurements(self):
-        if getattr(self.engine, 'time_dependent_H', False):
+        if getattr(self.engine, "time_dependent_H", False):
             # might need to re-initialize model with current time
             # in particular for a sequential/resume run, the first `self.init_model()` might not
             # yet have had the initial start time of the algorithm engine!
@@ -152,8 +156,9 @@ class TimeDependentCorrelation(RealTimeEvolution):
             a filename of a given ground state search (ideally a hdf5 file coming from a finished
             run of a :class:`~tenpy.simulations.ground_state_search.GroundStateSearch`)
     """
+
     default_measurements = RealTimeEvolution.default_measurements + [
-        ('simulation_method', 'm_correlation_function'),
+        ("simulation_method", "m_correlation_function"),
     ]
 
     def __init__(self, options, *, ground_state_data=None, ground_state_filename=None, **kwargs):
@@ -161,124 +166,125 @@ class TimeDependentCorrelation(RealTimeEvolution):
 
         resume_data = kwargs.get("resume_data", None)
         if resume_data is not None:
-            if 'psi_ground_state' in resume_data:
-                self.psi_ground_state = resume_data['psi_ground_state']
+            if "psi_ground_state" in resume_data:
+                self.psi_ground_state = resume_data["psi_ground_state"]
             else:
                 self.logger.warning("psi_ground_state not in resume data")
-            if 'gs_energy' in resume_data:
-                self.gs_energy = resume_data['gs_energy']
+            if "gs_energy" in resume_data:
+                self.gs_energy = resume_data["gs_energy"]
             else:
                 self.logger.warning("ground-state energy not in resume data")
 
         if not self.loaded_from_checkpoint:
             if ground_state_filename is None:
-                ground_state_filename = self.options.get('ground_state_filename', None)
+                ground_state_filename = self.options.get("ground_state_filename", None)
             if ground_state_data is None and ground_state_filename is not None:
-                self.logger.info(
-                    f"loading data from 'ground_state_filename'='{ground_state_filename}'")
+                self.logger.info(f"loading data from 'ground_state_filename'='{ground_state_filename}'")
                 ground_state_data = hdf5_io.load(ground_state_filename)
             elif ground_state_data is not None and ground_state_filename is not None:
                 self.logger.warning(
                     "Supplied a 'ground_state_filename' and ground_state_data as kwarg. "
-                    "Ignoring 'ground_state_filename'.")
+                    "Ignoring 'ground_state_filename'."
+                )
 
             if ground_state_data is not None:
                 self.logger.info("Initializing from ground state data")
                 self._init_from_gs_data(ground_state_data)
 
         # will be read out in init_state
-        self.gs_energy = self.options.get('gs_energy', None, 'real')
-        self.operator_t = self.options['operator_t']
+        self.gs_energy = self.options.get("gs_energy", None, "real")
+        self.operator_t = self.options["operator_t"]
         # generate info for operator before time evolution as subconfig
-        self.operator_t0_config = self.options.subconfig('operator_t0')
+        self.operator_t0_config = self.options.subconfig("operator_t0")
         self.operator_t0_name = self._get_operator_t0_name()
         self.operator_t0 = None  # read out config later, since defaults depend on model parameters
 
     def resume_run(self):
-        if not hasattr(self, 'psi_ground_state'):
+        if not hasattr(self, "psi_ground_state"):
             # didn't get psi_ground_state in resume_data, but might still have it in the results
-            if 'psi_ground_state' not in self.results:
+            if "psi_ground_state" not in self.results:
                 raise ValueError("psi_ground_state not saved in checkpoint results: can't resume!")
         super().resume_run()
 
     def get_resume_data(self):
         resume_data = super().get_resume_data()
-        resume_data['psi_ground_state'] = self.psi_ground_state
-        resume_data['gs_energy'] = self.gs_energy
+        resume_data["psi_ground_state"] = self.psi_ground_state
+        resume_data["gs_energy"] = self.gs_energy
         return resume_data
 
     def init_measurements(self):
-        use_default_meas = self.options.silent_get('use_default_measurements', True)
-        connect_any_meas = self.options.silent_get('connect_measurements', None)
+        use_default_meas = self.options.silent_get("use_default_measurements", True)
+        connect_any_meas = self.options.silent_get("connect_measurements", None)
         if use_default_meas is False and connect_any_meas is None:
             warnings.warn(f"No measurements are being made, this might not make sense for {self.__class__}")
         super().init_measurements()
 
     def init_state(self):
         # make sure state is not reinitialized if psi and psi_ground_state are given
-        if not hasattr(self, 'psi_ground_state'):
+        if not hasattr(self, "psi_ground_state"):
             warnings.warn(
                 f"No ground state data is supplied, calling the initial state builder on "
-                f"{self.__class__.__name__} class - you probably want to supply a ground state!")
+                f"{self.__class__.__name__} class - you probably want to supply a ground state!"
+            )
             super().init_state()  # this sets self.psi from init_state_builder (should be avoided)
             self.psi_ground_state = self.psi.copy()
-            delattr(self, 'psi')  # free memory
+            delattr(self, "psi")  # free memory
 
-        if not hasattr(self, 'psi'):
+        if not hasattr(self, "psi"):
             # copy is essential, since time evolution is probably only performed on psi
             self.psi = self.psi_ground_state.copy()
             self.apply_operator_t0_to_psi()
 
         # check for saving
-        if self.options.get('save_psi', True, bool):
-            self.results['psi'] = self.psi
-            self.results['psi_ground_state'] = self.psi_ground_state
+        if self.options.get("save_psi", True, bool):
+            self.results["psi"] = self.psi
+            self.results["psi_ground_state"] = self.psi_ground_state
 
     def init_algorithm(self, **kwargs):
         super().init_algorithm(**kwargs)  # links to RealTimeEvolution class, not to Simulation
         # make sure to get the energy of the ground state, this is needed for the correlation_function
         if self.gs_energy is None:
             self.gs_energy = self.model.H_MPO.expectation_value(self.psi_ground_state)
-        if self.engine.psi.bc != 'finite':
+        if self.engine.psi.bc != "finite":
             raise NotImplementedError(
-                "Only finite MPS boundary conditions are currently implemented for "
-                f"{self.__class__.__name__}")
+                "Only finite MPS boundary conditions are currently implemented for " f"{self.__class__.__name__}"
+            )
 
     def _init_from_gs_data(self, gs_data):
         if isinstance(gs_data, MPS):
             # self.psi_ground_state = gs_data ?
-            raise NotImplementedError(
-                "Only hdf5 and dictionaries are supported as ground state input")
-        sim_class = gs_data['version_info']['simulation_class']
-        if sim_class != 'GroundStateSearch':
+            raise NotImplementedError("Only hdf5 and dictionaries are supported as ground state input")
+        sim_class = gs_data["version_info"]["simulation_class"]
+        if sim_class != "GroundStateSearch":
             warnings.warn("The Simulation is not loaded from a GroundStateSearch.")
 
-        data_options = gs_data['simulation_parameters']
+        data_options = gs_data["simulation_parameters"]
         for key in data_options:
-            if not isinstance(key, str) or not key.startswith('model'):
+            if not isinstance(key, str) or not key.startswith("model"):
                 continue
             if key not in self.options:
                 self.options[key] = data_options[key]
             elif self.options[key] != data_options[key]:
                 warnings.warn(
                     "Different model parameters in Simulation and data from file. Ignoring parameters "
-                    "in data from file")
-        if 'energy' in gs_data:
-            self.options['gs_energy'] = gs_data['energy']
+                    "in data from file"
+                )
+        if "energy" in gs_data:
+            self.options["gs_energy"] = gs_data["energy"]
 
-        if 'psi' not in gs_data:
+        if "psi" not in gs_data:
             raise ValueError("MPS for ground state not found")
-        psi_ground_state = gs_data['psi']
+        psi_ground_state = gs_data["psi"]
         if not isinstance(psi_ground_state, MPS):
             raise TypeError("Ground state must be an MPS class")
 
-        if not hasattr(self, 'psi_ground_state'):
+        if not hasattr(self, "psi_ground_state"):
             self.psi_ground_state = psi_ground_state
 
     def _get_operator_t0_name(self):
-        operator_t0_name = self.operator_t0_config.get('key_name', None)
+        operator_t0_name = self.operator_t0_config.get("key_name", None)
         if operator_t0_name is None:
-            opname = self.operator_t0_config['opname']  # opname is mandatory
+            opname = self.operator_t0_config["opname"]  # opname is mandatory
             if len(to_iterable(opname)) == 1:
                 operator_t0_name = opname
             else:
@@ -306,9 +312,9 @@ class TimeDependentCorrelation(RealTimeEvolution):
                     The ``lat_idx`` must have (dim+1) i.e. ``[x, y, u]``,
                     where ``u = 0`` for a single-site unit cell
         """
-        ops = to_iterable(self.operator_t0_config['opname'])  # opname is mandatory
-        mps_idx = self.operator_t0_config.get('mps_idx', None)
-        lat_idx = self.operator_t0_config.get('lat_idx', None)
+        ops = to_iterable(self.operator_t0_config["opname"])  # opname is mandatory
+        mps_idx = self.operator_t0_config.get("mps_idx", None)
+        lat_idx = self.operator_t0_config.get("lat_idx", None)
         if mps_idx is not None and lat_idx is not None:
             raise KeyError("Either a mps_idx or a lat_idx should be passed")
         elif mps_idx is not None:
@@ -321,13 +327,11 @@ class TimeDependentCorrelation(RealTimeEvolution):
         # tiling
         if len(ops) > len(idx):
             if len(idx) != 1:
-                raise ValueError(
-                    "Ill-defined tiling: num. of operators must be equal to num. of indices or one")
+                raise ValueError("Ill-defined tiling: num. of operators must be equal to num. of indices or one")
             idx = idx * len(ops)
         elif len(ops) < len(idx):
             if len(ops) != 1:
-                raise ValueError(
-                    "Ill-defined tiling: num. of operators must be equal to num. of indices or one")
+                raise ValueError("Ill-defined tiling: num. of operators must be equal to num. of indices or one")
             ops = ops * len(idx)
         # generate list of tuples of form [(op1, i_1), (op2, i_2), ...]
         op_list = list(zip(ops, idx))
@@ -367,7 +371,7 @@ class TimeDependentCorrelation(RealTimeEvolution):
         phase = np.exp(1j * self.gs_energy * self.engine.evolved_time)
         for op in operator_t:
             results_key = f"correlation_function_t_{op}_{self.operator_t0_name}"  # as op is a str
-            results[results_key] = env.expectation_value(op)*phase
+            results[results_key] = env.expectation_value(op) * phase
 
 
 class TimeDependentCorrelationEvolveBraKet(TimeDependentCorrelation):
@@ -393,50 +397,49 @@ class TimeDependentCorrelationEvolveBraKet(TimeDependentCorrelation):
 
     def __init__(self, *args, **kwargs):
         self.engine_bra = None  # a second engine will be instantiated in :meth:`init_algorithm`
-        resume_data = kwargs.get('resume_data', None)
+        resume_data = kwargs.get("resume_data", None)
         if resume_data is not None:
-            if 'resume_data_bra' in resume_data:
-                if 'psi' in resume_data['resume_data_bra']:
-                    resume_data['psi_ground_state'] = resume_data['resume_data_bra']['psi']
+            if "resume_data_bra" in resume_data:
+                if "psi" in resume_data["resume_data_bra"]:
+                    resume_data["psi_ground_state"] = resume_data["resume_data_bra"]["psi"]
         super().__init__(*args, **kwargs)
 
     def init_algorithm(self, **kwargs):
         resume_data_bra = None
-        if 'resume_data' in self.results:
-            if 'resume_data_bra' in self.results['resume_data']:
+        if "resume_data" in self.results:
+            if "resume_data_bra" in self.results["resume_data"]:
                 self.logger.info("use `resume_data` for initializing the algorithm engine")
-                resume_data_bra = self.results['resume_data']['resume_data_bra'].copy()
+                resume_data_bra = self.results["resume_data"]["resume_data_bra"].copy()
                 # clean up: they are no longer up to date after algorithm initialization!
                 # up to date resume_data is added in :meth:`prepare_results_for_save`
-                self.results['resume_data']['resume_data_bra'].clear()
-                del self.results['resume_data']['resume_data_bra']
+                self.results["resume_data"]["resume_data_bra"].clear()
+                del self.results["resume_data"]["resume_data_bra"]
 
         super().init_algorithm(**kwargs)  # links to Simulation
         if resume_data_bra is not None:
-            kwargs.setdefault('resume_data', resume_data_bra)
-            if 'psi' in resume_data_bra:
-                self.psi_ground_state = resume_data_bra['psi']  # make sure to use resume data of bra
-        kwargs.setdefault('cache', self.cache)  # TODO: can we use the same cache
+            kwargs.setdefault("resume_data", resume_data_bra)
+            if "psi" in resume_data_bra:
+                self.psi_ground_state = resume_data_bra["psi"]  # make sure to use resume data of bra
+        kwargs.setdefault("cache", self.cache)  # TODO: can we use the same cache
         # make sure a second engine is used when evolving the bra
         # fetch engine that evolves ket
         AlgorithmClass = self.engine.__class__
         # instantiate the second engine for the ground state
-        algorithm_params = self.options.subconfig('algorithm_params')
-        self.engine_bra = AlgorithmClass(self.psi_ground_state, self.model,
-                                         algorithm_params, **kwargs)
+        algorithm_params = self.options.subconfig("algorithm_params")
+        self.engine_bra = AlgorithmClass(self.psi_ground_state, self.model, algorithm_params, **kwargs)
 
     def run_algorithm(self):
         while True:
             if np.real(self.engine.evolved_time) >= self.final_time:
                 break
-            self.logger.info("evolve to time %.2f, max chi=%d", self.engine.evolved_time.real,
-                             max(self.psi.chi))
+            self.logger.info("evolve to time %.2f, max chi=%d", self.engine.evolved_time.real, max(self.psi.chi))
             self.engine_bra.run()  # first evolve bra
             # call engine_bra_resume_data in case something else is done here....
             self.engine.run()  # evolve ket (psi)
             # sanity check, bra and ket should evolve to same time
-            assert np.isclose(self.engine_bra.evolved_time, self.engine.evolved_time), ('Bra evolved to different time '
-                                                                                        'than ket')
+            assert np.isclose(self.engine_bra.evolved_time, self.engine.evolved_time), (
+                "Bra evolved to different time " "than ket"
+            )
             self.model = self.engine.model
             self.make_measurements()
             self.engine.checkpoint.emit(self.engine)  # set up in init_algorithm of Simulation class
@@ -451,7 +454,7 @@ class TimeDependentCorrelationEvolveBraKet(TimeDependentCorrelation):
         psi_bra = self.engine_bra.psi
         if self.grouped > 1:
             psi_bra = psi_bra.copy()  # make copy since algorithm might use grouped bra
-            psi_bra.group_split(self.options['algorithm_params']['trunc_params'])
+            psi_bra.group_split(self.options["algorithm_params"]["trunc_params"])
         env = MPSEnvironment(psi_bra, psi)
         for op in operator_t:
             results_key = f"correlation_function_t_{op}_{self.operator_t0_name}"  # as op is a str
@@ -462,8 +465,8 @@ class TimeDependentCorrelationEvolveBraKet(TimeDependentCorrelation):
         resume_data = super(TimeDependentCorrelation, self).get_resume_data()  # call Simulation's method
         # in order not to write the ground-state twice into the resume_data
         resume_data_bra = self.engine_bra.get_resume_data()
-        resume_data['resume_data_bra'] = resume_data_bra
-        resume_data['gs_energy'] = self.gs_energy
+        resume_data["resume_data_bra"] = resume_data_bra
+        resume_data["gs_energy"] = self.gs_energy
         return resume_data
 
     def estimate_RAM(self):
@@ -482,8 +485,8 @@ class TimeDependentCorrelationEvolveBraKet(TimeDependentCorrelation):
         """Split sites of psi that were grouped in  :meth:`group_sites_for_algorithm`."""
         bra = self.psi_ground_state
         if self.grouped > 1:
-            bra.group_split(self.options['algorithm_params']['trunc_params'])
-            self.psi.group_split(self.options['algorithm_params']['trunc_params'])
+            bra.group_split(self.options["algorithm_params"]["trunc_params"])
+            self.psi.group_split(self.options["algorithm_params"]["trunc_params"])
             self.model = self.model_ungrouped
             del self.model_ungrouped
             self.grouped = 1
@@ -510,24 +513,25 @@ class SpectralSimulation(TimeDependentCorrelation):
     """
 
     def __init__(self, options, *, ground_state_data=None, ground_state_filename=None, **kwargs):
-        super().__init__(options,
-                         ground_state_data=ground_state_data,
-                         ground_state_filename=ground_state_filename,
-                         **kwargs)
+        super().__init__(
+            options, ground_state_data=ground_state_data, ground_state_filename=ground_state_filename, **kwargs
+        )
 
     def run_post_processing(self):
-        extra_kwargs = self.options.get('spectral_function_params', {})
-        consistency_check(value=extra_kwargs.get('rel_prediction_time', 1),
-                          options=self.options, threshold_key='max_rel_prediction_time',
-                          threshold_default=3,
-                          msg="Excessive use of linear prediction; ``max_rel_prediction_time`` exceeded")
-        for key in self.results['measurements'].keys():
-            if 'correlation_function_t' in key:
-                results_key = key.replace('correlation_function_t', 'spectral_function')
-                kwargs_dict = {'results_key': results_key, 'correlation_key': key}
+        extra_kwargs = self.options.get("spectral_function_params", {})
+        consistency_check(
+            value=extra_kwargs.get("rel_prediction_time", 1),
+            options=self.options,
+            threshold_key="max_rel_prediction_time",
+            threshold_default=3,
+            msg="Excessive use of linear prediction; ``max_rel_prediction_time`` exceeded",
+        )
+        for key in self.results["measurements"].keys():
+            if "correlation_function_t" in key:
+                results_key = key.replace("correlation_function_t", "spectral_function")
+                kwargs_dict = {"results_key": results_key, "correlation_key": key}
                 kwargs_dict.update(extra_kwargs)  # add parameters for linear prediction etc.
-                pp_entry = ('tenpy.simulations.post_processing', 'pp_spectral_function',
-                            kwargs_dict)
+                pp_entry = ("tenpy.simulations.post_processing", "pp_spectral_function", kwargs_dict)
                 # create a new list here! (otherwise this is added to all instances within that session)
                 self.default_post_processing = self.default_post_processing + [pp_entry]
         return super().run_post_processing()

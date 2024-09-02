@@ -102,11 +102,38 @@ from ..tools.string import vert_join, is_non_string_iterable
 from ..tools.optimization import optimize, OptimizationFlag, use_cython
 
 __all__ = [
-    'QCUTOFF', 'ChargeInfo', 'LegCharge', 'LegPipe', 'Array', 'zeros', 'ones', 'eye_like', 'diag',
-    'concatenate', 'grid_concat', 'grid_outer', 'detect_grid_outer_legcharge', 'detect_qtotal',
-    'detect_legcharge', 'trace', 'outer', 'inner', 'tensordot', 'svd', 'pinv', 'norm', 'eigh',
-    'eig', 'eigvalsh', 'eigvals', 'speigs', 'expm', 'qr', 'orthogonal_columns',
-    'to_iterable_arrays', 'polar'
+    "QCUTOFF",
+    "ChargeInfo",
+    "LegCharge",
+    "LegPipe",
+    "Array",
+    "zeros",
+    "ones",
+    "eye_like",
+    "diag",
+    "concatenate",
+    "grid_concat",
+    "grid_outer",
+    "detect_grid_outer_legcharge",
+    "detect_qtotal",
+    "detect_legcharge",
+    "trace",
+    "outer",
+    "inner",
+    "tensordot",
+    "svd",
+    "pinv",
+    "norm",
+    "eigh",
+    "eig",
+    "eigvalsh",
+    "eigvals",
+    "speigs",
+    "expm",
+    "qr",
+    "orthogonal_columns",
+    "to_iterable_arrays",
+    "polar",
 ]
 
 #: A cutoff to ignore machine precision rounding errors when determining charges
@@ -171,6 +198,7 @@ class Array:
         but *must* be set to `False` by algorithms changing _qdata.
 
     """
+
     def __init__(self, legcharges, dtype=np.float64, qtotal=None, labels=None):
         """see help(self)"""
         self.legs = list(legcharges)
@@ -184,7 +212,7 @@ class Array:
         if labels is not None:
             self.iset_leg_labels(labels)
         self._data = []
-        self._qdata = np.empty((0, self.rank), dtype=np.intp, order='C')
+        self._qdata = np.empty((0, self.rank), dtype=np.intp, order="C")
         self._qdata_sorted = True
         self.test_sanity()
 
@@ -199,23 +227,26 @@ class Array:
             raise ValueError("We don't allow rank-0 tensors without legs")
         for l in self.legs:
             if l.chinfo != self.chinfo:
-                raise ValueError("leg has different ChargeInfo:\n{0!s}\n vs {1!s}".format(
-                    l.chinfo, self.chinfo))
+                raise ValueError("leg has different ChargeInfo:\n{0!s}\n vs {1!s}".format(l.chinfo, self.chinfo))
         if self.shape != tuple([lc.ind_len for lc in self.legs]):
-            raise ValueError("shape mismatch with LegCharges\n self.shape={0!s} != {1!s}".format(
-                self.shape, tuple([lc.ind_len for lc in self.legs])))
+            raise ValueError(
+                "shape mismatch with LegCharges\n self.shape={0!s} != {1!s}".format(
+                    self.shape, tuple([lc.ind_len for lc in self.legs])
+                )
+            )
         for l in self.legs:
             l.test_sanity()
         if any([self.dtype != d.dtype for d in self._data]):
-            raise ValueError("wrong dtype: {0!s} vs\n {1!s}".format(
-                self.dtype, [self.dtype != d.dtype for d in self._data]))
+            raise ValueError(
+                "wrong dtype: {0!s} vs\n {1!s}".format(self.dtype, [self.dtype != d.dtype for d in self._data])
+            )
         if self._qdata.shape != (self.stored_blocks, self.rank):
             raise ValueError("_qdata shape wrong")
         if self._qdata.dtype != np.intp:
             raise ValueError("wrong dtype of _qdata")
         if np.any(self._qdata < 0) or np.any(self._qdata >= [l.block_number for l in self.legs]):
             raise ValueError("invalid qind in _qdata")
-        if not self._qdata.flags['C_CONTIGUOUS']:
+        if not self._qdata.flags["C_CONTIGUOUS"]:
             raise ValueError("qdata is not C-contiguous")
         if self._qdata_sorted:
             perm = np.lexsort(self._qdata.T)
@@ -281,7 +312,7 @@ class Array:
         cp._labels = cp._labels[:]  # list copy
         if deep:
             cp._data = [b.copy() for b in self._data]
-            cp._qdata = self._qdata.copy('C')
+            cp._qdata = self._qdata.copy("C")
             cp.qtotal = self.qtotal.copy()
             # even deep copies share legs & chinfo (!)
         return cp
@@ -297,8 +328,18 @@ class Array:
             self.__dict__.update(state)
             self._set_shape()
         elif isinstance(state, tuple):  # allow to import from the compiled versions of TenPy 0.3.0
-            self._data, self._qdata, self._qdata_sorted, self.chinfo, self.dtype, labels, \
-                self.legs, self.qtotal, self.rank, self.shape = state
+            (
+                self._data,
+                self._qdata,
+                self._qdata_sorted,
+                self.chinfo,
+                self.dtype,
+                labels,
+                self.legs,
+                self.qtotal,
+                self.rank,
+                self.shape,
+            ) = state
             self.labels = labels  # property, requires rank to be set already
         else:
             raise ValueError("setstate with incompatible type of state")
@@ -401,15 +442,17 @@ class Array:
         return res
 
     @classmethod
-    def from_ndarray(cls,
-                     data_flat,
-                     legcharges,
-                     dtype=None,
-                     qtotal=None,
-                     cutoff=None,
-                     labels=None,
-                     raise_wrong_sector=True,
-                     warn_wrong_sector=True):
+    def from_ndarray(
+        cls,
+        data_flat,
+        legcharges,
+        dtype=None,
+        qtotal=None,
+        cutoff=None,
+        labels=None,
+        raise_wrong_sector=True,
+        warn_wrong_sector=True,
+    ):
         """convert a flat (numpy) ndarray to an Array.
 
         Parameters
@@ -450,8 +493,7 @@ class Array:
         data_flat = data_flat.astype(dtype, copy=True)
         res = cls(legcharges, dtype, qtotal, labels)  # without any data
         if res.shape != data_flat.shape:
-            raise ValueError("Incompatible shapes: legcharges {0!s} vs flat {1!s} ".format(
-                res.shape, data_flat.shape))
+            raise ValueError("Incompatible shapes: legcharges {0!s} vs flat {1!s} ".format(res.shape, data_flat.shape))
         if qtotal is None:
             res.qtotal = qtotal = detect_qtotal(data_flat, legcharges, cutoff)
         data = []
@@ -468,23 +510,17 @@ class Array:
                 raise ValueError("wrong sector with non-zero entries")
             if warn_wrong_sector:
                 msg = "flat array has non-zero entries in blocks incompatible with charge"
-                warnings.warn(msg,  stacklevel=2)
+                warnings.warn(msg, stacklevel=2)
         res._data = data
-        res._qdata = np.array(qdata, dtype=np.intp, order='C').reshape((len(qdata), res.rank))
+        res._qdata = np.array(qdata, dtype=np.intp, order="C").reshape((len(qdata), res.rank))
         res._qdata_sorted = True
         res.test_sanity()
         return res
 
     @classmethod
-    def from_func(cls,
-                  func,
-                  legcharges,
-                  dtype=None,
-                  qtotal=None,
-                  func_args=(),
-                  func_kwargs={},
-                  shape_kw=None,
-                  labels=None):
+    def from_func(
+        cls, func, legcharges, dtype=None, qtotal=None, func_args=(), func_kwargs={}, shape_kw=None, labels=None
+    ):
         """Create an Array from a numpy func.
 
         This function creates an array and fills the blocks *compatible* with the charges
@@ -553,20 +589,13 @@ class Array:
             data.append(block)
             qdata.append(qindices)
         res._data = data
-        res._qdata = np.array(qdata, dtype=np.intp, order='C').reshape((len(qdata), res.rank))
+        res._qdata = np.array(qdata, dtype=np.intp, order="C").reshape((len(qdata), res.rank))
         res._qdata_sorted = True  # _iter_all_blocks is in lexicographic order
         res.test_sanity()
         return res
 
     @classmethod
-    def from_func_square(cls,
-                         func,
-                         leg,
-                         dtype=None,
-                         func_args=(),
-                         func_kwargs={},
-                         shape_kw=None,
-                         labels=None):
+    def from_func_square(cls, func, leg, dtype=None, func_args=(), func_kwargs={}, shape_kw=None, labels=None):
         """Create an Array from a (numpy) function.
 
         This function creates an array and fills the blocks *compatible* with the charges
@@ -713,9 +742,9 @@ class Array:
         for i, l in enumerate(labels):
             if l is None:
                 continue
-            if l == '':
+            if l == "":
                 raise ValueError("use `None` for empty labels")
-            if l in labels[i + 1:]:
+            if l in labels[i + 1 :]:
                 raise ValueError("Duplicate label entry in " + repr(labels))
         self._labels = list(labels)
         return self
@@ -726,7 +755,7 @@ class Array:
 
     def has_label(self, label):
         """Check whether a given label exists."""
-        return (label in self._labels)
+        return label in self._labels
 
     def get_leg(self, label):
         """Return ``self.legs[self.get_leg_index(label)]``.
@@ -796,14 +825,11 @@ class Array:
         return "<npc.Array shape={0!s} labels={1!s}>".format(self.shape, self.get_leg_labels())
 
     def __str__(self):
-        res = [
-            repr(self)[:-1], "charge=" + str(self.chinfo),
-            vert_join([str(l) for l in self.legs], delim='|')
-        ]
+        res = [repr(self)[:-1], "charge=" + str(self.chinfo), vert_join([str(l) for l in self.legs], delim="|")]
         if np.prod(self.shape) < 100:
             res.append(str(self.to_ndarray()))
-        res.append('>')
-        return '\n'.join(res)
+        res.append(">")
+        return "\n".join(res)
 
     def sparse_stats(self):
         """Returns a string detailing the sparse statistics."""
@@ -822,25 +848,29 @@ class Array:
             bs_med = np.median(bs)
             bs_var = np.var(bs)
         else:
-            captsparse = 1.
+            captsparse = 1.0
             bs_min = bs_max = bs_mean = bs_med = bs_var = 0
-        res = "{nonzero:d} of {total:d} entries (={nztotal:g}) nonzero,\n" \
-            "stored in {nblocks:d} blocks with {stored:d} entries.\n" \
-            "Captured sparsity: {captsparse:g}\n"  \
-            "Block sizes min:{bs_min:d} mean:{bs_mean:.2f} median:{bs_med:.1f} " \
+        res = (
+            "{nonzero:d} of {total:d} entries (={nztotal:g}) nonzero,\n"
+            "stored in {nblocks:d} blocks with {stored:d} entries.\n"
+            "Captured sparsity: {captsparse:g}\n"
+            "Block sizes min:{bs_min:d} mean:{bs_mean:.2f} median:{bs_med:.1f} "
             "max:{bs_max:d} var:{bs_var:.2f}"
+        )
 
-        return res.format(nonzero=nonzero,
-                          total=total,
-                          nztotal=nonzero / total,
-                          nblocks=nblocks,
-                          stored=stored,
-                          captsparse=captsparse,
-                          bs_min=bs_min,
-                          bs_max=bs_max,
-                          bs_mean=bs_mean,
-                          bs_med=bs_med,
-                          bs_var=bs_var)
+        return res.format(
+            nonzero=nonzero,
+            total=total,
+            nztotal=nonzero / total,
+            nblocks=nblocks,
+            stored=stored,
+            captsparse=captsparse,
+            bs_min=bs_min,
+            bs_max=bs_max,
+            bs_mean=bs_mean,
+            bs_med=bs_med,
+            bs_var=bs_var,
+        )
 
     # accessing entries =======================================================
 
@@ -868,7 +898,7 @@ class Array:
         for block, qdat in zip(self._data, self._qdata):
             blockslices = []
             qs = []
-            for (qi, l) in zip(qdat, self.legs):
+            for qi, l in zip(qdat, self.legs):
                 blockslices.append(l.get_slice(qi))
                 qs.append(l.get_charge(qi))
             yield block, tuple(blockslices), qs, qdat
@@ -1036,7 +1066,7 @@ class Array:
         axes = np.array(axes, dtype=np.intp)
         keep_axes = np.array(keep_axes, dtype=np.intp)
         keep_blocks = np.all(self._qdata[:, axes] == pos[:, 0], axis=1)
-        res._qdata = np.asarray(self._qdata[np.ix_(keep_blocks, keep_axes)], order='C')
+        res._qdata = np.asarray(self._qdata[np.ix_(keep_blocks, keep_axes)], order="C")
         # res._qdata_sorted is not changed
         # determine the slices to take on _data
         sl = [slice(None)] * self.rank
@@ -1075,11 +1105,10 @@ class Array:
         res._set_shape()
         res._data = res._data[:]  # make a copy
         for j, T in enumerate(res._data):
-            res._data[j] = T.reshape(T.shape[:axis] + (1, ) + T.shape[axis:])
-        res._qdata = np.asarray(np.hstack(
-            [res._qdata[:, :axis],
-             np.zeros([len(res._data), 1], np.intp), res._qdata[:, axis:]]),
-                              order='C')
+            res._data[j] = T.reshape(T.shape[:axis] + (1,) + T.shape[axis:])
+        res._qdata = np.asarray(
+            np.hstack([res._qdata[:, :axis], np.zeros([len(res._data), 1], np.intp), res._qdata[:, axis:]]), order="C"
+        )
         return res
 
     def add_leg(self, leg, i, axis=0, label=None):
@@ -1220,10 +1249,7 @@ class Array:
             assert chinfo == chinfo2
         else:
             chinfo = ChargeInfo.add([self.chinfo, add_legs[0].chinfo])
-        legs = [
-            LegCharge.from_add_charge([leg, leg2], chinfo)
-            for (leg, leg2) in zip(self.legs, add_legs)
-        ]
+        legs = [LegCharge.from_add_charge([leg, leg2], chinfo) for (leg, leg2) in zip(self.legs, add_legs)]
         if qtotal is None:
             for block, slices, _, _ in self:
                 leg_slices = []
@@ -1266,8 +1292,12 @@ class Array:
             chinfo2 = chinfo
         if charge is None:
             qtotal = None
-            res = Array([LegCharge.from_drop_charge(leg, charge, chinfo2) for leg in self.legs],
-                        self.dtype, qtotal, self._labels)
+            res = Array(
+                [LegCharge.from_drop_charge(leg, charge, chinfo2) for leg in self.legs],
+                self.dtype,
+                qtotal,
+                self._labels,
+            )
             for block, slices, _, _ in self:  # use __iter__
                 res[slices] = block  # use __setitem__
         else:
@@ -1281,7 +1311,7 @@ class Array:
         res.test_sanity()
         return res
 
-    def change_charge(self, charge, new_qmod, new_name='', chinfo=None):
+    def change_charge(self, charge, new_qmod, new_name="", chinfo=None):
         """Change the `qmod` of one charge in `chinfo`.
 
         Parameters
@@ -1309,10 +1339,7 @@ class Array:
             chinfo2 = chinfo
         res = self.copy(deep=True)
         res.chinfo = chinfo2
-        res.legs = [
-            LegCharge.from_change_charge(leg, charge, new_qmod, new_name, chinfo2)
-            for leg in self.legs
-        ]
+        res.legs = [LegCharge.from_change_charge(leg, charge, new_qmod, new_name, chinfo2) for leg in self.legs]
         res.test_sanity()
         return res
 
@@ -1508,7 +1535,7 @@ class Array:
         new_axes = [new_axes[p] for p in perm_args]
 
         # labels: replace non-set labels with '?#' (*before* transpose
-        labels = [(l if l is not None else '?' + str(i)) for i, l in enumerate(self._labels)]
+        labels = [(l if l is not None else "?" + str(i)) for i, l in enumerate(self._labels)]
         # transpose if necessary
         if transp != tuple(range(self.rank)):
             res = self.copy(deep=False)
@@ -1522,26 +1549,24 @@ class Array:
 
         # obtain the new legs
         # non_combined_legs: axes of self which are not in combine_legs
-        non_combined_legs = np.array([a for a in range(self.rank) if a not in all_combine_legs],
-                                     dtype=np.intp)
+        non_combined_legs = np.array([a for a in range(self.rank) if a not in all_combine_legs], dtype=np.intp)
         legs = [self.legs[ax] for ax in non_combined_legs]
         for na, p in zip(new_axes, pipes):  # not reversed
             legs.insert(na, p)
-        non_new_axes = np.array([i for i in range(len(legs)) if i not in new_axes],
-                                dtype=np.intp)  # convert to array for index tricks
+        non_new_axes = np.array(
+            [i for i in range(len(legs)) if i not in new_axes], dtype=np.intp
+        )  # convert to array for index tricks
         # get new labels
         pipe_labels = [self._combine_leg_labels([labels[c] for c in cl]) for cl in combine_legs]
         for na, p, plab in zip(new_axes, pipes, pipe_labels):
-            labels[na:na + p.nlegs] = [plab]
+            labels[na : na + p.nlegs] = [plab]
 
         res = Array(legs, self.dtype, self.qtotal, labels)
 
         # the **main work** of copying & reshaping the data
         if self.stored_blocks == 1:
             # handle self.stored_blocks == 1 separately for optimization
-            qmap_inds = [
-                p._map_incoming_qind(self._qdata[:, cl])[0] for p, cl in zip(pipes, combine_legs)
-            ]
+            qmap_inds = [p._map_incoming_qind(self._qdata[:, cl])[0] for p, cl in zip(pipes, combine_legs)]
             res_qdata = np.empty((1, res.rank), np.intp)
             res_qdata[0, non_new_axes] = self._qdata[0, non_combined_legs]
             slices = [slice(None)] * res.rank
@@ -1558,11 +1583,10 @@ class Array:
         elif self.stored_blocks > 1:
             # sourced out for optimization
             new_axes = np.array(new_axes, np.intp)
-            _combine_legs_worker(self, res, combine_legs, non_combined_legs, new_axes,
-                                 non_new_axes, pipes)
+            _combine_legs_worker(self, res, combine_legs, non_combined_legs, new_axes, non_new_axes, pipes)
         return res
 
-    def split_legs(self, axes=None, cutoff=0.):
+    def split_legs(self, axes=None, cutoff=0.0):
         """Reshape: opposite of combine_legs: split (some) legs which are LegPipes.
 
         Reverts :meth:`combine_legs` (except a possibly performed `transpose`).
@@ -1624,7 +1648,7 @@ class Array:
         elif self.stored_blocks == 0:
             res = self.copy(deep=True)
             for ax in reversed(axes):
-                res.legs[ax:ax + 1] = self.legs[ax].legs
+                res.legs[ax : ax + 1] = self.legs[ax].legs
             res._set_shape()
         elif self.stored_blocks == 1 and all([(self.legs[ax].q_map.shape[0] == 1) for ax in axes]):
             # optimize: just a single block in each pipe
@@ -1632,7 +1656,7 @@ class Array:
             qdata = [[qi] for qi in self._qdata[0, :]]
             for ax in reversed(axes):
                 pipe = self.legs[ax]
-                res.legs[ax:ax + 1] = pipe.legs
+                res.legs[ax : ax + 1] = pipe.legs
                 qdata[ax] = pipe.q_map[0, 3:]
             res._set_shape()
             res._qdata = np.ascontiguousarray(np.concatenate(qdata)).reshape((1, res.rank))
@@ -1643,7 +1667,7 @@ class Array:
 
         labels = self._labels[:]
         for a in sorted(axes, reverse=True):
-            labels[a:a + 1] = self._split_leg_label(labels[a], self.legs[a].nlegs)
+            labels[a : a + 1] = self._split_leg_label(labels[a], self.legs[a].nlegs)
         res.iset_leg_labels(labels)
         return res
 
@@ -1710,7 +1734,7 @@ class Array:
         res.iset_leg_labels([labels[a] for a in keep])
 
         res._data = [np.squeeze(t, axis=axes).copy() for t in self._data]
-        res._qdata = np.asarray(self._qdata[:, np.array(keep)], order='C')
+        res._qdata = np.asarray(self._qdata[:, np.array(keep)], order="C")
         # res._qdata_sorted doesn't change
         return res
 
@@ -1757,7 +1781,7 @@ class Array:
         if len(self._data) == 0:
             return self
         norm = np.array([np.linalg.norm(t, ord=norm_order) for t in self._data])
-        keep = (norm > cutoff)  # bool array
+        keep = norm > cutoff  # bool array
         self._data = [t for t, k in zip(self._data, keep) if k]
         self._qdata = self._qdata[keep]
         # self._qdata_sorted is preserved
@@ -1818,7 +1842,7 @@ class Array:
             map_qind.append(m_qind)
             block_masks.append(bm)
             q = self._qdata[:, a] = m_qind[self._qdata[:, a]]
-            piv = (q >= 0)
+            piv = q >= 0
             self._qdata = self._qdata[piv]  # keeps dimension
             # self._qdata_sorted is preserved
             proj_data = proj_data[piv]
@@ -1903,7 +1927,7 @@ class Array:
             res_qdata[i] = qindices
         return res
 
-    @use_cython(replacement='Array_itranspose')
+    @use_cython(replacement="Array_itranspose")
     def itranspose(self, axes=None):
         """Transpose axes like `np.transpose`; in place.
 
@@ -1925,7 +1949,7 @@ class Array:
         self._set_shape()
         labs = self.get_leg_labels()
         self.iset_leg_labels([labs[a] for a in axes])
-        self._qdata = np.array(self._qdata[:, axes_arr], order='C')
+        self._qdata = np.array(self._qdata[:, axes_arr], order="C")
         self._qdata_sorted = False
         self._data = [np.transpose(block, axes) for block in self._data]
         return self
@@ -1972,9 +1996,8 @@ class Array:
         """
         axis = self.get_leg_index(axis)
         s = np.asarray(s)
-        if s.shape != (self.shape[axis], ):
-            raise ValueError("s has wrong shape: " + str(s.shape) + " instead of " +
-                             str(self.shape[axis]))
+        if s.shape != (self.shape[axis],):
+            raise ValueError("s has wrong shape: " + str(s.shape) + " instead of " + str(self.shape[axis]))
         self.dtype = np.promote_types(self.dtype, s.dtype)
         leg = self.legs[axis]
         if axis != self.rank - 1:
@@ -2062,7 +2085,7 @@ class Array:
         inplace : bool
             Whether to apply changes to `self`, or to return a *deep* copy.
         """
-        if complex_conj and self.dtype.kind == 'c':
+        if complex_conj and self.dtype.kind == "c":
             if inplace:
                 res = self.iunary_blockwise(np.conj)
             else:
@@ -2093,7 +2116,7 @@ class Array:
         if ord == 0:
             return np.sum([np.count_nonzero(t) for t in self._data], dtype=np.int_)
         if convert_to_float:
-            new_type = np.result_type('f4', self.dtype)  # int -> float
+            new_type = np.result_type("f4", self.dtype)  # int -> float
             if new_type != self.dtype:
                 return self.astype(new_type).norm(ord, False)
         block_norms = [np.linalg.norm(t.reshape(-1), ord) for t in self._data]
@@ -2224,8 +2247,7 @@ class Array:
         other gets **transposed** before the action.
         """
         if not isinstance(other, Array) or not np.isscalar(prefactor):
-            raise ValueError("wrong argument types: {0!r}, {1!r}".format(
-                type(prefactor), type(other)))
+            raise ValueError("wrong argument types: {0!r}, {1!r}".format(type(prefactor), type(other)))
         self.ibinary_blockwise(np.add, other.__mul__(prefactor))
         return self
 
@@ -2237,7 +2259,7 @@ class Array:
         """
         if not np.isscalar(prefactor):
             raise ValueError("prefactor is not scalar: {0!r}".format(type(prefactor)))
-        if prefactor == 0.:
+        if prefactor == 0.0:
             self._data = []
             self._qdata = np.empty((0, self.rank), np.intp)
             self._qdata_sorted = True
@@ -2248,26 +2270,26 @@ class Array:
         """Return ``self + other``."""
         if isinstance(other, Array):
             res = self.copy(deep=True)
-            return res.iadd_prefactor_other(1., other)
+            return res.iadd_prefactor_other(1.0, other)
         return NotImplemented  # unknown type of other
 
     def __iadd__(self, other):
         """``self += other``."""
         if isinstance(other, Array):
-            return self.iadd_prefactor_other(1., other)
+            return self.iadd_prefactor_other(1.0, other)
         return NotImplemented  # unknown type of other
 
     def __sub__(self, other):
         """Return ``self - other``."""
         if isinstance(other, Array):
             res = self.copy(deep=True)
-            return res.iadd_prefactor_other(-1., other)
+            return res.iadd_prefactor_other(-1.0, other)
         return NotImplemented  # unknown type of other
 
     def __isub__(self, other):
         """``self -= other``."""
         if isinstance(other, Array):
-            return self.iadd_prefactor_other(-1., other)
+            return self.iadd_prefactor_other(-1.0, other)
         return NotImplemented
 
     def __mul__(self, other):
@@ -2295,23 +2317,21 @@ class Array:
     def __truediv__(self, other):
         """Return ``self / other`` for scalar `other`."""
         if np.isscalar(other):
-            if other == 0.:
-                raise ZeroDivisionError("a/b for b=0. Types: {0!s}, {1!s}".format(
-                    type(self), type(other)))
+            if other == 0.0:
+                raise ZeroDivisionError("a/b for b=0. Types: {0!s}, {1!s}".format(type(self), type(other)))
             res = self.copy(deep=True)
-            return res.iscale_prefactor(1. / other)
+            return res.iscale_prefactor(1.0 / other)
         return NotImplemented
 
     def __itruediv__(self, other):
         """``self /= other`` for scalar `other`."""
         if np.isscalar(other):
-            if other == 0.:
-                raise ZeroDivisionError("a/b for b=0. Types: {0!s}, {1!s}".format(
-                    type(self), type(other)))
-            return self.iscale_prefactor(1. / other)
+            if other == 0.0:
+                raise ZeroDivisionError("a/b for b=0. Types: {0!s}, {1!s}".format(type(self), type(other)))
+            return self.iscale_prefactor(1.0 / other)
         return NotImplemented
 
-    def __eq__(self, other, eps=1.e-14):
+    def __eq__(self, other, eps=1.0e-14):
         """Check if two arrays are the same up to `eps`.
 
         Parameters
@@ -2324,7 +2344,8 @@ class Array:
         """
         if self is other:
             return True
-        if not isinstance(other, Array): return NotImplemented
+        if not isinstance(other, Array):
+            return NotImplemented
         if other.chinfo != self.chinfo:
             raise ValueError("other array has different charges!")
         other = other._transpose_same_labels(self._labels)
@@ -2392,7 +2413,7 @@ class Array:
             idx, new_leg = cp.legs[li].bunch()
             cp.legs[li] = new_leg
             # generate entries in map_qindex and bunch_qindex
-            bunch_qindex[li] = ((idx[1:] - idx[:-1]) > 1)
+            bunch_qindex[li] = (idx[1:] - idx[:-1]) > 1
             m_qindex = np.zeros(idx[-1], dtype=np.intp)
             m_qindex[idx[:-1]] = 1
             map_qindex[li] = np.cumsum(m_qindex, axis=0)
@@ -2452,22 +2473,22 @@ class Array:
             `inds`, where ``Ellipsis`` is replaced by the correct number of slice(None).
         """
         if type(inds) != tuple:  # for rank 1
-            inds = (inds, )
+            inds = (inds,)
         i = next((i for i, idx in enumerate(inds) if idx is Ellipsis), None)
         # i is index of Ellipsis or None if we don't have one
         if i is None and len(inds) < self.rank:  # need an Ellipsis
             i = len(inds)
-            inds = inds + (Ellipsis, )
+            inds = inds + (Ellipsis,)
         if i is not None:
             # replace Ellipsis with slice(None)
             fill = tuple([slice(None)] * (self.rank - len(inds) + 1))
-            inds = inds[:i] + fill + inds[i + 1:]
+            inds = inds[:i] + fill + inds[i + 1 :]
         if len(inds) > self.rank:
             raise IndexError("too many indices for Array")
         # do we have only integer entries in `inds`?
         try:
             only_int = np.array(inds, dtype=np.intp)
-            assert (only_int.shape == (len(inds), ))
+            assert only_int.shape == (len(inds),)
         except:
             return False, inds
         else:
@@ -2517,8 +2538,7 @@ class Array:
                     project_masks.append(m)
                     project_axes.append(a)
                     if i.step is not None and i.step < 0:
-                        permutations.append((a, np.arange(np.count_nonzero(m),
-                                                          dtype=np.intp)[::-1]))
+                        permutations.append((a, np.arange(np.count_nonzero(m), dtype=np.intp)[::-1]))
             else:
                 try:
                     iter(i)
@@ -2544,12 +2564,12 @@ class Array:
                 res = res.permute(perm, a)
         if not calc_map_qind:
             return res
-        part2self = self._advanced_getitem_map_qind(inds, slice_axes, slice_inds, project_axes,
-                                                    p_map_qinds, p_masks, res_axes)
+        part2self = self._advanced_getitem_map_qind(
+            inds, slice_axes, slice_inds, project_axes, p_map_qinds, p_masks, res_axes
+        )
         return part2self, permutations, res
 
-    def _advanced_getitem_map_qind(self, inds, slice_axes, slice_inds, project_axes, p_map_qinds,
-                                   p_masks, res_axes):
+    def _advanced_getitem_map_qind(self, inds, slice_axes, slice_inds, project_axes, p_map_qinds, p_masks, res_axes):
         """Generate a function mapping from qindices of `self[inds]` back to qindices of self.
 
         This function is called only by `_advanced_getitem(calc_map_qind=True)`
@@ -2603,9 +2623,7 @@ class Array:
         # suppress warning if we project a pipe
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            map_part2self, permutations, self_part = self._advanced_getitem(inds,
-                                                                            calc_map_qind=True,
-                                                                            permute=False)
+            map_part2self, permutations, self_part = self._advanced_getitem(inds, calc_map_qind=True, permute=False)
         # permutations are ignored by map_part2self.
         # instead of figuring out permutations in self, apply the *reversed* permutations ot other
         for ax, perm in permutations:
@@ -2624,13 +2642,13 @@ class Array:
         for p_qindices in self_part._qdata:
             qindices, block_mask = map_part2self(p_qindices)
             block = self.get_block(qindices)
-            block[block_mask] = 0.  # overwrite data in self
+            block[block_mask] = 0.0  # overwrite data in self
         # now we copy blocks from other
         for o_block, o_qindices in zip(other._data, other._qdata):
             qindices, block_mask = map_part2self(o_qindices)
             block = self.get_block(qindices, insert=True)
             block[block_mask] = o_block  # overwrite data in self
-        self.ipurge_zeros(0.)  # remove blocks identically zero
+        self.ipurge_zeros(0.0)  # remove blocks identically zero
 
     def _combine_legs_make_pipes(self, combine_legs, pipes, qconj):
         """Argument parsing for :meth:`combine_legs`: make missing pipes.
@@ -2699,7 +2717,7 @@ class Array:
         >>> self._combine_leg_labels(['a', 'b', '(c.d)'])
         '(a.b.(c.d))'
         """
-        return '(' + '.'.join(labels) + ')'
+        return "(" + ".".join(labels) + ")"
 
     @staticmethod
     def _split_leg_label(label, count):
@@ -2715,7 +2733,7 @@ class Array:
         """
         if label is None:
             return [None] * count
-        if label[0] != '(' or label[-1] != ')':
+        if label[0] != "(" or label[-1] != ")":
             warnings.warn("split leg with label not in Form '(...)': " + repr(label), stacklevel=3)
             return [None] * count
         beg = 1
@@ -2723,18 +2741,18 @@ class Array:
         res = []
         for i in range(1, len(label) - 1):
             c = label[i]
-            if c == '(':
+            if c == "(":
                 depth += 1
-            elif c == ')':
+            elif c == ")":
                 depth -= 1
-            elif c == '.' and depth == 0:
+            elif c == "." and depth == 0:
                 res.append(label[beg:i])
                 beg = i + 1
-        res.append(label[beg:i + 1])
+        res.append(label[beg : i + 1])
         if len(res) != count:
             raise ValueError("wrong number of splitted labels.")
         for i in range(len(res)):
-            if res[i][0] == '?':
+            if res[i][0] == "?":
                 res[i] = None
         return res
 
@@ -2755,15 +2773,15 @@ class Array:
         res = []
         beg = 0
         for i in range(1, len(label)):
-            if label[i - 1] != ')' and label[i] in '.)':
+            if label[i - 1] != ")" and label[i] in ".)":
                 res.append(label[beg:i])
                 beg = i
         res.append(label[beg:])
-        label = '*'.join(res)
-        if label[-1] != ')':
-            label += '*'
+        label = "*".join(res)
+        if label[-1] != ")":
+            label += "*"
         # remove '**' entries
-        return label.replace('**', '')
+        return label.replace("**", "")
 
     @use_cython(replacement="Array__imake_contiguous")
     def _imake_contiguous(self):
@@ -2782,8 +2800,9 @@ class Array:
             return self  # fits
         if None in self_labels or None in other_labels:
             if set(self_labels) == set(other_labels) != set([None]):
-                warnings.warn("Not all legs labeled, so no transpose for Array addition. "
-                              "Did you intend to transpose?")
+                warnings.warn(
+                    "Not all legs labeled, so no transpose for Array addition. " "Did you intend to transpose?"
+                )
             return self  # not all legs labeled
         if set(self_labels) == set(other_labels):
             # same labels, different order.
@@ -2818,7 +2837,7 @@ def ones(legcharges, dtype=np.float64, qtotal=None, labels=None):
 def eye_like(a, axis=0, labels=None):
     """Return an identity matrix contractible with the leg `axis` of the :class:`Array` `a`."""
     axis = a.get_leg_index(axis)
-    return diag(1., a.legs[axis], labels=labels)
+    return diag(1.0, a.legs[axis], labels=labels)
 
 
 def diag(s, leg, dtype=None, labels=None):
@@ -2847,7 +2866,7 @@ def diag(s, leg, dtype=None, labels=None):
     Array.scale_axis : similar as ``tensordot(diag(s), ...)``, but faster.
     """
     s = np.asarray(s, dtype)
-    scalar = (s.ndim == 0)
+    scalar = s.ndim == 0
     if not scalar and len(s) != leg.ind_len:
         raise ValueError("len(s)={0:d} not equal to leg.ind_len={1:d}".format(len(s), leg.ind_len))
     res = Array((leg, leg.conj()), s.dtype, labels=labels)  # default charge is 0
@@ -2894,7 +2913,7 @@ def concatenate(arrays, axis=0, copy=True):
     not_axis = np.array([a for a in range(res.rank) if a != axis], dtype=np.intp)
     # test for compatibility
     for a in arrays:
-        if a.shape[:axis] != res.shape[:axis] or a.shape[axis + 1:] != res.shape[axis + 1:]:
+        if a.shape[:axis] != res.shape[:axis] or a.shape[axis + 1 :] != res.shape[axis + 1 :]:
             raise ValueError("wrong shape to fit " + repr(a.shape) + " into " + repr(res.shape))
         if a.chinfo != res.chinfo:
             raise ValueError("wrong ChargeInfo")
@@ -3164,10 +3183,7 @@ def detect_grid_outer_legcharge(grid, grid_legs, qtotal=None, qconj=1, bunch=Fal
     qtotal = chinfo.make_valid(qtotal)  # charge 0, if qtotal is not set.
     qflat = [None] * grid_shape[axis]
     for idx, entry in entries:
-        grid_charges = [
-            l.get_charge(l.get_qindex(i)[0]) for a, (i, l) in enumerate(zip(idx, grid_legs))
-            if a != axis
-        ]
+        grid_charges = [l.get_charge(l.get_qindex(i)[0]) for a, (i, l) in enumerate(zip(idx, grid_legs)) if a != axis]
         qflat_entry = chinfo.make_valid(qtotal - entry.qtotal - np.sum(grid_charges, axis=0))
         i = idx[axis]
         if qflat[i] is None:
@@ -3176,8 +3192,7 @@ def detect_grid_outer_legcharge(grid, grid_legs, qtotal=None, qconj=1, bunch=Fal
             raise ValueError("different grid entries lead to different charges at index " + str(i))
     if any([q is None for q in qflat]):
         raise ValueError("can't derive flat charge for all indices:" + str(qflat))
-    grid_legs[axis] = LegCharge.from_qflat(chinfo, chinfo.make_valid(qconj * np.array(qflat)),
-                                           qconj)
+    grid_legs[axis] = LegCharge.from_qflat(chinfo, chinfo.make_valid(qconj * np.array(qflat)), qconj)
     return grid_legs
 
 
@@ -3209,8 +3224,7 @@ def detect_qtotal(flat_array, legcharges, cutoff=None):
     inds_max = np.unravel_index(np.argmax(np.abs(flat_array)), flat_array.shape)
     val_max = abs(flat_array[inds_max])
     if val_max < cutoff:
-        warnings.warn("can't detect total charge: no entry larger than cutoff. Return 0 charge.",
-                    stacklevel=2)
+        warnings.warn("can't detect total charge: no entry larger than cutoff. Return 0 charge.", stacklevel=2)
         return legcharges[0].chinfo.make_valid()
     test_array = zeros(legcharges)  # Array prototype with correct charges
     qindices = [leg.get_qindex(i)[0] for leg, i in zip(legcharges, inds_max)]
@@ -3265,7 +3279,7 @@ def detect_legcharge(flat_array, chargeinfo, legcharges, qtotal=None, qconj=+1, 
         legs[axis] = LegCharge.from_trivial(axis_len, chargeinfo, qconj=qconj)
         return legs
     qtotal = chargeinfo.make_valid(qtotal)  # charge 0, if qtotal is not set.
-    legs_known = legs[:axis] + legs[axis + 1:]
+    legs_known = legs[:axis] + legs[axis + 1 :]
     qflat = np.empty([axis_len, chargeinfo.qnumber], dtype=QTYPE)
     for i in range(axis_len):
         A_i = np.take(flat_array, i, axis=axis)
@@ -3298,7 +3312,7 @@ def trace(a, leg1=0, leg2=1):
     a.legs[ax1].test_contractible(a.legs[ax2])
     if a.rank == 2:
         # full contraction: ax1, ax2 = 0, 1 or vice versa
-        res = a.dtype.type(0.)
+        res = a.dtype.type(0.0)
         for qdata_row, block in zip(a._qdata, a._data):
             if qdata_row[0] == qdata_row[1]:
                 res += np.trace(block)
@@ -3354,15 +3368,15 @@ def outer(a, b):
     # fill with data
     qdata_a = a._qdata
     qdata_b = b._qdata
-    grid = np.mgrid[:len(qdata_a), :len(qdata_b)].T.reshape(-1, 2)
+    grid = np.mgrid[: len(qdata_a), : len(qdata_b)].T.reshape(-1, 2)
     # grid is lexsorted like qdata, with rows as all combinations of a/b block indices.
     qdata_res = np.empty((len(qdata_a) * len(qdata_b), res.rank), dtype=np.intp)
-    qdata_res[:, :a.rank] = qdata_a[grid[:, 0]]
-    qdata_res[:, a.rank:] = qdata_b[grid[:, 1]]
+    qdata_res[:, : a.rank] = qdata_a[grid[:, 0]]
+    qdata_res[:, a.rank :] = qdata_b[grid[:, 1]]
     # use numpys broadcasting to obtain the tensor product
-    idx_reshape = (Ellipsis, ) + tuple([np.newaxis] * b.rank)
+    idx_reshape = (Ellipsis,) + tuple([np.newaxis] * b.rank)
     data_a = [ta[idx_reshape] for ta in a._data]
-    idx_reshape = tuple([np.newaxis] * a.rank) + (Ellipsis, )
+    idx_reshape = tuple([np.newaxis] * a.rank) + (Ellipsis,)
     data_b = [tb[idx_reshape] for tb in b._data]
     res._data = [data_a[i] * data_b[j] for i, j in grid]
     res._qdata = qdata_res
@@ -3372,7 +3386,7 @@ def outer(a, b):
     return res
 
 
-def inner(a, b, axes='labels', do_conj=False):
+def inner(a, b, axes="labels", do_conj=False):
     """Contract all legs in `a` and `b`, return scalar.
 
     .. versionchanged :: 1.0
@@ -3406,10 +3420,10 @@ def inner(a, b, axes='labels', do_conj=False):
         return np.sum([inner(w, v, axes=axes, do_conj=do_conj) for w, v in zip(a, b)])
     if a.rank != b.rank:
         raise ValueError("different rank!")
-    if axes == 'range':
+    if axes == "range":
         transp = False
     else:
-        if axes == 'labels':
+        if axes == "labels":
             a_labels = a.get_leg_labels()
             if do_conj:
                 axes = (a_labels, a_labels)
@@ -3424,7 +3438,7 @@ def inner(a, b, axes='labels', do_conj=False):
         # we can permute axes_a and axes_b. Use that to ensure axes_b = range(b.rank)
         sort_axes_b = np.argsort(axes_b)
         axes_a = [axes_a[i] for i in sort_axes_b]
-        transp = (tuple(axes_a) != tuple(range(a.rank)))
+        transp = tuple(axes_a) != tuple(range(a.rank))
     if transp:
         a = a.copy(deep=False)
         a.itranspose(axes_a)
@@ -3475,14 +3489,15 @@ def tensordot(a, b, axes=2):
     a, b, axes = _tensordot_transpose_axes(a, b, axes)
 
     # optimize/check for special cases
-    no_block = (a.stored_blocks == 0 or b.stored_blocks == 0)  # result is zero
-    one_block = (a.stored_blocks == 1 and b.stored_blocks == 1)
+    no_block = a.stored_blocks == 0 or b.stored_blocks == 0  # result is zero
+    one_block = a.stored_blocks == 1 and b.stored_blocks == 1
     if axes == a.rank and axes == b.rank:
         return _inner_worker(a, b, False)  # full contraction yields a single number
     elif no_block or one_block:
         cut_a = a.rank - axes
-        res = Array(a.legs[:cut_a] + b.legs[axes:], np.promote_types(a.dtype, b.dtype),
-                    a.chinfo.make_valid(a.qtotal + b.qtotal))
+        res = Array(
+            a.legs[:cut_a] + b.legs[axes:], np.promote_types(a.dtype, b.dtype), a.chinfo.make_valid(a.qtotal + b.qtotal)
+        )
         if one_block:
             # optimize for special case that a and b have only 1 entry
             # this is (usually) the case if we have trivial charges
@@ -3501,17 +3516,19 @@ def tensordot(a, b, axes=2):
         # #### the main work
         res = _tensordot_worker(a, b, axes)
     # labels
-    res._labels = _drop_duplicate_labels(a._labels[:a.rank-axes], b._labels[axes:])
+    res._labels = _drop_duplicate_labels(a._labels[: a.rank - axes], b._labels[axes:])
     return res
 
 
-def svd(a,
-        full_matrices=False,
-        compute_uv=True,
-        cutoff=None,
-        qtotal_LR=[None, None],
-        inner_labels=[None, None],
-        inner_qconj=+1):
+def svd(
+    a,
+    full_matrices=False,
+    compute_uv=True,
+    cutoff=None,
+    qtotal_LR=[None, None],
+    inner_labels=[None, None],
+    inner_qconj=+1,
+):
     """Singular value decomposition of an Array `a`.
 
     Factorizes ``U, S, VH = svd(a)``, such that ``a = U*diag(S)*VH`` (where ``*`` stands for
@@ -3583,9 +3600,8 @@ def svd(a,
     qtotal_LR = qtotal_L, qtotal_R
 
     # the main work
-    overwrite_a = (len(piped_axes) > 0)
-    U, S, VH = _svd_worker(a, full_matrices, compute_uv, overwrite_a, cutoff, qtotal_LR,
-                           inner_qconj)
+    overwrite_a = len(piped_axes) > 0
+    U, S, VH = _svd_worker(a, full_matrices, compute_uv, overwrite_a, cutoff, qtotal_LR, inner_qconj)
     if not compute_uv:
         return S
 
@@ -3598,7 +3614,8 @@ def svd(a,
     VH.iset_leg_labels([labR, a_labels[1]])
     return U, S, VH
 
-def polar(a, cutoff=1.e-16, left=False, inner_labels=[None, None]):
+
+def polar(a, cutoff=1.0e-16, left=False, inner_labels=[None, None]):
     """Polar decomposition of an Array `a`.
 
     Factorizes ``u * p = a`` (left=False) or ``p * u = a`` (left=True), such that ``a = U*diag(S)*VH`` (where ``*`` stands for
@@ -3625,27 +3642,27 @@ def polar(a, cutoff=1.e-16, left=False, inner_labels=[None, None]):
     # check arguments
     if a.rank != 2:
         raise ValueError("Polar is only defined for a 2D matrix. Use LegPipes!")
-    if cutoff < 0.:
+    if cutoff < 0.0:
         raise ValueError("invalid cutoff")
     # follow exactly the procedure lined out.
     # however, use inplace methods and don't construct the diagonal matrix explicitly.
-    W, s, VH = svd(a, cutoff=cutoff, inner_labels=inner_labels) # w s vh
+    W, s, VH = svd(a, cutoff=cutoff, inner_labels=inner_labels)  # w s vh
 
     u = tensordot(W, VH, axes=([1, 0]))
     if not left:
         labels = VH.conj().get_leg_labels()[1], VH.get_leg_labels()[1]
         # a = up
         p = tensordot(VH.conj().itranspose().iscale_axis(s), VH, axes=([1, 0])).iset_leg_labels(labels)
-        #p = (vh.T.conj() * s).dot(vh)
+        # p = (vh.T.conj() * s).dot(vh)
     else:
         # a = pu
         labels = u.get_leg_labels()[0], u.conj().get_leg_labels()[0]
         p = tensordot(W.iscale_axis(s), W.conj().itranspose(), axes=([1, 0])).iset_leg_labels(labels)
-        #p = (w * s).dot(w.T.conj())
+        # p = (w * s).dot(w.T.conj())
     return u, p, s
 
 
-def pinv(a, cutoff=1.e-15):
+def pinv(a, cutoff=1.0e-15):
     """Compute the (Moore-Penrose) pseudo-inverse of a matrix.
 
     Equivalent to the following procedure: Perform a SVD, ``U, S, VH = svd(a, cutoff=cutoff)``
@@ -3665,12 +3682,12 @@ def pinv(a, cutoff=1.e-15):
     B : (N, M) :class:`Array`
         The pseudo-inverse of `a`.
     """
-    if cutoff <= 0.:
+    if cutoff <= 0.0:
         raise ValueError("invalid cutoff")
     # follow exactly the procedure lined out.
     # however, use inplace methods and don't construct the diagonal matrix explicitly.
     U, S, VH = svd(a, cutoff=cutoff)
-    X = VH.itranspose().iconj().iscale_axis(1. / S, axis=-1)
+    X = VH.itranspose().iconj().iscale_axis(1.0 / S, axis=-1)
     Z = U.itranspose().iconj()
     return tensordot(X, Z, axes=1)
 
@@ -3712,16 +3729,16 @@ def norm(a, ord=None, convert_to_float=True):
         return a.norm(ord, convert_to_float)
     elif isinstance(a, np.ndarray):
         if convert_to_float:
-            new_type = np.result_type('f4', a.dtype)  # int -> float
+            new_type = np.result_type("f4", a.dtype)  # int -> float
             a = np.asarray(a, new_type)  # doesn't copy, if the dtype did not change.
-        return np.linalg.norm(a.reshape((-1, )), ord)
+        return np.linalg.norm(a.reshape((-1,)), ord)
     elif isinstance(a, list):
         return np.linalg.norm([norm(p) for p in a] + [0])
     else:
         raise ValueError("unknown type of a")
 
 
-def eigh(a, UPLO='L', sort=None):
+def eigh(a, UPLO="L", sort=None):
     r"""Calculate eigenvalues and eigenvectors for a hermitian matrix.
 
     ``W, V = eigh(a)`` yields :math:`a = V diag(w) V^{\dagger}`.
@@ -3754,7 +3771,7 @@ def eigh(a, UPLO='L', sort=None):
     :math:`V = P^{-1} V'` such that :math:`a = V W V^{\dagger}`.
     """
     w, v = _eig_worker(True, a, sort, UPLO)  # hermitian
-    v.iset_leg_labels([a._labels[0], 'eig'])
+    v.iset_leg_labels([a._labels[0], "eig"])
     return w, v
 
 
@@ -3788,11 +3805,11 @@ def eig(a, sort=None):
     :math:`V = P^{-1} V'` such that :math:`a = V W V^{\dagger}`.
     """
     w, v = _eig_worker(False, a, sort)  # non-hermitian
-    v.iset_leg_labels([a._labels[0], 'eig'])
+    v.iset_leg_labels([a._labels[0], "eig"])
     return w, v
 
 
-def eigvalsh(a, UPLO='L', sort=None):
+def eigvalsh(a, UPLO="L", sort=None):
     r"""Calculate eigenvalues for a hermitian matrix.
 
     **Assumes** that a is hermitian, ``a.conj().transpose() == a``.
@@ -3871,13 +3888,13 @@ def speigs(a, charge_sector, k, *args, **kwargs):
         Note that when interpreted as a matrix,
         this is the transpose of what ``np.eigs`` normally gives.
     """
-    charge_sector = a.chinfo.make_valid(charge_sector).reshape((a.chinfo.qnumber, ))
+    charge_sector = a.chinfo.make_valid(charge_sector).reshape((a.chinfo.qnumber,))
     if a.rank != 2 or a.shape[0] != a.shape[1]:
         raise ValueError("expect a square matrix!")
     a.legs[0].test_contractible(a.legs[1])
     if np.any(a.qtotal != a.chinfo.make_valid()):
         raise ValueError("Non-trivial qtotal -> Nilpotent. Not diagonizable!?")
-    ret_eigv = kwargs.get('return_eigenvectors', args[7] if len(args) > 7 else True)
+    ret_eigv = kwargs.get("return_eigenvectors", args[7] if len(args) > 7 else True)
     piped_axes, a = a.as_completely_blocked()  # ensure complete blocking
 
     # find the block corresponding to `charge_sector` in `a`
@@ -3942,11 +3959,11 @@ def expm(a):
         raise NotImplementedError("A*A has different qtotal than A; nilpotent matrix")
     piped_axes, a = a.as_completely_blocked()  # ensure complete blocking
 
-    res_dtype = np.result_type('f8', a.dtype)
-    res = diag(1., a.legs[0], dtype=res_dtype)
+    res_dtype = np.result_type("f8", a.dtype)
+    res = diag(1.0, a.legs[0], dtype=res_dtype)
     res._labels = a._labels[:]
     for qindices, block in zip(a._qdata, a._data):  # non-zero blocks on the diagonal
-        exp_block = np.asarray(scipy.linalg.expm(block), dtype=res_dtype, order='C')  # main work
+        exp_block = np.asarray(scipy.linalg.expm(block), dtype=res_dtype, order="C")  # main work
         qi = qindices[0]  # `res` has all diagonal blocks,
         # so res._qdata = [[0, 0], [1, 1], [2, 2]...]
         res._data[qi] = exp_block  # replace identity block
@@ -3955,13 +3972,7 @@ def expm(a):
     return res
 
 
-def qr(a,
-       mode='reduced',
-       inner_labels=[None, None],
-       cutoff=None,
-       pos_diag_R=False,
-       qtotal_Q=None,
-       inner_qconj=+1):
+def qr(a, mode="reduced", inner_labels=[None, None], cutoff=None, pos_diag_R=False, qtotal_Q=None, inner_qconj=+1):
     r"""Q-R decomposition of a matrix.
 
     Decomposition such that ``A == npc.tensordot(Q, R, axes=1)`` up to numerical rounding errors.
@@ -4027,15 +4038,15 @@ def qr(a,
                 r_block *= np.conj(phase)[:, np.newaxis]
         q_data.append(q_block)
         r_data.append(r_block)
-        if mode != 'complete':
+        if mode != "complete":
             q1, q2 = qindices
             i0 = a_leg0.slices[q1]
-            inner_leg_mask[i0:i0 + q_block.shape[1]] = True
+            inner_leg_mask[i0 : i0 + q_block.shape[1]] = True
         #  else: assert q_block.shape[1] == q_block.shape[0]
     inner_leg = a_leg0.copy()
     if isinstance(inner_leg, charges.LegPipe):
         inner_leg = inner_leg.to_LegCharge()
-    if mode != 'complete':
+    if mode != "complete":
         map_qind, _, inner_leg = inner_leg.project(inner_leg_mask)
     if qtotal_Q is not None:
         qtotal_Q = a.chinfo.make_valid(qtotal_Q)  # convert to ndarray
@@ -4055,7 +4066,7 @@ def qr(a,
     r._data = r_data
     r._qdata = a._qdata.copy()
     r._qdata_sorted = False
-    if mode != 'complete':
+    if mode != "complete":
         q._qdata[:, 1] = map_qind[q._qdata[:, 0]]
         r._qdata[:, 0] = q._qdata[:, 1]  # copy map_qind[q._qdata[:, 0]] from q
     else:  # mode == 'complete'
@@ -4126,10 +4137,7 @@ def orthogonal_columns(a, new_label=None):
         raise ValueError(f"orthogonal_columns with M={M:d} < N{N:d}: overcomplete! ")
     if M == N:
         warnings.warn("orthogonal_columns(a) for square `a` yields zero matrix!")
-        right_leg = LegCharge(a.chinfo,
-                              [0],
-                              np.zeros([0, a.chinfo.qnumber], dtype=QTYPE),
-                              a.legs[1].qconj)
+        right_leg = LegCharge(a.chinfo, [0], np.zeros([0, a.chinfo.qnumber], dtype=QTYPE), a.legs[1].qconj)
         return Array([a.legs[0], right_leg], a.dtype, a.qtotal, [a_labels[0], new_label])
     piped_axes, a = a.as_completely_blocked()  # ensure complete blocking & sort
     left_leg = a.legs[0]
@@ -4152,7 +4160,7 @@ def orthogonal_columns(a, new_label=None):
         M, N = a_block.shape
         if M > N:
             # find orthogonal columns of a_block
-            q_block, r_block = np.linalg.qr(a_block, mode='complete')
+            q_block, r_block = np.linalg.qr(a_block, mode="complete")
             ortho_data.append(q_block[:, N:])
             ortho_qdata.append([left_qi, right_qi])
             right_kept_blocks.append(left_qi)
@@ -4167,12 +4175,11 @@ def orthogonal_columns(a, new_label=None):
     right_block_sizes = [b.shape[1] for b in ortho_data]
     right_block_slices = np.cumsum([0] + right_block_sizes)
     right_qconj = a.legs[1].qconj
-    right_charges = a.chinfo.make_valid(right_qconj * (a.qtotal -
-                                                       left_leg.get_charge(right_kept_blocks)))
+    right_charges = a.chinfo.make_valid(right_qconj * (a.qtotal - left_leg.get_charge(right_kept_blocks)))
     right_leg = LegCharge(a.chinfo, right_block_slices, right_charges, right_qconj)
     ortho = Array([left_leg, right_leg], a.dtype, a.qtotal)
     ortho._data = ortho_data
-    ortho._qdata = np.array(ortho_qdata, dtype=np.intp, order='C')
+    ortho._qdata = np.array(ortho_qdata, dtype=np.intp, order="C")
     ortho._qdata_sorted = True
 
     if len(piped_axes) > 0:  # revert the permutation in the axes
@@ -4203,8 +4210,7 @@ def _find_calc_dtype(a_dtype, b_dtype):
 
 
 @use_cython
-def _combine_legs_worker(self, res, combine_legs, non_combined_legs, new_axes, non_new_axes,
-                         pipes):
+def _combine_legs_worker(self, res, combine_legs, non_combined_legs, new_axes, non_new_axes, pipes):
     """The main work of :meth:`Array.combine_legs`: create a copy and reshape the data blocks.
 
     Assumes standard form of parameters.
@@ -4298,7 +4304,7 @@ def _split_legs_worker(self, split_axes, cutoff):
         if axis in split_axes:
             pipe = self.legs[axis]
             pipes.append(pipe)
-            res_legs[new_axis:new_axis + 1] = pipe.legs
+            res_legs[new_axis : new_axis + 1] = pipe.legs
             new_split_axes_first.append(new_axis)
             new_axis += pipe.nlegs
         else:
@@ -4325,8 +4331,7 @@ def _split_legs_worker(self, split_axes, cutoff):
         q_map_slices = pipe.q_map_slices
         qinds = self._qdata[:, split_axes[j]]
         q_map_slices_beg[:, j] = q_map_slices[qinds]
-        q_map_slices_shape[:, j] = q_map_slices[
-            qinds + 1]  # - q_map_slices[qinds] # one line below # TODO: in pipe
+        q_map_slices_shape[:, j] = q_map_slices[qinds + 1]  # - q_map_slices[qinds] # one line below # TODO: in pipe
     q_map_slices_shape -= q_map_slices_beg
     new_data_blocks_per_old_block = np.prod(q_map_slices_shape, axis=1)
     old_block_inds = charges._map_blocks(new_data_blocks_per_old_block)
@@ -4337,8 +4342,9 @@ def _split_legs_worker(self, split_axes, cutoff):
     q_map_rows = np.concatenate(q_map_rows, axis=0)  # shape (res_stored_blocks, N_split)
 
     new_qdata = np.empty((res_stored_blocks, res.rank), dtype=np.intp)
-    new_qdata[:, new_nonsplit_axes] = self._qdata[np.ix_(
-        old_block_inds, nonsplit_axes)]  # TODO faster to implement by hand?
+    new_qdata[:, new_nonsplit_axes] = self._qdata[
+        np.ix_(old_block_inds, nonsplit_axes)
+    ]  # TODO faster to implement by hand?
     old_block_beg = np.zeros((res_stored_blocks, self.rank), dtype=np.intp)
     old_block_shapes = np.empty((res_stored_blocks, self.rank), dtype=np.intp)
     for j in range(N_split):
@@ -4424,7 +4430,7 @@ def _inner_worker(a, b, do_conj):
         return res  # also trivial
     a = a.astype(calc_dtype, False)
     b = b.astype(calc_dtype, False)
-    func_name = 'dotc' if do_conj else 'dotu'
+    func_name = "dotc" if do_conj else "dotu"
     blas_dot = BLAS.get_blas_funcs(func_name, dtype=calc_dtype)
 
     # need to find common blocks in a and b, i.e. equal leg charges.
@@ -4503,8 +4509,7 @@ def _tensordot_pre_reshape(data, cut, dtype, same_shape_before_cut=True):
     """Reshape blocks to (fortran) matrix/vector (depending on `cut`)"""
     if cut == 0 or cut == data[0][0].ndim:
         # special case: reshape to 1D vectors
-        return [[np.reshape(T, (-1, )).astype(dtype, order='F', copy=False) for T in blocks]
-                for blocks in data]
+        return [[np.reshape(T, (-1,)).astype(dtype, order="F", copy=False) for T in blocks] for blocks in data]
     res = []
     for blocks in data:
         if same_shape_before_cut:
@@ -4517,7 +4522,7 @@ def _tensordot_pre_reshape(data, cut, dtype, same_shape_before_cut=True):
             for s in blocks[0].shape[cut:]:
                 p *= s
             shape = (-1, p)
-        res.append([np.reshape(T, shape).astype(dtype, order='F', copy=False) for T in blocks])
+        res.append([np.reshape(T, shape).astype(dtype, order="F", copy=False) for T in blocks])
     return res
 
 
@@ -4592,9 +4597,9 @@ def _tensordot_pre_worker(a, b, cut_a, cut_b):
     a_data = _tensordot_pre_reshape(a_data, cut_a, calc_dtype, same_shape_before_cut=True)
     b_data = _tensordot_pre_reshape(b_data, cut_b, calc_dtype, same_shape_before_cut=False)
     # determine blas function
-    f_name = 'gemv' if (cut_a == 0 or cut_b == b.rank) else 'gemm'
+    f_name = "gemv" if (cut_a == 0 or cut_b == b.rank) else "gemm"
     blas_dot = BLAS.get_blas_funcs(f_name, dtype=calc_dtype)
-    kw_overwrite = 'overwrite_c' if f_name == 'gemm' else 'overwrite_y'
+    kw_overwrite = "overwrite_c" if f_name == "gemm" else "overwrite_y"
     kw_overwrite = {kw_overwrite: True}
     if cut_a > 0:
 
@@ -4611,13 +4616,13 @@ def _tensordot_pre_worker(a, b, cut_a, cut_b):
             if len(ks) == 0:
                 return None
             k1, k2 = ks[0]
-            sum_ = blas_dot(1., a[k1], b[k2])
+            sum_ = blas_dot(1.0, a[k1], b[k2])
             for k1, k2 in ks[1:]:
-                sum_ = blas_dot(1., a[k1], b[k2], 1., sum_, **kw_overwrite)
+                sum_ = blas_dot(1.0, a[k1], b[k2], 1.0, sum_, **kw_overwrite)
             return sum_
     else:
         # special case: `a` contains 1D vectors, so we need blas_dot(b, a, trans=True)
-        kw_no_overwrite = {'trans': True}
+        kw_no_overwrite = {"trans": True}
         kw_overwrite.update(kw_no_overwrite)
 
         def fast_dot_sum(a, b, a_qdata, b_qdata):
@@ -4626,9 +4631,9 @@ def _tensordot_pre_worker(a, b, cut_a, cut_b):
             if len(ks) == 0:
                 return None
             k1, k2 = ks[0]
-            sum_ = blas_dot(1., b[k2], a[k1], **kw_no_overwrite)
+            sum_ = blas_dot(1.0, b[k2], a[k1], **kw_no_overwrite)
             for k1, k2 in ks[1:]:
-                sum_ = blas_dot(1., b[k2], a[k1], 1., sum_, **kw_overwrite)
+                sum_ = blas_dot(1.0, b[k2], a[k1], 1.0, sum_, **kw_overwrite)
             return sum_
 
     # collect and return the results
@@ -4699,8 +4704,7 @@ def _tensordot_worker(a, b, axes):
     """
     chinfo = a.chinfo
     if a.stored_blocks == 0 or b.stored_blocks == 0:  # special case: `a` or `b` is 0
-        return zeros(a.legs[:-axes] + b.legs[axes:], np.promote_types(a.dtype, b.dtype),
-                     a.qtotal + b.qtotal)
+        return zeros(a.legs[:-axes] + b.legs[axes:], np.promote_types(a.dtype, b.dtype), a.qtotal + b.qtotal)
     cut_a = a.rank - axes
     cut_b = axes
     a_pre_result, b_pre_result, fast_dot_sum, res_dtype = _tensordot_pre_worker(a, b, cut_a, cut_b)
@@ -4725,8 +4729,7 @@ def _tensordot_worker(a, b, axes):
     for col_b, charge_match in enumerate(b_charges_match):
         rows_a = a_lookup_charges.get(tuple(charge_match), [])  # empty list if no match
         for row_a in rows_a:
-            block_contr = fast_dot_sum(a_data[row_a], b_data[col_b], a_qdata_contr[row_a],
-                                       b_qdata_contr[col_b])
+            block_contr = fast_dot_sum(a_data[row_a], b_data[col_b], a_qdata_contr[row_a], b_qdata_contr[col_b])
             if block_contr is not None:  # no common blocks
                 # Step 4) reshape back to tensors
                 block_contr = block_contr.reshape(a_shape_keep[row_a] + b_shape_keep[col_b])
@@ -4767,21 +4770,19 @@ def _svd_worker(a, full_matrices, compute_uv, overwrite_a, cutoff, qtotal_LR, in
             if anynan(U_b) or anynan(VH_b) or anynan(S_b):
                 warnings.warn("Svd (gesdd) gave NaNs. Try again with gesvd")
                 # give it another try with the other (more stable) svd driver
-                U_b, S_b, VH_b = svd_flat(block,
-                                          full_matrices,
-                                          True,
-                                          overwrite_a,
-                                          check_finite=True,
-                                          lapack_driver='gesvd')
+                U_b, S_b, VH_b = svd_flat(
+                    block, full_matrices, True, overwrite_a, check_finite=True, lapack_driver="gesvd"
+                )
                 if anynan(U_b) or anynan(VH_b) or anynan(S_b):
-                    raise ValueError("NaN in U_b {0:d} and/or VH_b: {1:d}".format(
-                        np.sum(np.isnan(U_b)), np.sum(np.isnan(VH_b))))
+                    raise ValueError(
+                        "NaN in U_b {0:d} and/or VH_b: {1:d}".format(np.sum(np.isnan(U_b)), np.sum(np.isnan(VH_b)))
+                    )
         else:
             S_b = svd_flat(block, False, False, overwrite_a, check_finite=True)
         if anynan(S_b):
             raise ValueError("NaN in S: " + str(np.sum(np.isnan(S_b))))
         if cutoff is not None:
-            keep = (S_b > cutoff)  # bool array
+            keep = S_b > cutoff  # bool array
             S_b = S_b[keep]
             if compute_uv:
                 U_b = U_b[:, keep]
@@ -4838,7 +4839,7 @@ def _svd_worker(a, full_matrices, compute_uv, overwrite_a, cutoff, qtotal_LR, in
     return U, S, VH
 
 
-def _eig_worker(hermitian, a, sort, UPLO='L'):
+def _eig_worker(hermitian, a, sort, UPLO="L"):
     """Worker for ``eig``, ``eigh``"""
     if a.rank != 2 or a.shape[0] != a.shape[1]:
         raise ValueError("expect a square matrix!")
@@ -4850,7 +4851,7 @@ def _eig_worker(hermitian, a, sort, UPLO='L'):
 
     dtype = np.float64 if hermitian else np.complex128
     resw = np.zeros(a.shape[0], dtype=dtype)
-    resv = diag(1., a.legs[0], dtype=np.promote_types(dtype, a.dtype))
+    resv = diag(1.0, a.legs[0], dtype=np.promote_types(dtype, a.dtype))
     if isinstance(a.legs[0], LegPipe):
         resv.legs[1] = resv.legs[1].to_LegCharge()
     # w, v now default to 0 and the Identity
@@ -4871,7 +4872,7 @@ def _eig_worker(hermitian, a, sort, UPLO='L'):
     return resw, resv
 
 
-def _eigvals_worker(hermitian, a, sort, UPLO='L'):
+def _eigvals_worker(hermitian, a, sort, UPLO="L"):
     """Worker for ``eigvals``, ``eigvalsh``"""
     if a.rank != 2 or a.shape[0] != a.shape[1]:
         raise ValueError("expect a square matrix!")

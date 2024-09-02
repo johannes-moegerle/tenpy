@@ -18,7 +18,7 @@ def test_DictCache(**kwargs):
     data = dict([(f"x{i:d}", np.arange(i + 5)) for i in range(5)])
     datasub = dict([(f"x{i:d}", np.ones(i + 1)) for i in range(5)])  # same keys, different values
     with CacheFile.open(**kwargs) as cache:
-        for k in ['filename', 'directory']:
+        for k in ["filename", "directory"]:
             if k in kwargs and kwargs[k] is not None:
                 assert os.path.exists(kwargs[k])
         cache.set_short_term_keys("x0", "x1")
@@ -46,16 +46,16 @@ def test_DictCache(**kwargs):
         for k, v in data.items():
             loaded = cache[key]
             npt.assert_equal(loaded, data[key])
-    for k in ['filename', 'directory']:
+    for k in ["filename", "directory"]:
         if k in kwargs and kwargs[k] is not None:
             assert not os.path.exists(kwargs[k])  # did the cleanup work?
 
 
 @pytest.mark.skipif(h5py is None, reason="h5py not available")
 def test_Hdf5Cache():
-    warning_msg = 'Benchmarks suggest that PickleStorage is faster than Hdf5Storage'
+    warning_msg = "Benchmarks suggest that PickleStorage is faster than Hdf5Storage"
     with tempfile.TemporaryDirectory() as tdir:
-        filename = os.path.join(tdir, 'tmp_Hdf5Cache.h5')
+        filename = os.path.join(tdir, "tmp_Hdf5Cache.h5")
         with pytest.warns(UserWarning, match=warning_msg):
             test_DictCache(storage_class="Hdf5Storage", filename=filename)
 
@@ -67,7 +67,7 @@ def test_Hdf5Cache():
 
 def test_PickleCache():
     with tempfile.TemporaryDirectory() as tdir:
-        subdir = os.path.join(tdir, 'tmp_PickleCache')
+        subdir = os.path.join(tdir, "tmp_PickleCache")
         test_DictCache(storage_class="PickleStorage", directory=subdir)
     test_DictCache(storage_class="PickleStorage")  # path = None -> tempfile in tenpy.tools.cache
     test_DictCache(storage_class="PickleStorage", use_threading=True)

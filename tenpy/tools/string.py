@@ -2,7 +2,7 @@
 
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-__all__ = ['is_non_string_iterable', 'vert_join', 'to_mathematica_lists']
+__all__ = ["is_non_string_iterable", "vert_join", "to_mathematica_lists"]
 
 
 def is_non_string_iterable(x):
@@ -16,7 +16,7 @@ def is_non_string_iterable(x):
         return False
 
 
-def vert_join(strlist, valign='t', halign='l', delim=' '):
+def vert_join(strlist, valign="t", halign="l", delim=" "):
     r"""Join multiline strings vertically such that they appear next to each other.
 
     Parameters
@@ -46,7 +46,7 @@ def vert_join(strlist, valign='t', halign='l', delim=' '):
     string    |
     """
     # expand tabs, split to newlines
-    strlist = [str(s).expandtabs().split('\n') for s in strlist]
+    strlist = [str(s).expandtabs().split("\n") for s in strlist]
     numstrings = len(strlist)
     # number of lines in each string
     numlines = [len(lines) for lines in strlist]
@@ -55,27 +55,27 @@ def vert_join(strlist, valign='t', halign='l', delim=' '):
     # width for each of the strings
     widths = [max([len(l) for l in lines]) for lines in strlist]
     # translate halign to string format mini language
-    halign = {'l': '<', 'c': '^', 'r': '>'}[halign]
-    fstr = ['{0: ' + halign + str(w) + 's}' for w in widths]
+    halign = {"l": "<", "c": "^", "r": ">"}[halign]
+    fstr = ["{0: " + halign + str(w) + "s}" for w in widths]
 
     # create a 2d table
-    res = [[' ' * widths[j] for j in range(numstrings)] for i in range(totallines)]
+    res = [[" " * widths[j] for j in range(numstrings)] for i in range(totallines)]
 
     for j, lines in enumerate(strlist):
-        if valign == 't':
+        if valign == "t":
             voffset = 0
-        elif valign == 'b':
+        elif valign == "b":
             voffset = totallines - len(lines)
-        elif valign == 'c':
+        elif valign == "c":
             voffset = (totallines - len(lines)) // 2  # rounds to int
         else:
-            raise ValueError('invalid valign ' + str(valign))
+            raise ValueError("invalid valign " + str(valign))
 
         for i, l in enumerate(lines):
             res[i + voffset][j] = fstr[j].format(l)  # format to fixed widths[j]
 
     # convert the created table to a single string
-    res = '\n'.join([delim.join(lines) for lines in res])
+    res = "\n".join([delim.join(lines) for lines in res])
     return res
 
 
@@ -89,5 +89,5 @@ def to_mathematica_lists(a):
         return s
     except TypeError:
         if isinstance(a, float) or isinstance(a, complex):
-            return str(a).replace('e', '*^').replace('j', ' I')
+            return str(a).replace("e", "*^").replace("j", " I")
         return str(a)
