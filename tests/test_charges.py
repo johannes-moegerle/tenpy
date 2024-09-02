@@ -138,10 +138,10 @@ def test_LegCharge():
     npt.assert_equal(lc.charges, charges_s)  # check from_qdict
     npt.assert_equal(lc.slices, slices_s)  # check from_dict
     npt.assert_equal(lc.to_qdict(), qdict_s)  # chec to_qdict
-    assert lcs.is_sorted() == True
-    assert lcs.is_blocked() == True
-    assert lcus.is_sorted() == False
-    assert lcus.is_blocked() == False
+    assert lcs.is_sorted() is True
+    assert lcs.is_blocked() is True
+    assert lcus.is_sorted() is False
+    assert lcus.is_blocked() is False
 
     # test sort & bunch
     lcus_charges = lcus.charges.copy()
@@ -149,15 +149,15 @@ def test_LegCharge():
     lcus_s.test_sanity()
     npt.assert_equal(lcus_charges, lcus.charges)  # don't change the old instance
     npt.assert_equal(lcus_s.charges, lcus.charges[pqind])  # permutation returned by sort ok?
-    assert lcus_s.is_sorted() == True == lcus_s.sorted
-    assert lcus_s.is_bunched() == False == lcus_s.bunched
-    assert lcus_s.is_blocked() == False
+    assert lcus_s.is_sorted() is True == lcus_s.sorted
+    assert lcus_s.is_bunched() is False == lcus_s.bunched
+    assert lcus_s.is_blocked() is False
     assert lcus_s.ind_len == lcus.ind_len
     assert lcus_s.block_number == lcus.block_number
     idx, lcus_sb = lcus.sort(bunch=True)
-    assert lcus_sb.is_sorted() == True == lcus_sb.sorted
-    assert lcus_sb.is_bunched() == True == lcus_sb.bunched
-    assert lcus_sb.is_blocked() == True
+    assert lcus_sb.is_sorted() is True == lcus_sb.sorted
+    assert lcus_sb.is_bunched() is True == lcus_sb.bunched
+    assert lcus_sb.is_blocked() is True
     assert lcus_sb.ind_len == lcus.ind_len
 
     # test get_qindex

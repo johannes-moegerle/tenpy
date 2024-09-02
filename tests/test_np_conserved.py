@@ -229,7 +229,7 @@ def test_npc_Array_itemacces():
         npt.assert_equal(a_sl.to_ndarray(), aflat[sl])
         npt.assert_equal(a[sl].to_ndarray(), aflat[sl])
         # NOTE: interally uses advanced indexing notation, but only with slices.
-        if type(axes) == int:
+        if isinstance(axes, int):
             a_ext = a_sl.add_leg(a.legs[axes], idx, axes)
             npt.assert_equal(a.qtotal, a_ext.qtotal)
             npt.assert_equal(a_ext.to_ndarray()[sl], aflat[sl])
@@ -605,7 +605,7 @@ def test_npc_inner(tol=1.0e-13):
         b_conj_flat = b.to_ndarray()
         cflat = np.tensordot(aflat, b_conj_flat, axes=[[0, 1, 2], [0, 1, 2]])
         c = npc.inner(a, b_conj, axes="range")  # no transpose
-        assert type(c) == np.dtype(float)
+        assert type(c) is np.dtype(float)
         assert abs(c - cflat) < tol
         c = npc.inner(a, b_conj, axes=[[0, 1, 2], [0, 1, 2]])
         assert abs(c - cflat) < tol

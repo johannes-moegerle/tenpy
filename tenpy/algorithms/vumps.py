@@ -7,7 +7,8 @@ we look for the optimal ground state in the manifold of fixed bond dimensionMPS 
 
 The VUMPS algorithm was introduced in 2017 :cite:`zauner-stauber2018`, where it was shown
 that VUMPS outperforms both iTEBD and iDMRG as ground state search algorithms for both
-1D and quasi-1D models. The VUMPS algorithm uses the network :class:`~tenpy.networks.uniform_mps.UniformMPS` to represent
+1D and quasi-1D models.
+The VUMPS algorithm uses the network :class:`~tenpy.networks.uniform_mps.UniformMPS` to represent
 the current state of the uniform MPS during optimization. On each site, left canonical AL,
 right canonical AR, and single-site orthogonality center AC is stored; on each bond a center
 matrix C is stored. During the algorithm, the canonical form equality AL_i C_{i+1} = C_i AR_i = AC_i
@@ -262,7 +263,8 @@ class VUMPSEngine(IterativeSweeps):
         # self.psi.test_validity()
         # logger.info(f"VUMPS finished after {self.sweeps} sweeps, max chi={max(self.psi.chi)}")
 
-        # # psi.norm_test() is sometimes > 1.e-10 for paramagnetic TFI. More VUMPS (>10) fixes this even though the energy is already saturated for 10 sweeps.
+        # # psi.norm_test() is sometimes > 1.e-10 for paramagnetic TFI.
+        # # More VUMPS (>10) fixes this even though the energy is already saturated for 10 sweeps.
         # self.guess_init_env_data, Es, _ = MPOTransferMatrix.find_init_LP_RP(self.model.H_MPO, self.psi, calc_E=True, guess_init_env_data=self.guess_init_env_data)
         # self.tangent_projector_test(self.guess_init_env_data)
         # return (Es[0] + Es[1])/2, self.psi.to_MPS(check_overlap=check_overlap)
@@ -467,7 +469,7 @@ class VUMPSEngine(IterativeSweeps):
 
         self.make_eff_H()
         theta = self.psi.get_theta(i0, n=self.n_optimize, cutoff=self.S_inv_cutoff)  # n_optimize will be 1
-        assert self.eff_H.combine == False
+        assert self.eff_H.combine is False
         theta = self.eff_H.combine_theta(theta)  # combine should be false.
         C1, C2 = self.psi.get_C(i0), self.psi.get_C(i0 + self.n_optimize)
 
