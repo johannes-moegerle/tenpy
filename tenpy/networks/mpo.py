@@ -36,25 +36,26 @@ i.e. between sites ``i-1`` and ``i``.
 """
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-import numpy as np
-from scipy.linalg import expm
-import warnings
 import copy
 import logging
+import warnings
+
+import numpy as np
+from scipy.linalg import expm
 
 logger = logging.getLogger(__name__)
 
+from ..algorithms.truncation import TruncationError, svd_theta
 from ..linalg import np_conserved as npc
-from ..linalg.sparse import NpcLinearOperator, FlatLinearOperator
-from .site import group_sites
+from ..linalg.sparse import FlatLinearOperator, NpcLinearOperator
+from ..tools.math import lcm
+from ..tools.misc import add_with_None_0, to_iterable
+from ..tools.params import asConfig
 from ..tools.string import vert_join
 from .mps import MPS as _MPS  # only for MPS._valid_bc
 from .mps import BaseEnvironment
+from .site import group_sites
 from .terms import TermList
-from ..tools.misc import to_iterable, add_with_None_0
-from ..tools.math import lcm
-from ..tools.params import asConfig
-from ..algorithms.truncation import TruncationError, svd_theta
 
 __all__ = ["MPO", "make_W_II", "MPOGraph", "MPOEnvironment", "MPOTransferMatrix", "grid_insert_ops"]
 

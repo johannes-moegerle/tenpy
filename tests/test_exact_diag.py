@@ -1,12 +1,14 @@
 """A collection of tests to check the functionality of algorithms.exact_diagonalization."""
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-import tenpy.linalg.np_conserved as npc
+import copy
+
 import numpy as np
-from tenpy.models.xxz_chain import XXZChain
+
+import tenpy.linalg.np_conserved as npc
 from tenpy.algorithms.exact_diag import ExactDiag
 from tenpy.linalg.krylov_based import LanczosGroundState
-import copy
+from tenpy.models.xxz_chain import XXZChain
 
 
 def test_ED():

@@ -6,8 +6,8 @@ Examples are given in the class doc-string.
 """
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-from collections import namedtuple
 import warnings
+from collections import namedtuple
 
 from .hdf5_io import find_global
 

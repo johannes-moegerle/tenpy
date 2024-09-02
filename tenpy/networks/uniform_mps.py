@@ -22,9 +22,11 @@ account for the additional type of tensor structure.
 """
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-import numpy as np
 import logging
 import warnings
+
+import numpy as np
+
 from ..tools.misc import BetaWarning
 
 logger = logging.getLogger(__name__)

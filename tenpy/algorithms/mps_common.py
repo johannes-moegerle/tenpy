@@ -20,21 +20,23 @@ implemented here also directly use the :class:`Sweep` class.
 """
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-from ..linalg import np_conserved as npc
-from .algorithm import Algorithm
-from ..linalg.sparse import NpcLinearOperator, SumNpcLinearOperator, OrthogonalNpcLinearOperator
-from ..networks.mpo import MPOEnvironment
-from ..networks.mps import MPSEnvironment
-from .truncation import truncate, svd_theta, decompose_theta_qr_based, TruncationError
-from ..tools.params import asConfig
-from ..tools.misc import find_subclass, consistency_check
-from ..tools.process import memory_usage
-import numpy as np
-import time
-import warnings
 import copy
 import itertools
 import logging
+import time
+import warnings
+
+import numpy as np
+
+from ..linalg import np_conserved as npc
+from ..linalg.sparse import NpcLinearOperator, OrthogonalNpcLinearOperator, SumNpcLinearOperator
+from ..networks.mpo import MPOEnvironment
+from ..networks.mps import MPSEnvironment
+from ..tools.misc import consistency_check, find_subclass
+from ..tools.params import asConfig
+from ..tools.process import memory_usage
+from .algorithm import Algorithm
+from .truncation import TruncationError, decompose_theta_qr_based, svd_theta, truncate
 
 logger = logging.getLogger(__name__)
 

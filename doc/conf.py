@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 # Copyright (C) TeNPy Developers, GNU GPLv3
 #
-import sys
-import os
 import inspect
+import os
+import sys
 import warnings
 from datetime import datetime
 
@@ -388,10 +388,10 @@ cfg_options_always_include = ["Config"]
 
 bibtex_bibfiles = ["literature.bib", "papers_using_tenpy.bib"]
 
+from pybtex.plugin import register_plugin
 from pybtex.style.formatting.unsrt import Style as UnsrtStyle
 from pybtex.style.labels import BaseLabelStyle
 from pybtex.style.sorting.author_year_title import SortingStyle
-from pybtex.plugin import register_plugin
 
 
 class CustomBibtexStyle1(UnsrtStyle):

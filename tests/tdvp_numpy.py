@@ -4,8 +4,8 @@
 """
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-from scipy.linalg import expm
 import numpy as np
+from scipy.linalg import expm
 
 
 def tdvp(Psi, W, dt, Rp_list=None, k=5, O=None):

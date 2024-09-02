@@ -5,9 +5,8 @@
 """
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-from ..tools.thread import Worker
-
 from ..linalg import np_conserved as npc
+from ..tools.thread import Worker
 from .dmrg import TwoSiteDMRGEngine
 from .mps_common import TwoSiteH
 

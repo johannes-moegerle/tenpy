@@ -2,10 +2,11 @@
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
 import numpy as np
-from tenpy.networks.site import SpinSite, FermionSite, SpinHalfFermionSite
+
+from tenpy.models.hubbard import FermiHubbardModel
 from tenpy.networks.mps import MPS
 from tenpy.networks.purification_mps import PurificationMPS
-from tenpy.models.hubbard import FermiHubbardModel
+from tenpy.networks.site import FermionSite, SpinHalfFermionSite, SpinSite
 
 
 def test_cs_projection():

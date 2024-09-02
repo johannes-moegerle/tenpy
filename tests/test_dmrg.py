@@ -1,15 +1,16 @@
 """A collection of tests to check the functionality of `tenpy.dmrg`"""
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
+import numpy as np
+import pytest
+from scipy import integrate
+
 import tenpy.linalg.np_conserved as npc
-from tenpy.models.tf_ising import TFIChain
-from tenpy.models.spins import SpinChain
 from tenpy.algorithms import dmrg, dmrg_parallel
 from tenpy.algorithms.exact_diag import ExactDiag
+from tenpy.models.spins import SpinChain
+from tenpy.models.tf_ising import TFIChain
 from tenpy.networks import mps
-import pytest
-import numpy as np
-from scipy import integrate
 
 
 def e0_transverse_ising(g=0.5):

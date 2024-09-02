@@ -6,9 +6,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from .algorithm import TimeEvolutionAlgorithm, TimeDependentHAlgorithm
-from .truncation import TruncationError
 from ..tools.misc import consistency_check
+from .algorithm import TimeDependentHAlgorithm, TimeEvolutionAlgorithm
+from .truncation import TruncationError
 
 __all__ = ["ExpMPOEvolution", "TimeDependentExpMPOEvolution"]
 

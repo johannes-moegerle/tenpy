@@ -1,13 +1,15 @@
 """A collection of tests for tenpy.tools submodules."""
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
+import itertools as it
+import os.path
+
 import numpy as np
 import numpy.testing as npt
-import itertools as it
+import pytest
+
 import tenpy
 from tenpy import tools
-import pytest
-import os.path
 
 
 def test_inverse_permutation(N=10):
@@ -259,8 +261,8 @@ def test_merge_recursive():
 
 @pytest.mark.skip(reason="interferes with pytest logging setup")
 def test_logging_setup(tmp_path):
-    from contextlib import redirect_stdout
     import logging.config
+    from contextlib import redirect_stdout
 
     logger = logging.getLogger("tenpy.test_logging")
     root = logging.getLogger()

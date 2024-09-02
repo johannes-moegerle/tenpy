@@ -1,7 +1,8 @@
 # Copyright (C) TeNPy Developers, GNU GPLv3
 import pytest
-from tenpy.models import hubbard
 from test_model import check_general_model
+
+from tenpy.models import hubbard
 
 
 def test_FermiHubbardModel():

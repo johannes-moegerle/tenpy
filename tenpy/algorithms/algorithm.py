@@ -1,17 +1,18 @@
 """This module contains some base classes for algorithms."""
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-import time
-import numpy as np
 import logging
+import time
+
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
-from .truncation import TruncationError
-from ..tools.misc import consistency_check
-from ..tools.events import EventHandler
-from ..tools.params import asConfig
 from ..tools.cache import DictCache
+from ..tools.events import EventHandler
+from ..tools.misc import consistency_check
+from ..tools.params import asConfig
+from .truncation import TruncationError
 
 __all__ = ["Algorithm", "TimeEvolutionAlgorithm", "TimeDependentHAlgorithm"]
 
@@ -271,8 +272,8 @@ class Algorithm:
 
         logger.debug("Extracted MPS RAM usage as             %10.0f entries", psi_entries)
 
-        from .mps_common import Sweep
         from .mpo_evolution import ExpMPOEvolution
+        from .mps_common import Sweep
 
         if isinstance(self, (Sweep, ExpMPOEvolution)):
             # need to sweep -> MPO environments are often biggest contribution!

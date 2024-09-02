@@ -1,8 +1,9 @@
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-from tenpy.models.tf_ising import TFIModel, TFIChain
-from test_model import check_general_model
 import pytest
+from test_model import check_general_model
+
+from tenpy.models.tf_ising import TFIChain, TFIModel
 
 
 def test_TFIChain_general():

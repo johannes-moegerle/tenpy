@@ -1,12 +1,12 @@
 """A collection of tests for :module:`tenpy.networks.terms`."""
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-import numpy as np
 import copy
 
+import numpy as np
+
+from tenpy.networks import mpo, site
 from tenpy.networks.terms import *
-from tenpy.networks import site
-from tenpy.networks import mpo
 
 spin_half = site.SpinHalfSite(conserve="Sz", sort_charge=True)
 fermion = site.FermionSite(conserve="N")

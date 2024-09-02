@@ -15,12 +15,12 @@ The classes provided here provide a structure for the whole setup of simulations
 """
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-from . import measurement, simulation, ground_state_search, time_evolution
-from .measurement import *
-from .simulation import *
+from . import ground_state_search, measurement, simulation, time_evolution
 from .ground_state_search import *
-from .time_evolution import *
+from .measurement import *
 from .post_processing import *
+from .simulation import *
+from .time_evolution import *
 
 __all__ = [
     "measurement",

@@ -6,9 +6,10 @@ We therefore consider them part of a linting routine and do *not* call them from
 """
 # Copyright (C) TeNPy Developers, GNU GPLv3
 
-import tenpy
-import types
 import os
+import types
+
+import tenpy
 
 
 def main():

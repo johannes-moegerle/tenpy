@@ -3,14 +3,15 @@
 
 import itertools
 
-from tenpy.models import model, lattice
-from tenpy.models.xxz_chain import XXZChain
-import tenpy.networks.site
-import tenpy.linalg.np_conserved as npc
-from tenpy.algorithms.exact_diag import ExactDiag
 import numpy as np
 import numpy.testing as npt
 import pytest
+
+import tenpy.linalg.np_conserved as npc
+import tenpy.networks.site
+from tenpy.algorithms.exact_diag import ExactDiag
+from tenpy.models import lattice, model
+from tenpy.models.xxz_chain import XXZChain
 
 spin_half_site = tenpy.networks.site.SpinHalfSite("Sz", sort_charge=False)
 
