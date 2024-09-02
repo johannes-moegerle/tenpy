@@ -169,7 +169,6 @@ class Lattice:
     """
 
     Lu = None  #: the (expected) number of sites in the unit cell, ``len(unit_cell)``.
-    dim = None  #: the dimension of the lattice
 
     def __init__(
         self, Ls, unit_cell, order="default", bc="open", bc_MPS="finite", basis=None, positions=None, pairs=None

@@ -879,7 +879,6 @@ def test_InitialStateBuilder():
         lat,
         {
             "method": "fill_where",
-            "full_empty": ("up", "down"),
             "fill_where": "x_ind % 2 == 0",
             "check_filling": 0.5,
             "full_empty": ["up", "down"],
