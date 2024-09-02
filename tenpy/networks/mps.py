@@ -1027,7 +1027,7 @@ class BaseMPSExpectationValue(metaclass=ABCMeta):
         term = list(term)
         i_min = min([t[1] for t in term])
         i_max = max([t[1] for t in term])
-        ops = [[] for i in range((i_max - i_min + 1))]
+        ops = [[] for i in range(i_max - i_min + 1)]
         count_JW = 0
         for op, i in term:
             j = i - i_min  # index in ops
@@ -1216,7 +1216,7 @@ class BaseMPSExpectationValue(metaclass=ABCMeta):
         if i < 0:
             i += self.L
         if i >= self.L or i < 0:
-            raise KeyError("i = {0:d} out of bounds for finite MPS".format(i))
+            raise KeyError(f"i = {i:d} out of bounds for finite MPS")
         return i
 
     def get_op(self, op_list, i):
@@ -1240,7 +1240,7 @@ class BaseMPSExpectationValue(metaclass=ABCMeta):
             an array.
         """
         if self.finite and (i > self.L or i < 0):
-            raise ValueError("i = {0:d} out of bounds for finite MPS".format(i))
+            raise ValueError(f"i = {i:d} out of bounds for finite MPS")
         op = op_list[i % len(op_list)]
         if isinstance(op, str):
             site = self.sites[i % self.L]
@@ -1409,7 +1409,7 @@ class MPS(BaseMPSExpectationValue):
                 assert len(f) == 2
         for i, B in enumerate(self._B):
             if B.get_leg_labels() != self._B_labels:
-                raise ValueError("B has wrong labels {0!r}, expected {1!r}".format(B.get_leg_labels(), self._B_labels))
+                raise ValueError(f"B has wrong labels {B.get_leg_labels()!r}, expected {self._B_labels!r}")
             if len(self._S[i + 1].shape) == 1:
                 if (
                     self._S[i].shape[-1] != B.get_leg("vL").ind_len
@@ -1623,8 +1623,8 @@ class MPS(BaseMPSExpectationValue):
             p_state_flat = p_state[inds]  # "advanced" numpy indexing
         else:
             raise ValueError(
-                "wrong dimension of `p_state`. Expected {d:d}-dimensional array of "
-                "(string, int, or 1D array)".format(d=lat.dim + 1)
+                f"wrong dimension of `p_state`. Expected {lat.dim + 1:d}-dimensional array of "
+                "(string, int, or 1D array)"
             )
         from ..models.lattice import HelicalLattice
 
@@ -3388,7 +3388,7 @@ class MPS(BaseMPSExpectationValue):
             Labels ``'p0', 'p1', ..., 'pk', 'p0*', 'p1*', ..., 'pk*'`` with ``k=len(segment)``.
         """
         if len(segment) > 12:
-            warnings.warn("{0:d} sites in the segment, that's much!".format(len(segment)), stacklevel=2)
+            warnings.warn(f"{len(segment):d} sites in the segment, that's much!", stacklevel=2)
         if len(segment) > 20:
             raise ValueError("too large segment; this is exponentially expensive!")
         segment = np.sort(segment)
@@ -4959,7 +4959,7 @@ class MPS(BaseMPSExpectationValue):
         self.convert_form("B")
         norm_err = np.linalg.norm(self.norm_test())
         if norm_err > canonicalize:
-            warnings.warn("self.norm_test() = {0!s} ==> canonicalize".format(self.norm_test()))
+            warnings.warn(f"self.norm_test() = {self.norm_test()!s} ==> canonicalize")
             self.canonical_form()
         # get copy of self
         psi_t = self.copy()
@@ -5003,7 +5003,7 @@ class MPS(BaseMPSExpectationValue):
 
     def __str__(self):
         """Some status information about the MPS."""
-        res = ["MPS, L={L:d}, bc={bc!r}.".format(L=self.L, bc=self.bc)]
+        res = [f"MPS, L={self.L:d}, bc={self.bc!r}."]
         res.append("chi: " + str(self.chi))
         if self.L > 10:
             res.append("first two sites: " + repr(self.sites[0]) + " " + repr(self.sites[1]))
@@ -5166,11 +5166,11 @@ class MPS(BaseMPSExpectationValue):
         self._transfermatrix_keep = len(eta)
         if len(eta) > 1:
             if np.abs(eta[0]) > np.abs(eta[1]):
-                xi = -self.L / np.log(np.abs((eta[1] / eta[0])))
+                xi = -self.L / np.log(np.abs(eta[1] / eta[0]))
             else:
                 xi = np.inf
             if xi > tol_xi:
-                raise ValueError("Degenerate spectrum of TransferMatrix " "(corr length xi={xi:.3e})".format(xi=xi))
+                raise ValueError("Degenerate spectrum of TransferMatrix " f"(corr length xi={xi:.3e})")
         eta, G = eta[0], V[0]
         G = G.split_legs()
         # note: the dominant eigenvector should be hermitian and positive
@@ -5388,8 +5388,8 @@ class BaseEnvironment(metaclass=ABCMeta):
             self.L = L = lcm(self.H.L, L)
         self.finite = self.ket.finite  # just for _to_valid_index
         self.sites = self.ket.sites * (L // self.ket.L)
-        self._LP_keys = ["LP_{0:d}".format(i) for i in range(L)]
-        self._RP_keys = ["RP_{0:d}".format(i) for i in range(L)]
+        self._LP_keys = [f"LP_{i:d}" for i in range(L)]
+        self._RP_keys = [f"RP_{i:d}" for i in range(L)]
         self._LP_age = [None] * L
         self._RP_age = [None] * L
         if cache is None:
@@ -6437,13 +6437,9 @@ class InitialStateBuilder:
         except:
             p, q = int(round(check_filling * N_total)), N_total
         if abs(p - check_filling * N_total) > 1.0e-13:
-            raise ValueError(
-                "check_filling={0:.5f} doesn't fit as integer in p_state.size = {1:d}".format(check_filling, N_total)
-            )
+            raise ValueError(f"check_filling={check_filling:.5f} doesn't fit as integer in p_state.size = {N_total:d}")
         if N_filled * q != N_total * p:  # int-version of N_filled/N_total != p/q
-            raise ValueError(
-                "unexpected filling {0:.5f} != check_filling = {1:.5f}".format(N_filled / N_total, check_filling)
-            )
+            raise ValueError(f"unexpected filling {N_filled / N_total:.5f} != check_filling = {check_filling:.5f}")
         # done
 
     def fill_where(self):
@@ -6643,7 +6639,7 @@ def build_initial_state(size, states, filling, mode="random", seed=None):
         if (num - round(num)) < 1e-12:
             num = int(round(num))
         if not isinstance(num, int) and not num.is_integer():
-            raise ValueError("Cannot create model of length {} with filling {}".format(size, filling))
+            raise ValueError(f"Cannot create model of length {size} with filling {filling}")
 
     # Randomly assign local states
     initial_state = [0] * size

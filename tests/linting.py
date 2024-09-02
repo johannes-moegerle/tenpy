@@ -28,14 +28,14 @@ def check_all_attribute(check_module=tenpy):
     """
     _name_ = check_module.__name__
     if not hasattr(check_module, "__all__"):
-        raise AssertionError("module {0} has no line __all__ = [...]".format(_name_))
+        raise AssertionError(f"module {_name_} has no line __all__ = [...]")
     _all_ = check_module.__all__
 
     # print("test __all__ of", _name_)
     # find entries in __all__ but not in the module
     nonexistent = [n for n in _all_ if not hasattr(check_module, n)]
     if len(nonexistent) > 0:
-        raise AssertionError("found entries {0!s} in __all__ but not in module {1}".format(nonexistent, _name_))
+        raise AssertionError(f"found entries {nonexistent!s} in __all__ but not in module {_name_}")
 
     # find objects in the module, which are not listed in __all__ (although they should be)
     for n in dir(check_module):
@@ -44,14 +44,14 @@ def check_all_attribute(check_module=tenpy):
         obj = getattr(check_module, n)
         if getattr(obj, "__module__", None) == _name_:
             # got a class or function defined in the module
-            raise AssertionError("object {0!r} defined in {1} but not in __all__".format(obj, _name_))
+            raise AssertionError(f"object {obj!r} defined in {_name_} but not in __all__")
         if _name_ == "tenpy.models":
             # HACK: submodules of models (like xxz_chain.py) are not imported by default,
             # but by the other tests. They can be ignored here.
             continue
         if hasattr(obj, "__package__") and obj.__name__.startswith(_name_):
             # imported submodule
-            raise AssertionError("Module {0!r} imported in {1} but not listed in __all__".format(obj.__name__, _name_))
+            raise AssertionError(f"Module {obj.__name__!r} imported in {_name_} but not listed in __all__")
 
     # recurse into submodules
     submodules = [getattr(check_module, n, None) for n in _all_]
@@ -80,7 +80,7 @@ def check_copyright_notice():
     # tenpy_files = get_python_files(os.path.dirname(os.path.dirname(tenpy.__file__)))
     #  (but this doesn't work for the pip-installed tenpy, so you can only do it temporary!)
     for fn in tenpy_files:
-        with open(fn, "r") as f:
+        with open(fn) as f:
             for line in f:
                 if line.startswith("# Copyright (C) TeNPy Developers, GNU GPLv3"):
                     break

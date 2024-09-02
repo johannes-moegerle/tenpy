@@ -204,7 +204,7 @@ class TermList(Hdf5Exportable):
                     op = "[" + op + "]"
                 ops.append(f"{op!s}_{i:d}")
             term_str = " ".join(ops)
-            res.append("{s:.5f} * {t}".format(s=strength, t=term_str))
+            res.append(f"{strength:.5f} * {term_str}")
         return " +\n".join(res)
 
     def order_combine(self, sites):
@@ -482,7 +482,7 @@ class OnsiteTerms(Hdf5Exportable):
         for site, terms in zip(sites, self.onsite_terms):
             for opname, strength in terms.items():
                 if not site.valid_opname(opname):
-                    raise ValueError("Operator {op!r} not in site".format(op=opname))
+                    raise ValueError(f"Operator {opname!r} not in site")
 
 
 class CouplingTerms(Hdf5Exportable):
@@ -543,7 +543,7 @@ class CouplingTerms(Hdf5Exportable):
             The operator to be inserted between `i` and `j`.
         """
         if not 0 <= i < self.L:
-            raise ValueError("We need 0 <= i < N_sites, got i={i:d}".format(i=i))
+            raise ValueError(f"We need 0 <= i < N_sites, got i={i:d}")
         if not i < j:
             raise ValueError("need i < j")
         d1 = self.coupling_terms.setdefault(i, dict())
@@ -824,13 +824,13 @@ class CouplingTerms(Hdf5Exportable):
             site_i = sites[i]
             for (op_i, opstring), d2 in d1.items():
                 if not site_i.valid_opname(op_i):
-                    raise ValueError("Operator {op!r} not in site".format(op=op_i))
+                    raise ValueError(f"Operator {op_i!r} not in site")
                 for j, d3 in d2.items():
                     if not i < j:
                         raise ValueError("wrong order of indices in coupling terms")
                     for op_j in d3.keys():
                         if not sites[j % L].valid_opname(op_j):
-                            raise ValueError("Operator {op!r} not in site".format(op=op_j))
+                            raise ValueError(f"Operator {op_j!r} not in site")
         # done
 
 
@@ -1115,7 +1115,7 @@ class MultiCouplingTerms(CouplingTerms):
             The operator to be inserted between `i` and `j`.
         """
         if not 0 <= i < self.L:
-            raise ValueError("We need 0 <= i < N_sites, got i={i:d}".format(i=i))
+            raise ValueError(f"We need 0 <= i < N_sites, got i={i:d}")
         if not i < j:
             raise ValueError("need i < j")
         ijkl = [i, j]
@@ -1529,5 +1529,5 @@ class ExponentiallyDecayingTerms(Hdf5Exportable):
             for i in subsites:
                 for op in op_i, op_j:
                     if not sites[i].valid_opname(op):
-                        raise ValueError("Operator {op!r} not in site {i:d}".format(op=op, i=i))
+                        raise ValueError(f"Operator {op!r} not in site {i:d}")
         # done

@@ -219,7 +219,7 @@ class TEBDEngine(TimeEvolutionAlgorithm):
             b2 = -0.12039526945509726545
             return [a1, b1, a2, b2, 0.5 - a1 - a2, 1.0 - 2 * (b1 + b2)]  # a1 b1 a2 b2 a3 b3
         # else
-        raise ValueError("Unknown order %r for Suzuki Trotter decomposition" % order)
+        raise ValueError(f"Unknown order {order!r} for Suzuki Trotter decomposition")
 
     @staticmethod
     def suzuki_trotter_decomposition(order, N_steps):
@@ -283,7 +283,7 @@ class TEBDEngine(TimeEvolutionAlgorithm):
                      (4, odd), (3, even), (2, odd), (1, even), (0, odd)]  # yapf: disable
             return steps * N_steps
         # else
-        raise ValueError("Unknown order {0!r} for Suzuki Trotter decomposition".format(order))
+        raise ValueError(f"Unknown order {order!r} for Suzuki Trotter decomposition")
 
     def prepare_evolve(self, dt):
         order = self.options.get("order", 2, int)

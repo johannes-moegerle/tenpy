@@ -112,7 +112,7 @@ class ExpMPOEvolution(TimeEvolutionAlgorithm):
             U2 = H_MPO.make_U(-(1.0 - 1j) / 2.0 * dt * 1j, approximation=approximation)
             self._U_MPO = [U1, U2]
         else:
-            raise ValueError("order {order:d} not implemented".format(order=order))
+            raise ValueError(f"order {order:d} not implemented")
         self.force_prepare_evolve = False
 
     def evolve_step(self, dt):

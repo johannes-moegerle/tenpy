@@ -135,7 +135,7 @@ class TruncationError(Hdf5Exportable):
 
     def __repr__(self):
         if self.eps != 0 or self.ov != 1.0:
-            return "TruncationError(eps={eps:.4e}, ov={ov:.10f})".format(eps=self.eps, ov=self.ov)
+            return f"TruncationError(eps={self.eps:.4e}, ov={self.ov:.10f})"
         else:
             return "TruncationError()"
 
@@ -294,12 +294,12 @@ def svd_theta(theta, trunc_par, qtotal_LR=[None, None], inner_labels=["vR", "vL"
     piv, new_norm, err = truncate(S, trunc_par)
     new_len_S = np.sum(piv, dtype=np.int_)
     if new_len_S * 100 < len(S) and (trunc_par["chi_max"] is None or new_len_S != trunc_par["chi_max"]):
-        msg = "Catastrophic reduction in chi: {0:d} -> {1:d}".format(len(S), new_len_S)
+        msg = f"Catastrophic reduction in chi: {len(S):d} -> {new_len_S:d}"
         # NANs are excluded in npc.svd
         UHU = npc.tensordot(U.conj(), U, axes=[[0], [0]])
-        msg += " |U^d U - 1| = {0:f}".format(npc.norm(UHU - npc.eye_like(UHU)))
+        msg += f" |U^d U - 1| = {npc.norm(UHU - npc.eye_like(UHU)):f}"
         VHV = npc.tensordot(VH, VH.conj(), axes=[[1], [1]])
-        msg += " |V V - 1| = {0:f}".format(npc.norm(VHV - npc.eye_like(VHV)))
+        msg += f" |V V - 1| = {npc.norm(VHV - npc.eye_like(VHV)):f}"
         warnings.warn(msg, stacklevel=2)
     S = S[piv] / new_norm
     renormalization *= new_norm

@@ -886,7 +886,7 @@ class MPO:
                 if npc.norm(LP_converged) < tol:
                     break  # no more terms left
         else:  # no break
-            msg = "Tolerance {0:.2e} not reached within {1:d} sites".format(tol, max_range)
+            msg = f"Tolerance {tol:.2e} not reached within {max_range:d} sites"
             warnings.warn(msg, stacklevel=2)
         if self.explicit_plus_hc:
             current_value = current_value + np.conj(current_value)
@@ -1361,7 +1361,7 @@ class MPO:
         if i < 0:
             i += self.L
         if i >= self.L + int(bond) or i < 0:
-            raise KeyError("i = {0:d} out of bounds for finite MPO".format(i))
+            raise KeyError(f"i = {i:d} out of bounds for finite MPO")
         return i
 
     @staticmethod
@@ -1374,7 +1374,7 @@ class MPO:
         except TypeError:
             return [Id] * (L + 1)
         if len(Id) != L + 1:
-            raise ValueError("expected list with L+1={0:d} entries".format(L + 1))
+            raise ValueError(f"expected list with L+1={L + 1:d} entries")
         return Id
 
     def __add__(self, other):
@@ -1695,7 +1695,7 @@ class MPOGraph:
             raise ValueError("invalid MPO boundary conditions: " + repr(self.bc))
         for i, site in enumerate(self.sites):
             if site.leg.chinfo != self.chinfo:
-                raise ValueError("invalid ChargeInfo for site {i:d}".format(i=i))
+                raise ValueError(f"invalid ChargeInfo for site {i:d}")
             stL, stR = self.states[i : i + 2]
             # check graph
             gr = self.graph[i]
@@ -1735,7 +1735,7 @@ class MPOGraph:
         i = i % self.L
         if check_op:
             if not self.sites[i].valid_opname(opname):
-                raise ValueError("operator {0!r} not existent on site {1:d}".format(opname, i))
+                raise ValueError(f"operator {opname!r} not existent on site {i:d}")
         G = self.graph[i]
         if keyL not in self.states[i]:
             self.states[i].add(keyL)
@@ -1883,7 +1883,7 @@ class MPOGraph:
         return H
 
     def __repr__(self):
-        return "<MPOGraph L={L:d}>".format(L=self.L)
+        return f"<MPOGraph L={self.L:d}>"
 
     def __str__(self):
         """string showing the graph for debug output."""
@@ -2397,7 +2397,7 @@ class MPOEnvironment(BaseEnvironment):
         if i < 0:
             i += self.L
         if i >= self.L or i < 0:
-            raise KeyError("i = {0:d} out of bounds for finite MPS".format(i))
+            raise KeyError(f"i = {i:d} out of bounds for finite MPS")
         return i
 
 
