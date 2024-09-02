@@ -101,4 +101,8 @@ target-version = "py38"
 exclude = ["doc/sphinx_ext/*"]
 
 [tool.ruff.lint]
-select = []  # all possible rules see here: https://docs.astral.sh/ruff/rules/
+select = ["F"]  # all possible rules see here: https://docs.astral.sh/ruff/rules/
+extend-ignore = [
+    "F403", "F405",  # ignore `import *` warnings
+    "F841",  # ignore unused variable warnings
+]
